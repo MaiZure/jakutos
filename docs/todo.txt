@@ -1,0 +1,17 @@
+Zooming should instantly refocus view.
+
+
+Make minimap with more flat colors.
+Make minimap more efficient (add rectangle to actor layer? no redraw squares)
+
+Make move turn PQ
+
+Make diagonal movement
+
+Make fighting
+
+Add the idea of HUD widgets (And updating only when dirty)
+Add more HUD widgets
+
+
+

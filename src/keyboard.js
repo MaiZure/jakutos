@@ -33,12 +33,12 @@ function doKeyDown(event)
 		case KB_RIGHT: Player.move_right(); break;
 		case KB_DOWN: Player.move_down(); break;
 		case KB_A: toggle_animate(); break;
-		case KB_C: refocus_view(Player.map_x, Player.map_y); break;
-		case KB_MINUS: world_rescale_down(); break;
-		case KB_PLUS: world_rescale_up(); break;
+		case KB_C: Camera.refocus(Player.map_x, Player.map_y); break;
+		case KB_MINUS: Camera.zoom_out(); break;
+		case KB_PLUS: Camera.zoom_in(); break;
 	}
 	
 	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
 	
-	renderWorld(wctx,actx);
+	Camera.render(wctx,actx);
 }

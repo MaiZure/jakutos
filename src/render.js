@@ -21,6 +21,35 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+function initCamera()
+{
+	this.dirty = false;
+	this.view_grid_x = 0;
+	this.view_grid_y = 0;
+	this.grid_size = 32;
+	this.view_px_x = 0;
+	this.view_px_y = 0;
+	this.view_px_width = 768;
+	this.view_px_height = 576;
+	this.font_size = this.grid_size+"px";
+	this.view_grid_width = this.view_px_width/this.grid_size;
+	this.view_grid_height = this.view_px_height/this.grid_size;
+	
+	
+	this.target_view_x = 0;
+	this.target_view_y = 0;
+	this.px_offset_x = 0;
+	this.px_offset_y = 0;
+	
+	this.animate_camera = _animate_camera;
+	this.zoom_in = world_rescale_up;
+	this.zoom_out = world_rescale_down;
+	this.refocus = refocus_view;
+	this.render = renderWorld;
+	this.rescale = recalculate_view_scale;
+	this.clear_world = clear_world;
+}
+
 function renderWorld(world_context, actor_context)
 {	
 	var i;
@@ -36,13 +65,13 @@ function renderWorld(world_context, actor_context)
 				Player.moveAnimate();
 				
 				for (i=0; i<Monsters.length; i++) { Monsters[i].moveAnimate(); }
-			
-				actor_context.clearRect(0,0,actor_context.canvas.width,actor_context.canvas.height);
+	
+				Camera.clear_world(actor_context);
 				Player.render(actor_context);
 				
 				for (i=0; i<Monsters.length; i++) { Monsters[i].render(actor_context); }
 				
-				if (count > (GRID_SIZE/ANIMATION_STEPS)) { clearInterval(interval); clearTimeout(timer);}
+				if (count > (Camera.grid_size/ANIMATION_STEPS)) { clearInterval(interval); clearTimeout(timer);}
 				}, 0)
 			}, 24);
 		}
@@ -59,17 +88,17 @@ function renderWorld(world_context, actor_context)
 			}
 		}
 		
-		if (Player.map_x - VIEW_GRID_X < 5 || VIEW_GRID_X+VIEW_GRID_WIDTH-Player.map_x < 5)
-			refocus_view(Player.map_x, Player.map_y);
+		if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)
+			this.refocus(Player.map_x, Player.map_y);
 		
-		if (Player.map_y - VIEW_GRID_Y < 5 || VIEW_GRID_Y+VIEW_GRID_HEIGHT-Player.map_y < 5)
-			refocus_view(Player.map_x, Player.map_y);
+		if (Player.map_y - this.view_grid_y < 5 || this.view_grid_y+this.view_grid_height-Player.map_y < 5)
+			this.refocus(Player.map_x, Player.map_y);
 		
 	}
 	
-	actor_context.clearRect(0,0,actorCanvas.width,actorCanvas.height);
-	if (Region.dirty) { world_context.clearRect(0,0,worldCanvas.width,worldCanvas.height); Region.render(world_context); Hud.render(world_context);}
-	if (Player.dirty) { Player.render(actor_context); }
+	if (Region.dirty) { this.clear_world(world_context); Region.render(world_context); }
+	if (Player.dirty) { this.clear_world(actor_context); Player.render(actor_context); }
+	Hud.render();
 	
 	for (i=0; i<Monsters.length; i++)
 	{
@@ -82,53 +111,73 @@ function renderWorld(world_context, actor_context)
  
 function world_rescale_down()
 {
-	if (GRID_SIZE > 8)
+	if (this.grid_size > 8)
 	{
 		Region.dirty = true;
-		GRID_SIZE/=2;
-		recalculate_view_scale();
-		refocus_view(Player.map_x, Player.map_y);
+		Hud.Minimap.minimap_viewbox_dirty = true;
+		this.grid_size/=2;
+		this.rescale();
+		this.refocus(Player.map_x, Player.map_y, true);
 	}
 }
 
 function world_rescale_up()
 {
-	if (GRID_SIZE < 128)
+	if (this.grid_size < 128)
 	{
 		Region.dirty = true;
-		GRID_SIZE*=2;
-		recalculate_view_scale();
-		refocus_view(Player.map_x, Player.map_y);
+		Hud.Minimap.minimap_viewbox_dirty = true;
+		this.grid_size*=2;
+		this.rescale();
+		this.refocus(Player.map_x, Player.map_y, true);
 	}
 }
 
 function recalculate_view_scale()
 {
-	FONT_SIZE = GRID_SIZE+"px";
-	VIEW_GRID_WIDTH = VIEW_PIXEL_WIDTH/GRID_SIZE;
-	VIEW_GRID_HEIGHT = VIEW_PIXEL_HEIGHT/GRID_SIZE;	
+	this.font_size = this.grid_size+"px";
+	this.view_grid_width = this.view_px_width/this.grid_size;
+	this.view_grid_height = this.view_px_height/this.grid_size;
 }
 
-function refocus_view(xx, yy)
+function refocus_view(xx, yy, immediate = false)
 {
 	var i;
-	var old_x = VIEW_GRID_X;
-	var old_y = VIEW_GRID_Y;
+	var old_x = this.view_grid_x;
+	var old_y = this.view_grid_y;
 	
-	VIEW_GRID_X = Math.round(xx-VIEW_GRID_WIDTH/2);
-	VIEW_GRID_Y = Math.round(yy-VIEW_GRID_HEIGHT/2);
-	
-	VIEW_GRID_X = Math.max(VIEW_GRID_X,0);
-	VIEW_GRID_Y = Math.max(VIEW_GRID_Y,0);
-	
-	VIEW_GRID_X = Math.min(WORLD_SIZE_X-VIEW_GRID_WIDTH,VIEW_GRID_X);
-	VIEW_GRID_Y = Math.min(WORLD_SIZE_Y-VIEW_GRID_HEIGHT,VIEW_GRID_Y);
-	
-	if (VIEW_GRID_X != old_x || VIEW_GRID_Y != old_y)
+	if (!SETTING_ANIMATE || immediate)
 	{
-		Region.dirty = true;
-		Player.dirty = true;
-		for (i=0; i<Monsters.length; i++) { Monsters[i].dirty = true; }
+		this.view_grid_x = Math.round(xx-this.view_grid_width/2);
+		this.view_grid_y = Math.round(yy-this.view_grid_height/2);
+		
+		this.view_grid_x = Math.max(this.view_grid_x,0);
+		this.view_grid_y = Math.max(this.view_grid_y,0);
+		
+		this.view_grid_x = Math.min(WORLD_SIZE_X-this.view_grid_width,this.view_grid_x);
+		this.view_grid_y = Math.min(WORLD_SIZE_Y-this.view_grid_height,this.view_grid_y);
+		
+		if (this.view_grid_x != old_x || this.view_grid_y != old_y)
+		{
+			this.dirty = true;
+			Hud.Minimap.minimap_viewbox_dirty = true;
+			Region.dirty = true;
+			Player.dirty = true;
+			for (i=0; i<Monsters.length; i++) { Monsters[i].dirty = true; }
+		}
+	}
+	else
+	{
+		this.dirty = true;
+		
+		this.target_view_x = Math.round(xx-Camera.view_grid_width/2);
+		this.target_view_y = Math.round(yy-Camera.view_grid_height/2);
+		this.target_view_x = Math.max(Camera.target_view_x,0);
+		this.target_view_y = Math.max(Camera.target_view_y,0);
+		this.target_view_x = Math.min(WORLD_SIZE_X-Camera.view_grid_width,Camera.target_view_x);
+		this.target_view_y = Math.min(WORLD_SIZE_Y-Camera.view_grid_height,Camera.target_view_y);
+		
+		if (Camera.dirty) {Camera.animate_camera();}
 	}
 }
 
@@ -137,4 +186,48 @@ function toggle_animate()
 	Region.dirty = true;
 	Hud.dirty = true;
 	SETTING_ANIMATE = !SETTING_ANIMATE;
+}
+
+function _animate_camera()
+{
+	
+	if (this.view_grid_x == this.target_view_x && this.view_grid_y == this.target_view_y)
+	{
+		this.dirty = false;
+		return;
+	}
+	
+	var timer = setTimeout(function() {
+		var interval = setInterval(function(){
+			
+			if (Camera.view_grid_x < Camera.target_view_x) { Camera.view_grid_x++; }
+			if (Camera.view_grid_x > Camera.target_view_x) { Camera.view_grid_x--; }
+			if (Camera.view_grid_y < Camera.target_view_y) { Camera.view_grid_y++; }
+			if (Camera.view_grid_y > Camera.target_view_y) { Camera.view_grid_y--; }
+			
+			if (Camera.view_grid_x == Camera.target_view_x && Camera.view_grid_y == Camera.target_view_y)
+			{
+				Camera.dirty = false;
+				Hud.Minimap.minimap_viewbox_dirty = true;
+			}
+			
+			Camera.clear_world(actx);
+			Camera.clear_world(wctx);
+			Player.render(actx);
+			Region.render(wctx);
+			Hud.render();
+			for (i=0; i<Monsters.length; i++) { Monsters[i].render(actx); }
+		
+			if (!Camera.dirty) { clearInterval(interval); clearTimeout(timer);}
+		}, 0)
+	}, 24);
+}
+
+function clear_world(target_context)
+{
+	var xx = this.view_px_x;
+	var yy = this.view_px_y;
+	var ww = this.view_px_width+64;
+	var hh = this.view_px_width+64;
+	target_context.clearRect(xx, yy, xx+ww, yy+hh);
 }

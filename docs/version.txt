@@ -1,0 +1,13 @@
+--*v0.2---In Progress-------------------------------
+Cleaned up the minimap
+Added a 'real' map based on New Sporigal from MM6
+
+
+
+--*v0.1---Dec 8, 2016-------------------------------
+The first published version...8 hours of sprint coding
+Working map with two canvas layers
+Multiple monsters with random AI (no interactions)
+A minimap
+Cardinal direction movement
+Animated motion

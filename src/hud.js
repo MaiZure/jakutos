@@ -23,47 +23,32 @@
 
 function initHud()
 {
-	this.world = Region;
 	this.dirty = true;
-	this.minimap = renderMinimap;
+	this.minimap_world_dirty = true;
+	this.minimap_viewbox_dirty = true;
+	
+	this.render_hud_text = render_hud_text;
 	this.render = renderHud;
+	
+	this.Minimap = new initMinimap();
+	
+	this.render();
 }
 
-function renderHud(target_context)
+function renderHud()
 {
+	if (this.dirty) { this.render_hud_text(wctx); }
+	this.Minimap.render();
+	this.dirty = false;
+}
+
+function render_hud_text(target_context)
+{
+	/* Old stuff
 	target_context.font = BASE_FONT_SIZE+" Sans-Serif";
 	target_context.fillStyle = FG_COLOR;
 	target_context.textAlign = "right";
 	var animateOut = SETTING_ANIMATE ? "Animations ON" : "Animations OFF";
-	target_context.fillText(animateOut,target_context.canvas.width,50);
-	this.minimap(target_context);
-	this.dirty = false;
-}
-
-function renderMinimap(target_context)
-{
-	var i,j, px, py;
-	for (j=WORLD_SIZE_Y-1;j>0;j--)
-	{
-		for (i=WORLD_SIZE_X-1;i>0;i--)
-		{
-			px = worldCanvas.width-i-1;
-			py = worldCanvas.height-j-1;
-			
-			target_context.fillStyle = this.world.gridcol[j][i]
-			target_context.fillRect(px,py,1,1);
-		}
-	}
-	
-	/* View Area */
-	px = worldCanvas.width-WORLD_SIZE_X+VIEW_GRID_X;
-	py = worldCanvas.height-WORLD_SIZE_Y+VIEW_GRID_Y;
-	target_context.strokeStyle = "rgb(255,255,0)";
-	target_context.beginPath();
-	target_context.lineTo(px,py);
-	target_context.lineTo(px+VIEW_GRID_WIDTH,py);
-	target_context.lineTo(px+VIEW_GRID_WIDTH,py+VIEW_GRID_HEIGHT);
-	target_context.lineTo(px,py+VIEW_GRID_HEIGHT);
-	target_context.lineTo(px,py);
-	target_context.stroke();
+	target_context.fillText(animateOut,target_context.canvas.width,50);	
+	*/
 }

@@ -22,24 +22,16 @@
  */
  
  /* Game Constants */
-const WORLD_SIZE_X = 100;
-const WORLD_SIZE_Y = 100;
+const WORLD_SIZE_X = 128;
+const WORLD_SIZE_Y = 128;
 const BASE_FONT_SIZE = "32px";
 const VERSION_MAJOR = 0;
 const VERSION_MINOR = 1;
 
 /* Game Settings */
 var SETTING_ANIMATE = true;
-var NUMBER_OF_MONSTERS = 16;
-var ANIMATION_STEPS = 4; /* 1 = slow, 2 = medium, 4 = fast */
-var GRID_SIZE = 32;
-var FONT_SIZE = GRID_SIZE+"px";
-var VIEW_PIXEL_WIDTH = 768;
-var VIEW_PIXEL_HEIGHT = 576;
-var VIEW_GRID_WIDTH = VIEW_PIXEL_WIDTH/GRID_SIZE;
-var VIEW_GRID_HEIGHT = VIEW_PIXEL_HEIGHT/GRID_SIZE;
-var VIEW_GRID_X = 0;
-var VIEW_GRID_Y = 0;
+var NUMBER_OF_MONSTERS = 20;
+var ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
 var FG_COLOR = "rgb(170,170,170)"
 var GRASSLAND = Math.round(Math.random());
 

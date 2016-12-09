@@ -53,15 +53,15 @@ function initActor(ch)
 
 function renderActor(target_context)
 {
-	if (!this.is_visible()) { return; } /* culling */
+	if (!this.is_visible()) { this.dirty = false; return; } /* culling */
 	
-	target_context.font = (FONT_SIZE+" Sans-Serif");
+	target_context.font = (Camera.font_size+" Sans-Serif");
 	target_context.fillStyle = this.color;
 	target_context.textAlign = "center";
-	var current_view_grid_x = this.map_x-VIEW_GRID_X;
-	var current_view_grid_y = this.map_y-VIEW_GRID_Y;
-	var current_view_pixel_x = 32+current_view_grid_x*GRID_SIZE+this.offset_x;
-	var current_view_pixel_y = 32+current_view_grid_y*GRID_SIZE+this.offset_y;
+	var current_view_grid_x = this.map_x-Camera.view_grid_x;
+	var current_view_grid_y = this.map_y-Camera.view_grid_y;
+	var current_view_pixel_x = 32+current_view_grid_x*Camera.grid_size+this.offset_x;
+	var current_view_pixel_y = 32+current_view_grid_y*Camera.grid_size+this.offset_y;
 	target_context.fillText(this.avatar,current_view_pixel_x,current_view_pixel_y);
 	
 }
@@ -78,7 +78,7 @@ function _moveAnimate()
 	if (this.next_y < this.map_y) { this.offset_y-=ANIMATION_STEPS;}
 	if (this.next_y > this.map_y) { this.offset_y+=ANIMATION_STEPS;}
 	
-	if (Math.abs(this.offset_x) == GRID_SIZE || Math.abs(this.offset_y) == GRID_SIZE) 
+	if (Math.abs(this.offset_x) == Camera.grid_size || Math.abs(this.offset_y) == Camera.grid_size) 
 	{
 		this.offset_x = 0;
 		this.offset_y = 0;
@@ -107,9 +107,9 @@ function _can_move(xx, yy)
 
 function _is_visible()
 {
-	if (this.map_x < VIEW_GRID_X) {return false;}
-	if (this.map_x > VIEW_GRID_X+VIEW_GRID_WIDTH) {return false;}
-	if (this.map_y < VIEW_GRID_Y) {return false;}
-	if (this.map_y > VIEW_GRID_Y+VIEW_GRID_HEIGHT) {return false;}	
+	if (this.map_x < Camera.view_grid_x) {return false;}
+	if (this.map_x > Camera.view_grid_x+Camera.view_grid_width-1) {return false;}
+	if (this.map_y < Camera.view_grid_y) {return false;}
+	if (this.map_y > Camera.view_grid_y+Camera.view_grid_height-1) {return false;}	
 	return true;
 }

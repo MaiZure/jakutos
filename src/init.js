@@ -25,8 +25,8 @@ function gameInit()
 {
 	var i;
 	
+	Camera = new initCamera();
 	Region = new initRegion();
-	Hud = new initHud();
 	Player = create_player();
 	
 	Monsters = [];
@@ -37,8 +37,9 @@ function gameInit()
 	actorCanvas.width = Math.round(window.innerWidth*0.96);
 	actorCanvas.height = Math.round(window.innerHeight*0.96);
 	
-	refocus_view(Player.map_x, Player.map_y);
-	renderWorld(wctx,actx);
+	Hud = new initHud();
+	Camera.refocus(Player.map_x, Player.map_y, true);
+	Camera.render(wctx,actx);
 }
 
 function create_player()
