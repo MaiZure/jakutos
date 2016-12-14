@@ -407,7 +407,6 @@ function Hud()
 	
 	/* The hud should create its widgets */
 	this.message = new Message(this);
-	this.message.render();
 }
 
 Hud.prototype.dirty = true;
@@ -417,18 +416,19 @@ Hud.prototype.message_dirty = true;
 Hud.prototype.render = function()
 {
 	if (this.dirty) { this.render_text(animation_context); }
+	if (this.message_dirty) {this.message.render();}
 	this.debug();
 	this.dirty = false;
 }
 
 Hud.prototype.render_text = function(target_context)
 {
-	target_context.clearRect(target_context.canvas.width-150,0,target_context.canvas.width,150);
+	target_context.clearRect(target_context.canvas.width-150,this.avatar_box_topline-150,target_context.canvas.width,this.avatar_box_topline);
 	target_context.font = BASE_FONT_SIZE+" Sans-Serif";
 	target_context.fillStyle = FG_COLOR;
 	target_context.textAlign = "right";
-	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,50);	
-	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,100);	
+	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_topline-100);	
+	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_topline-50);	
 }
 
 Hud.prototype.debug = function()
@@ -458,30 +458,47 @@ Hud.prototype.debug = function()
 		
 	}
 	this.party_dirty = false;
-	
 }
  
 function Message(hud_instance)
 {
 	this.hud = hud_instance; /* save parent pinter */
+	this.message_index = this.message_buffer_size-1;
 }
 
-Message.prototype.message_log = ["first","2","third","4","5","6","7","8","9","10"];
-Message.prototype.message_index = 5;
+Message.prototype.message_buffer_size = 16;
+Message.prototype.message_log = ["","","","","","","","","","","","","","","",""];
 Message.prototype.hud = 0 /* parent pointer unknown during prototyping */
 
 Message.prototype.render = function()
 {
 	var i;
-	var num = this.message_index
+	var num = this.message_index;
+	this.clear_message_window()
 	for (i=0; i<10; i++)
 	{
 		animation_context.font = BASE_FONT_SIZE+" Courier";
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
 		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+24+i*24);	
-		num=(++num)%10;
+		num=(++num)%this.message_buffer_size;
 	}
+	this.hud.message_dirty = false;
+}
+
+Message.prototype.clear_message_window = function()
+{
+	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
+}
+
+Message.prototype.add_message = function(msg)
+{
+	this.message_index--;
+	if (this.message_index < 0) {this.message_index = this.message_buffer_size-1;}
+	
+	//console.log(msg);
+	this.message_log[this.message_index] = msg;
+	this.hud.message_dirty = true;
 }
 
 function gameInit()
@@ -549,10 +566,10 @@ function doKeyDown(event)
 	
 	switch (event.keyCode)
 	{	
-		case KB_LEFT: Player.move_left(); break;
-		case KB_UP: Player.move_up(); break;
-		case KB_RIGHT: Player.move_right(); break;
-		case KB_DOWN: Player.move_down(); break;
+		case KB_LEFT: Hud.message.add_message("You move west"); Player.move_left(); break;
+		case KB_UP: Hud.message.add_message("You move north"); Player.move_up(); break;
+		case KB_RIGHT: Hud.message.add_message("You move east"); Player.move_right(); break;
+		case KB_DOWN: Hud.message.add_message("You move south"); Player.move_down(); break;
 		case KB_A: toggle_animate(); break;
 		case KB_C: Camera.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: toggle_minimap(); break;

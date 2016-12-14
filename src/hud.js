@@ -42,7 +42,6 @@ function Hud()
 	
 	/* The hud should create its widgets */
 	this.message = new Message(this);
-	this.message.render();
 }
 
 Hud.prototype.dirty = true;
@@ -52,18 +51,19 @@ Hud.prototype.message_dirty = true;
 Hud.prototype.render = function()
 {
 	if (this.dirty) { this.render_text(animation_context); }
+	if (this.message_dirty) {this.message.render();}
 	this.debug();
 	this.dirty = false;
 }
 
 Hud.prototype.render_text = function(target_context)
 {
-	target_context.clearRect(target_context.canvas.width-150,0,target_context.canvas.width,150);
+	target_context.clearRect(target_context.canvas.width-150,this.avatar_box_topline-150,target_context.canvas.width,this.avatar_box_topline);
 	target_context.font = BASE_FONT_SIZE+" Sans-Serif";
 	target_context.fillStyle = FG_COLOR;
 	target_context.textAlign = "right";
-	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,50);	
-	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,100);	
+	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_topline-100);	
+	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_topline-50);	
 }
 
 Hud.prototype.debug = function()
@@ -93,5 +93,4 @@ Hud.prototype.debug = function()
 		
 	}
 	this.party_dirty = false;
-	
 }
