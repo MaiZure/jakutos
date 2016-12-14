@@ -20,17 +20,22 @@
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
-
  
-/* Kick off the game when the window loads */
-window.addEventListener("load", gameInit, false);
-//document.addEventListener("DOMContentLoaded", gameInit, false);
+function Monster()
+{
+	Actor.call(this);
+}
 
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("keydown", doKeyDown, false);
+Monster.prototype = Object.create(Actor.prototype);
+Monster.prototype.constructor = Monster;
 
-/* Capture key pressed when the Document has focus */
-//baseCanvas.addEventListener("mousemove", doMouseMove, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("mousedown", doMouseClick, false);
+Monster.prototype.ai_move = function() 
+{
+	switch (Math.floor(Math.random()*4))
+	{
+		case 0: this.move_left(); break;
+		case 1: this.move_up(); break;
+		case 2: this.move_right(); break;
+		case 3: this.move_down(); break;
+	}
+}

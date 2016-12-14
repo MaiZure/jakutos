@@ -24,36 +24,48 @@
 
 function initMinimap()
 {
+	this.active = false;
 	this.minimap_world_dirty = true;
 	this.minimap_viewbox_dirty = true;
+	this.minimap_width = WORLD_SIZE_X/2;
+	this.minimap_height = WORLD_SIZE_Y/2;
 	
-	this.base_x = worldCanvas.width-WORLD_SIZE_X;
-	this.base_y = worldCanvas.height-WORLD_SIZE_Y;
+	this.base_x = 0;
+	this.base_y = 0;
 	
 	this.render = renderMinimap;
+	this.draw = drawMinimap;
 	this.clear_minimap = clear_minimap;
 	this._renderTerrain = renderTerrain;
 	this._renderViewbox = renderViewbox;
+	
+	this._renderTerrain(overlay_context);
+	this.minimap_image = overlay_context.getImageData(0,0,WORLD_SIZE_X,WORLD_SIZE_Y);
+	//Camera.clear_world(overlay_context);
+	Camera.clear_context(overlay_context);
 }
 
 function renderMinimap()
 {
-	if (this.minimap_world_dirty) { this._renderTerrain(wctx); }
-	if (this.minimap_viewbox_dirty) { this._renderViewbox(actx); }
+	if (this.active)
+	{
+		if (this.minimap_world_dirty) { this._renderTerrain(base_context); }
+		if (this.minimap_viewbox_dirty) { this._renderViewbox(animation_context); }
+	}
 }
 
 function renderTerrain(target_context)
 {
 	var i,j, px, py;
-	for (j=0; j<WORLD_SIZE_Y; j++)
+	for (j=0; j<WORLD_SIZE_Y; j+=2)
 	{
-		for (i=0; i<WORLD_SIZE_X; i++)
+		for (i=0; i<WORLD_SIZE_X; i+=2)
 		{
 			px = this.base_x+i;
 			py = this.base_y+j;
 			
-			target_context.fillStyle = Region.gridcol[j][i]
-			target_context.fillRect(px,py,1,1);
+			target_context.fillStyle = Region.gridcol[j][i];
+			target_context.fillRect(px/2,py/2,1,1);
 		}
 	}
 	
@@ -76,6 +88,20 @@ function renderViewbox(target_context)
 	target_context.stroke();
 
 	this.minimap_viewbox_dirty = false;
+}
+
+function drawMinimap(target_context)
+{
+	var screen_width = target_context.canvas.width;
+	var screen_height = target_context.canvas.height;
+	var player_x = Player.map_x;
+	var player_y = Player.map_y;
+	var minimap_x = (Camera.view_px_width-this.minimap_width)/2;
+	var minimap_y = (Camera.view_px_height-this.minimap_height)/2;
+	target_context.putImageData(this.minimap_image, minimap_x,minimap_y);
+	target_context.fillStyle = "rgb(255,0,0)";
+	target_context.fillRect(minimap_x+player_x/2-5, minimap_y+player_y/2-5, 10, 10);
+	
 }
 
 function clear_minimap(target_context)

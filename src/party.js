@@ -20,17 +20,21 @@
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
-
  
-/* Kick off the game when the window loads */
-window.addEventListener("load", gameInit, false);
-//document.addEventListener("DOMContentLoaded", gameInit, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("keydown", doKeyDown, false);
-
-/* Capture key pressed when the Document has focus */
-//baseCanvas.addEventListener("mousemove", doMouseMove, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("mousedown", doMouseClick, false);
+function initParty()
+{
+	this.job[0] = CLASS_KNIGHT;
+	this.job[1] = CLASS_PALADIN;
+	this.job[2] = CLASS_CLERIC;
+	this.job[3] = CLASS_SORCERER;
+	
+	this.max_hp[0] = 30; this.current_hp[0]=this.max_hp[0];
+	this.max_hp[1] = 25; this.current_hp[1]=this.max_hp[1];
+	this.max_hp[2] = 15; this.current_hp[2]=this.max_hp[2];
+	this.max_hp[3] = 12; this.current_hp[3]=this.max_hp[3];
+	
+	this.max_mp[0] = 0; this.current_mp[0]=this.max_mp[0];
+	this.max_mp[1] = 6; this.current_mp[1]=this.max_mp[1];
+	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
+	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
+}

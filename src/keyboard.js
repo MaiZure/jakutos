@@ -26,6 +26,7 @@ function doKeyDown(event)
 	var i;
 	
 	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses */
+	
 	switch (event.keyCode)
 	{	
 		case KB_LEFT: Player.move_left(); break;
@@ -34,11 +35,12 @@ function doKeyDown(event)
 		case KB_DOWN: Player.move_down(); break;
 		case KB_A: toggle_animate(); break;
 		case KB_C: Camera.refocus(Player.map_x, Player.map_y); break;
+		case KB_M: toggle_minimap(); break;
 		case KB_MINUS: Camera.zoom_out(); break;
 		case KB_PLUS: Camera.zoom_in(); break;
 	}
 	
 	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
 	
-	Camera.render(wctx,actx);
+	Camera.render(base_context,animation_context,overlay_context);
 }

@@ -21,7 +21,14 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-worldCanvas = document.getElementById("World");
-actorCanvas = document.getElementById("Actors");
-wctx = worldCanvas.getContext("2d");
-actx = actorCanvas.getContext("2d");
+baseCanvas = document.getElementById("Base");
+animationCanvas = document.getElementById("Animation");
+overlayCanvas = document.getElementById("Overlay");
+
+base_context = baseCanvas.getContext("2d");
+animation_context = animationCanvas.getContext("2d");
+overlay_context = overlayCanvas.getContext("2d");
+
+mouse_x = 0;
+mouse_y = 0;
+

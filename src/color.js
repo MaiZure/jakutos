@@ -21,10 +21,13 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+const COL_MAP_BUILDING = 'rgb(200,180,100)';
 const COL_MAP_WATER = 'rgb(100,100,175)';
 const COL_MAP_DIRT = 'rgb(170,100,50)';
 const COL_MAP_GRASS = 'rgb(20,150,50)';
-const COL_MAP_MOUNTAIN = 'rgb(175,185,200)';
+const COL_MAP_HILL = 'rgb(160,180,160)';
+const COL_MAP_LOW_MOUNTAIN = 'rgb(175,185,195)';
+const COL_MAP_HIGH_MOUNTAIN = 'rgb(185,195,200)';
  
 function random_grass_color()
 {
@@ -59,5 +62,19 @@ function random_mountain_color()
 	r = Math.round(Math.random()*30)+160;
 	g = Math.round(Math.random()*10)+r;
 	b = Math.round(Math.random()*60)+170;
+	return "rgb("+r+","+g+","+b+")";
+}
+
+function height_to_color(height)
+{
+	var r,g,b;
+	if (height == 0) return COL_MAP_WATER
+	if (height == 1) return COL_MAP_DIRT
+	else
+	{
+		r = Math.min(height*10,175);
+		g = Math.min(100+Math.round(height*5),185);
+		b = Math.min(20+Math.round(height*10),195);
+	}
 	return "rgb("+r+","+g+","+b+")";
 }

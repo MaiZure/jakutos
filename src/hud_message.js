@@ -20,17 +20,26 @@
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
-
  
-/* Kick off the game when the window loads */
-window.addEventListener("load", gameInit, false);
-//document.addEventListener("DOMContentLoaded", gameInit, false);
+function Message(hud_instance)
+{
+	this.hud = hud_instance; /* save parent pinter */
+}
 
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("keydown", doKeyDown, false);
+Message.prototype.message_log = ["first","2","third","4","5","6","7","8","9","10"];
+Message.prototype.message_index = 5;
+Message.prototype.hud = 0 /* parent pointer unknown during prototyping */
 
-/* Capture key pressed when the Document has focus */
-//baseCanvas.addEventListener("mousemove", doMouseMove, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("mousedown", doMouseClick, false);
+Message.prototype.render = function()
+{
+	var i;
+	var num = this.message_index
+	for (i=0; i<10; i++)
+	{
+		animation_context.font = BASE_FONT_SIZE+" Courier";
+		animation_context.fillStyle = FG_COLOR;
+		animation_context.textAlign = "left";
+		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+24+i*24);	
+		num=(++num)%10;
+	}
+}

@@ -1,9 +1,23 @@
 <!DOCTYPE html>
 <html><head>
-<style>canvas { outline: none !important; }</style>
+<style>canvas { 
+	outline: none !important; 
+	font-family: 'clacon';
+	}
+	#load {
+            font-family: 'clacon';
+            visibility: hidden;
+            height: 0px;
+    } 
+	@font-face {
+    font-family: 'clacon';
+    src: url('./data/ClassicConsole.ttf');
+	}</style>
 <body bgcolor="#303030">
-<canvas id="World" width="95%" height="95%" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
-<canvas id="Actors" width="95%" height="95%" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+<div style="font-family: clacon;">&nbsp</div> <!-- Force the font CSS before randering canvas -->
+<canvas id="Base" width="95%" height="95%" tabindex="1" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+<canvas id="Animation" width="95%" height="95%" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+<canvas id="Overlay" width="95%" height="95%" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
 <script type="text/javascript" src="game.js">
 </script>
 </body></html>

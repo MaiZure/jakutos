@@ -31,30 +31,34 @@ function initRegion()
 	this.is_clear = _is_clear;
 	this.grid = [[],[]]
 	this.gridcol = [[],[]];
+	this.gridheight = [[],[]];
 	this.build_map = _build_map;
 	this.load_map = _load_map;
-	
+
 	this.load_map();
 }
 
 function renderRegion(target_context)
 {
 	var i,j, ch, col;
-	target_context.font = Camera.font_size+" Courier";
-	target_context.textAlign = "center";
-	for (j=Camera.view_grid_y; j<Math.min(Camera.view_grid_y+Camera.view_grid_height,WORLD_SIZE_Y); j++)
+	var start_grid_x, start_grid_y, end_grid_x, end_grid_y;
+	var px, py;
+	
+	target_context.font = Camera.font_size+" clacon";
+	target_context.textAlign = "left";
+	
+	start_grid_x = Camera.view_grid_x;
+	start_grid_y = Camera.view_grid_y;
+	end_grid_x = Math.min(Camera.view_grid_x+Camera.view_grid_width,WORLD_SIZE_X);
+	end_grid_y = Math.min(Camera.view_grid_y+Camera.view_grid_height,WORLD_SIZE_Y);
+	
+	
+	for (j=start_grid_y; j<end_grid_y; j++)
 	{
-		for (i=Camera.view_grid_x; i<Math.min(Camera.view_grid_x+Camera.view_grid_width,WORLD_SIZE_X); i++)
+		for (i=start_grid_x; i<end_grid_x; i++)
 		{
-			switch (this.grid[j][i])
-			{
-				case 0: ch = "~"; break;
-				case 1: 
-				case 2: ch = "."; break;
-				case 3: ch = "^"; break;
-			}
 			target_context.fillStyle = this.gridcol[j][i];
-			target_context.fillText(ch,32+(i-Camera.view_grid_x)*Camera.grid_size,32+(j-Camera.view_grid_y)*Camera.grid_size);
+			target_context.fillText(this.grid[j][i],0+(i-Camera.view_grid_x)*Camera.grid_width,0+(j-Camera.view_grid_y)*Camera.grid_height);
 		}
 	}
 	this.dirty = false;
@@ -66,7 +70,7 @@ function _is_clear(xx, yy)
 	if (yy < 0) { return false; }
 	if (xx >= WORLD_SIZE_X) { return false; }
 	if (yy >= WORLD_SIZE_Y) { return false; }
-	if (this.grid[yy][xx] < 3) { return true; } else { return false; }
+	if (this.grid[yy][xx] != '^') { return true; } else { return false; }
 }
 
 function _build_map()
@@ -75,6 +79,7 @@ function _build_map()
 	{
 		this.grid[i] = [];
 		this.gridcol[i] = [];
+		this.gridheight[i]= [];
 	}
 	
 	for (j=0; j<WORLD_SIZE_Y; j++)
@@ -95,40 +100,66 @@ function _build_map()
 
 function _load_map()
 {
-	var ch;
+	
+	var ch, i ,j, k;
+	var source_map = [];
+	var target_base_x = [];
+	var target_base_y = [];
+	var region_size = 252;
+	
+	source_map[0] = WORLD_MAP_1; target_base_x[0]  = 0; target_base_y[0]  = 0;
+	source_map[1] = WORLD_MAP_2; target_base_x[1]  = region_size; target_base_y[1]  = 0;
+	source_map[2] = WORLD_MAP_3; target_base_x[2]  = region_size*2; target_base_y[2]  = 0;
+	source_map[3] = WORLD_MAP_4; target_base_x[3]  = region_size*3; target_base_y[3]  = 0;
+	source_map[4] = WORLD_MAP_5; target_base_x[4]  = region_size*4; target_base_y[4]  = 0;
+	source_map[5] = WORLD_MAP_6; target_base_x[5]  = 0; target_base_y[5]  = region_size;
+	source_map[6] = WORLD_MAP_7; target_base_x[6]  = region_size; target_base_y[6] = region_size;
+	source_map[7] = WORLD_MAP_8; target_base_x[7]  = region_size*2; target_base_y[7]  = region_size;
+	source_map[8] = WORLD_MAP_9; target_base_x[8]  = region_size*3; target_base_y[8]  = region_size;
+	source_map[9] = WORLD_MAP_10; target_base_x[9]  = region_size*4; target_base_y[9]  = region_size;
+	source_map[10] = WORLD_MAP_11; target_base_x[10]  = 0; target_base_y[10]  = region_size*2;
+	source_map[11] = WORLD_MAP_12; target_base_x[11]  = region_size; target_base_y[11]  = region_size*2;
+	source_map[12] = WORLD_MAP_13; target_base_x[12]  = region_size*2; target_base_y[12]  = region_size*2;
+	source_map[13] = WORLD_MAP_14; target_base_x[13]  = region_size*3; target_base_y[13]  = region_size*2;
+	source_map[14] = WORLD_MAP_15; target_base_x[14]  = region_size*4; target_base_y[14]  = region_size*2;
+	
 	for (i=0; i<WORLD_SIZE_X; i++) 
 	{
 		this.grid[i] = [];
 		this.gridcol[i] = [];
+		this.gridheight[i] = [];
 	}
 	
-	for (j=0; j<WORLD_SIZE_Y; j++)
+	for (k=0; k<15; k++)
 	{
-		for (i=0; i<WORLD_SIZE_X; i++)
+		for (j=0; j<region_size; j++)
 		{
-			ch = WORLD_MAP_1.charAt(j*128+i);
-			
-			switch (ch)
+			for (i=0; i<region_size; i++)
 			{
-				case '~': this.grid[j][i]=0; break;
-				case '0': this.grid[j][i]=1; break;
-				case '1': this.grid[j][i]=2; break;
-				case '2': 
-				case '3': 
-				case '4': 
-				case '5': 
-				case '6': 
-				case '7': 
-				case '8': 
-				case '9': this.grid[j][i]=3; break;
-			}
-			
-			switch (this.grid[j][i])
-			{
-				case 0: this.gridcol[j][i] = COL_MAP_WATER; break;
-				case 1: this.gridcol[j][i] = COL_MAP_DIRT; break;
-				case 2: this.gridcol[j][i] = COL_MAP_GRASS; break;
-				case 3: this.gridcol[j][i] = COL_MAP_MOUNTAIN; break;
+				ch = source_map[k].charAt(j*region_size+i);
+				
+				/* Set heightmap */
+				switch (ch.charCodeAt(0))
+				{
+					case 126: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=0; break;
+					case 35: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=-1; break;
+					default: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=ch.charCodeAt(0)-64; break;
+				}
+				
+				/* Set character and color */
+				switch (this.gridheight[target_base_y[k]+j][target_base_x[k]+i])
+				{
+					case -1: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '#'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_BUILDING; break;
+					case 0: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '='; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_WATER; break;
+					case 1: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '~'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_DIRT; break;
+					case 2: 
+					case 3: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '~'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_GRASS; break;
+					case 4: 
+					case 5: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '^'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_HILL; break;
+					case 6: 
+					case 7: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '{'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_LOW_MOUNTAIN; break;
+					default: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '}'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_HIGH_MOUNTAIN; break;
+				}
 			}
 		}
 	}

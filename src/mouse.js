@@ -20,17 +20,16 @@
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
-
  
-/* Kick off the game when the window loads */
-window.addEventListener("load", gameInit, false);
-//document.addEventListener("DOMContentLoaded", gameInit, false);
+function doMouseMove(event)
+{
+	mouse_x = event.clientX;
+	mouse_y = event.clientY;
+	Hud.dirty = true;
+	Hud.render();
+}
 
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("keydown", doKeyDown, false);
-
-/* Capture key pressed when the Document has focus */
-//baseCanvas.addEventListener("mousemove", doMouseMove, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("mousedown", doMouseClick, false);
+function doMouseClick(event)
+{
+	
+}

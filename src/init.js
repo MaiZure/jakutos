@@ -25,6 +25,19 @@ function gameInit()
 {
 	var i;
 	
+	/* Set the three canvas dimensions on load and divisible by 8 (may help future calcs)*/
+	baseCanvas.width = Math.round(window.innerWidth*0.96); baseCanvas.width -= baseCanvas.width % 8;
+	baseCanvas.height = Math.round(window.innerHeight*0.96); baseCanvas.height -= baseCanvas.height % 8;
+	animationCanvas.width = Math.round(window.innerWidth*0.96); animationCanvas.width -= animationCanvas.width % 8;
+	animationCanvas.height = Math.round(window.innerHeight*0.96); animationCanvas.height -= animationCanvas.height % 8;
+	overlayCanvas.width = Math.round(window.innerWidth*0.96); overlayCanvas.width -= overlayCanvas.width % 8;
+	overlayCanvas.height = Math.round(window.innerHeight*0.96); overlayCanvas.height -= overlayCanvas.height % 8;
+	
+	/* Capture key presses in the document and mouse movements on the highest canvas */
+	document.addEventListener("keydown", doKeyDown, false);
+	overlayCanvas.addEventListener("mousemove", doMouseMove, false);
+	overlayCanvas.addEventListener("mousedown", doMouseClick, false);
+	
 	Camera = new initCamera();
 	Region = new initRegion();
 	Player = create_player();
@@ -32,26 +45,35 @@ function gameInit()
 	Monsters = [];
 	for (i=0; i<NUMBER_OF_MONSTERS; i++) { Monsters[i] = create_monster(); }
 	
-	worldCanvas.width = Math.round(window.innerWidth*0.96);
-	worldCanvas.height = Math.round(window.innerHeight*0.96);
-	actorCanvas.width = Math.round(window.innerWidth*0.96);
-	actorCanvas.height = Math.round(window.innerHeight*0.96);
+	Hud = new Hud();
 	
-	Hud = new initHud();
+	Minimap = new initMinimap();
+	
 	Camera.refocus(Player.map_x, Player.map_y, true);
-	Camera.render(wctx,actx);
+	Camera.render(base_context,animation_context);
+	
 }
 
 function create_player()
 {
-	var actor = new initActor("@");
+	var actor = new Actor();
 	actor.is_player = true;
+	actor.map_x = 1096;
+	actor.map_y = 671;
+	actor.next_x = 1096;
+	actor.next_y = 671;
+	actor.avatar = "@";
 	return actor;
 }
 
 function create_monster()
 {
-	var actor = new initActor("s");
-	actor.color = "rgb(224,224,0)";
-	return actor;
+	var monster = new Monster();
+	monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;
+	monster.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2;
+	monster.next_x = monster.map_x
+	monster.next_y = monster.map_y
+	monster.avatar = "s";
+	monster.color = "rgb(224,224,0)";
+	return monster;
 }
