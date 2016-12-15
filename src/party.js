@@ -21,7 +21,7 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
-function initParty()
+function Party()
 {
 	this.job[0] = CLASS_KNIGHT;
 	this.job[1] = CLASS_PALADIN;
@@ -38,3 +38,9 @@ function initParty()
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
 }
+
+Party.prototype.job = [];
+Party.prototype.max_hp = [];
+Party.prototype.max_mp = [];
+Party.prototype.current_hp = [];
+Party.prototype.current_mp = [];

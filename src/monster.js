@@ -21,9 +21,26 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
-function Monster()
+function Monster(type, level, xx, yy)
 {
 	Actor.call(this);
+	
+	this.avatar = "g";
+	
+	if (xx == 0) { this.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2; } else { this.map_x = xx;}
+	if (yy == 0) { this.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2; } else { this.map_y = yy;}
+	this.next_x = this.map_x;
+	this.next_y = this.map_y;
+	
+	this.level = level == MLEVEL_RANDOM ? level+=Math.round(Math.random()*2+1) : level;
+	
+	switch (this.level)
+	{
+		case MLEVEL_EASY: this.color = "rgb(128,224,128)"; break;
+		case MLEVEL_MEDIUM: this.color = "rgb(128,128,224)"; break;
+		case MLEVEL_HARD: this.color = "rgb(224,128,128)"; break;
+		case MLEVEL_UNIQUE: this.color = "rgb(224,224,0)"; break;
+	}
 }
 
 Monster.prototype = Object.create(Actor.prototype);

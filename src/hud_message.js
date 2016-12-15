@@ -23,12 +23,15 @@
  
 function Message(hud_instance)
 {
+	var i;
 	this.hud = hud_instance; /* save parent pinter */
+	for (i=0;i<this.message_buffer_size;i++) { this.message_log.push(""); }
 	this.message_index = this.message_buffer_size-1;
+	this.message_rows = Math.round(this.hud.message_box_height/BASE_FONT_SIZE)-1;
 }
 
-Message.prototype.message_buffer_size = 16;
-Message.prototype.message_log = ["","","","","","","","","","","","","","","",""];
+Message.prototype.message_buffer_size = 64;
+Message.prototype.message_log = [];
 Message.prototype.hud = 0 /* parent pointer unknown during prototyping */
 
 Message.prototype.render = function()
@@ -36,9 +39,9 @@ Message.prototype.render = function()
 	var i;
 	var num = this.message_index;
 	this.clear_message_window()
-	for (i=0; i<10; i++)
+	for (i=0; i<this.message_rows; i++)
 	{
-		animation_context.font = BASE_FONT_SIZE+" Courier";
+		animation_context.font = BASE_FONT_SIZE+"px Courier";
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
 		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+24+i*24);	

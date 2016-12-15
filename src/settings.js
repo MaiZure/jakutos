@@ -24,13 +24,13 @@
  /* Game Constants */
 const WORLD_SIZE_X = 252*5;
 const WORLD_SIZE_Y = 252*3;
-const BASE_FONT_SIZE = "24px";
+const BASE_FONT_SIZE = 24;
 const VERSION_MAJOR = 0;
 const VERSION_MINOR = 1;
 
 /* Game Settings */
 var SETTING_ANIMATE = false;
-var NUMBER_OF_MONSTERS = 100;
+var NUMBER_OF_MONSTERS = 500;
 var ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
 var FG_COLOR = "rgb(170,170,170)"
 var GRASSLAND = Math.round(Math.random());
@@ -59,6 +59,14 @@ var STATUS_STONED = 1 << 10;
 var STATUS_ZOMBIE = 1 << 11;
 var STATUS_DEAD = 1 << 12;
 var STATUS_ERADICATED = 1 << 13;
+
+/* Monster Type Levels */
+var MLEVEL_RANDOM = 0;
+var MLEVEL_EASY = 1;
+var MLEVEL_MEDIUM = 2;
+var MLEVEL_HARD = 3;
+var MLEVEL_UNIQUE = 4;
+
 
 /* Keyboard Codes */
 const KB_LEFT = 37;

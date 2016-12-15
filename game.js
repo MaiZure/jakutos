@@ -389,14 +389,18 @@ window.addEventListener("load", gameInit, false);
 function Hud()
 {
 	/* These variables need to be deferred until instantiation */
-	
+	var i;
 	this.view_px_x = Camera.view_px_width+16;
 	this.view_px_y = 0;
 	this.view_px_width = baseCanvas.width-this.view_px_x;
 	this.view_px_height = baseCanvas.height-this.view_px_y;
+	
 	this.avatar_box_width = Math.round((this.view_px_width-20)/4);
 	this.avatar_box_height = this.avatar_box_width;
-	this.avatar_box_topline = this.view_px_height-this.avatar_box_height-5;
+	this.avatar_box_y = this.view_px_height-this.avatar_box_height-5;
+	this.avatar_box_x = [];
+	for (i=0;i<4;i++) { this.avatar_box_x[i]=4+this.view_px_x+i*(this.avatar_box_width+4); }
+	
 	this.status_bar_x = this.view_px_x;
 	this.status_bar_y = 0;
 	this.status_bar_height = Math.round(baseCanvas.height*0.05);
@@ -407,37 +411,40 @@ function Hud()
 	
 	/* The hud should create its widgets */
 	this.message = new Message(this);
+	for (i=0;i<4;i++) { this.partymember[i] = new Partymember(this,i); }
 }
 
 Hud.prototype.dirty = true;
 Hud.prototype.party_dirty = true;
 Hud.prototype.message_dirty = true;
+Hud.prototype.partymember = [];
 
 Hud.prototype.render = function()
 {
 	if (this.dirty) { this.render_text(animation_context); }
 	if (this.message_dirty) {this.message.render();}
+	for (i=0;i<4;i++) { if (this.partymember[i].dirty) {this.partymember[i].render();}}
 	this.debug();
 	this.dirty = false;
 }
 
 Hud.prototype.render_text = function(target_context)
 {
-	target_context.clearRect(target_context.canvas.width-150,this.avatar_box_topline-150,target_context.canvas.width,this.avatar_box_topline);
-	target_context.font = BASE_FONT_SIZE+" Sans-Serif";
+	target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
+	target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
 	target_context.fillStyle = FG_COLOR;
 	target_context.textAlign = "right";
-	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_topline-100);	
-	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_topline-50);	
+	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
+	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-50);	
 }
 
 Hud.prototype.debug = function()
 {
 	var i;
-	base_context.fillStyle = "rgb(200,0,0)";
+	base_context.fillStyle = "rgb(160,0,0)";
 	base_context.fillRect(this.view_px_x, this.view_px_y, this.view_px_width, this.view_px_height);
 	
-	base_context.fillStyle = "rgb(0,200,0)";
+	base_context.fillStyle = "rgb(0,160,0)";
 	base_context.fillRect(this.status_bar_x, this.status_bar_y, this.view_px_width, this.status_bar_height);
 	
 	base_context.fillStyle = "rgb(0,0,160)";
@@ -445,29 +452,22 @@ Hud.prototype.debug = function()
 	
 	for (var i=0;i<4;i++)
 	{
-		base_context.fillStyle = "rgb(0,200,0)";
-		base_context.fillRect(4+this.view_px_x+i*(this.avatar_box_width+4), this.avatar_box_topline, this.avatar_box_width, this.avatar_box_height);
-		if (this.party_dirty)
-		{
-			
-			animation_context.fillStyle = "rgb(224,224,224)";
-			animation_context.textAlign = "center";
-			animation_context.font = Math.round(this.avatar_box_height*0.8)+"px Sans-Serif";
-			animation_context.fillText("@", this.view_px_x+i*(this.avatar_box_width+4)+this.avatar_box_width/2, this.avatar_box_topline+this.avatar_box_height/2+12);
-		}
-		
+		base_context.fillStyle = "rgb(0,160,0)";
+		base_context.fillRect(this.avatar_box_x[i], this.avatar_box_y, this.avatar_box_width, this.avatar_box_height);
 	}
-	this.party_dirty = false;
 }
  
 function Message(hud_instance)
 {
+	var i;
 	this.hud = hud_instance; /* save parent pinter */
+	for (i=0;i<this.message_buffer_size;i++) { this.message_log.push(""); }
 	this.message_index = this.message_buffer_size-1;
+	this.message_rows = Math.round(this.hud.message_box_height/BASE_FONT_SIZE)-1;
 }
 
-Message.prototype.message_buffer_size = 16;
-Message.prototype.message_log = ["","","","","","","","","","","","","","","",""];
+Message.prototype.message_buffer_size = 64;
+Message.prototype.message_log = [];
 Message.prototype.hud = 0 /* parent pointer unknown during prototyping */
 
 Message.prototype.render = function()
@@ -475,9 +475,9 @@ Message.prototype.render = function()
 	var i;
 	var num = this.message_index;
 	this.clear_message_window()
-	for (i=0; i<10; i++)
+	for (i=0; i<this.message_rows; i++)
 	{
-		animation_context.font = BASE_FONT_SIZE+" Courier";
+		animation_context.font = BASE_FONT_SIZE+"px Courier";
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
 		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+24+i*24);	
@@ -500,6 +500,65 @@ Message.prototype.add_message = function(msg)
 	this.message_log[this.message_index] = msg;
 	this.hud.message_dirty = true;
 }
+ 
+function Partymember(hud_id, new_id)
+{
+	this.partymember_id = new_id;
+	this.hud = hud_id
+	this.party = Party;
+}
+
+Partymember.prototype.hud = 0;  /* Hud object reference */
+Partymember.prototype.party = 0; /* Party object reference */
+Partymember.prototype.partymember_id = -1;
+Partymember.prototype.dirty = true;
+
+
+Partymember.prototype.clear_partymember = function()
+{
+	var xx = this.hud.avatar_box_x[this.partymember_id];
+	var yy = this.hud.avatar_box_y;
+	var ww = this.hud.avatar_box_width;
+	var hh = this.hud.avatar_box_height;
+	animation_context.clearRect(xx,yy,ww,hh);
+}
+
+Partymember.prototype.render = function()
+{	
+	if (this.dirty)
+	{
+		var xx = this.hud.avatar_box_x[this.partymember_id] + this.hud.avatar_box_width/2;
+		var yy = this.hud.avatar_box_y + Math.round(this.hud.avatar_box_height*0.6);
+		var font_size = Math.round(this.hud.avatar_box_height*0.8)+"px Sans-Serif";
+		
+		var hp_bar_width = Math.round(this.party.current_hp[this.partymember_id]/this.party.max_hp[this.partymember_id]*this.hud.avatar_box_width);
+		var hp_bar_height = Math.round(this.hud.avatar_box_height*0.04);
+		var hp_bar_x = this.hud.avatar_box_x[this.partymember_id];
+		var hp_bar_y = Math.round(this.hud.avatar_box_y+this.hud.avatar_box_height*0.85);
+		
+		var mp_bar_width = Math.round(this.party.current_mp[this.partymember_id]/this.party.max_mp[this.partymember_id]*this.hud.avatar_box_width);
+		var mp_bar_height = Math.round(this.hud.avatar_box_height*0.04);
+		var mp_bar_x = this.hud.avatar_box_x[this.partymember_id];
+		var mp_bar_y = Math.round(this.hud.avatar_box_y+this.hud.avatar_box_height*0.92);
+		
+		/* Draw @ sign */
+		this.clear_partymember();
+		animation_context.fillStyle = "rgb(224,224,224)";
+		animation_context.textAlign = "center";
+		animation_context.font = font_size
+		animation_context.fillText("@", xx, yy);
+		this.dirty = false;
+		console.log(this.partymember_id);
+		
+		/* Draw health */
+		animation_context.fillStyle = "rgb(0,240,0)";
+		animation_context.fillRect(hp_bar_x,hp_bar_y,hp_bar_width,hp_bar_height);
+		
+		/* Draw magic */
+		animation_context.fillStyle = "rgb(0,0,240)";
+		animation_context.fillRect(mp_bar_x,mp_bar_y,mp_bar_width,mp_bar_height);
+	}
+}
 
 function gameInit()
 {
@@ -521,6 +580,7 @@ function gameInit()
 	Camera = new initCamera();
 	Region = new initRegion();
 	Player = create_player();
+	Party = new Party();
 	
 	Monsters = [];
 	for (i=0; i<NUMBER_OF_MONSTERS; i++) { Monsters[i] = create_monster(); }
@@ -546,15 +606,15 @@ function create_player()
 	return actor;
 }
 
-function create_monster()
+function create_monster(type, level=MLEVEL_RANDOM, xx=0, yy=0)
 {
-	var monster = new Monster();
-	monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;
-	monster.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2;
-	monster.next_x = monster.map_x
-	monster.next_y = monster.map_y
-	monster.avatar = "s";
-	monster.color = "rgb(224,224,0)";
+	var monster = new Monster(type, level, xx, yy);
+	//monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;
+	//monster.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2;
+	//monster.next_x = monster.map_x
+	//monster.next_y = monster.map_y
+	//monster.avatar = "s";
+	//monster.color = "rgb(224,224,0)";
 	return monster;
 }
 
@@ -686,9 +746,26 @@ function clear_minimap(target_context)
 	target_context.clearRect(xx,yy,ww,hh);
 }
  
-function Monster()
+function Monster(type, level, xx, yy)
 {
 	Actor.call(this);
+	
+	this.avatar = "g";
+	
+	if (xx == 0) { this.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2; } else { this.map_x = xx;}
+	if (yy == 0) { this.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2; } else { this.map_y = yy;}
+	this.next_x = this.map_x;
+	this.next_y = this.map_y;
+	
+	this.level = level == MLEVEL_RANDOM ? level+=Math.round(Math.random()*2+1) : level;
+	
+	switch (this.level)
+	{
+		case MLEVEL_EASY: this.color = "rgb(128,224,128)"; break;
+		case MLEVEL_MEDIUM: this.color = "rgb(128,128,224)"; break;
+		case MLEVEL_HARD: this.color = "rgb(224,128,128)"; break;
+		case MLEVEL_UNIQUE: this.color = "rgb(224,224,0)"; break;
+	}
 }
 
 Monster.prototype = Object.create(Actor.prototype);
@@ -718,7 +795,7 @@ function doMouseClick(event)
 	
 }
  
-function initParty()
+function Party()
 {
 	this.job[0] = CLASS_KNIGHT;
 	this.job[1] = CLASS_PALADIN;
@@ -735,6 +812,12 @@ function initParty()
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
 }
+
+Party.prototype.job = [];
+Party.prototype.max_hp = [];
+Party.prototype.max_mp = [];
+Party.prototype.current_hp = [];
+Party.prototype.current_mp = [];
  
 
 /* Constructor for the region (map) */
@@ -883,13 +966,13 @@ function _load_map()
  /* Game Constants */
 const WORLD_SIZE_X = 252*5;
 const WORLD_SIZE_Y = 252*3;
-const BASE_FONT_SIZE = "24px";
+const BASE_FONT_SIZE = 24;
 const VERSION_MAJOR = 0;
 const VERSION_MINOR = 1;
 
 /* Game Settings */
 var SETTING_ANIMATE = false;
-var NUMBER_OF_MONSTERS = 100;
+var NUMBER_OF_MONSTERS = 500;
 var ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
 var FG_COLOR = "rgb(170,170,170)"
 var GRASSLAND = Math.round(Math.random());
@@ -918,6 +1001,14 @@ var STATUS_STONED = 1 << 10;
 var STATUS_ZOMBIE = 1 << 11;
 var STATUS_DEAD = 1 << 12;
 var STATUS_ERADICATED = 1 << 13;
+
+/* Monster Type Levels */
+var MLEVEL_RANDOM = 0;
+var MLEVEL_EASY = 1;
+var MLEVEL_MEDIUM = 2;
+var MLEVEL_HARD = 3;
+var MLEVEL_UNIQUE = 4;
+
 
 /* Keyboard Codes */
 const KB_LEFT = 37;

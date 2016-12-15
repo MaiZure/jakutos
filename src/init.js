@@ -41,6 +41,7 @@ function gameInit()
 	Camera = new initCamera();
 	Region = new initRegion();
 	Player = create_player();
+	Party = new Party();
 	
 	Monsters = [];
 	for (i=0; i<NUMBER_OF_MONSTERS; i++) { Monsters[i] = create_monster(); }
@@ -66,14 +67,14 @@ function create_player()
 	return actor;
 }
 
-function create_monster()
+function create_monster(type, level=MLEVEL_RANDOM, xx=0, yy=0)
 {
-	var monster = new Monster();
-	monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;
-	monster.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2;
-	monster.next_x = monster.map_x
-	monster.next_y = monster.map_y
-	monster.avatar = "s";
-	monster.color = "rgb(224,224,0)";
+	var monster = new Monster(type, level, xx, yy);
+	//monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;
+	//monster.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2;
+	//monster.next_x = monster.map_x
+	//monster.next_y = monster.map_y
+	//monster.avatar = "s";
+	//monster.color = "rgb(224,224,0)";
 	return monster;
 }

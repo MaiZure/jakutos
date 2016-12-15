@@ -24,14 +24,18 @@
 function Hud()
 {
 	/* These variables need to be deferred until instantiation */
-	
+	var i;
 	this.view_px_x = Camera.view_px_width+16;
 	this.view_px_y = 0;
 	this.view_px_width = baseCanvas.width-this.view_px_x;
 	this.view_px_height = baseCanvas.height-this.view_px_y;
+	
 	this.avatar_box_width = Math.round((this.view_px_width-20)/4);
 	this.avatar_box_height = this.avatar_box_width;
-	this.avatar_box_topline = this.view_px_height-this.avatar_box_height-5;
+	this.avatar_box_y = this.view_px_height-this.avatar_box_height-5;
+	this.avatar_box_x = [];
+	for (i=0;i<4;i++) { this.avatar_box_x[i]=4+this.view_px_x+i*(this.avatar_box_width+4); }
+	
 	this.status_bar_x = this.view_px_x;
 	this.status_bar_y = 0;
 	this.status_bar_height = Math.round(baseCanvas.height*0.05);
@@ -42,37 +46,40 @@ function Hud()
 	
 	/* The hud should create its widgets */
 	this.message = new Message(this);
+	for (i=0;i<4;i++) { this.partymember[i] = new Partymember(this,i); }
 }
 
 Hud.prototype.dirty = true;
 Hud.prototype.party_dirty = true;
 Hud.prototype.message_dirty = true;
+Hud.prototype.partymember = [];
 
 Hud.prototype.render = function()
 {
 	if (this.dirty) { this.render_text(animation_context); }
 	if (this.message_dirty) {this.message.render();}
+	for (i=0;i<4;i++) { if (this.partymember[i].dirty) {this.partymember[i].render();}}
 	this.debug();
 	this.dirty = false;
 }
 
 Hud.prototype.render_text = function(target_context)
 {
-	target_context.clearRect(target_context.canvas.width-150,this.avatar_box_topline-150,target_context.canvas.width,this.avatar_box_topline);
-	target_context.font = BASE_FONT_SIZE+" Sans-Serif";
+	target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
+	target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
 	target_context.fillStyle = FG_COLOR;
 	target_context.textAlign = "right";
-	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_topline-100);	
-	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_topline-50);	
+	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
+	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-50);	
 }
 
 Hud.prototype.debug = function()
 {
 	var i;
-	base_context.fillStyle = "rgb(200,0,0)";
+	base_context.fillStyle = "rgb(160,0,0)";
 	base_context.fillRect(this.view_px_x, this.view_px_y, this.view_px_width, this.view_px_height);
 	
-	base_context.fillStyle = "rgb(0,200,0)";
+	base_context.fillStyle = "rgb(0,160,0)";
 	base_context.fillRect(this.status_bar_x, this.status_bar_y, this.view_px_width, this.status_bar_height);
 	
 	base_context.fillStyle = "rgb(0,0,160)";
@@ -80,17 +87,7 @@ Hud.prototype.debug = function()
 	
 	for (var i=0;i<4;i++)
 	{
-		base_context.fillStyle = "rgb(0,200,0)";
-		base_context.fillRect(4+this.view_px_x+i*(this.avatar_box_width+4), this.avatar_box_topline, this.avatar_box_width, this.avatar_box_height);
-		if (this.party_dirty)
-		{
-			
-			animation_context.fillStyle = "rgb(224,224,224)";
-			animation_context.textAlign = "center";
-			animation_context.font = Math.round(this.avatar_box_height*0.8)+"px Sans-Serif";
-			animation_context.fillText("@", this.view_px_x+i*(this.avatar_box_width+4)+this.avatar_box_width/2, this.avatar_box_topline+this.avatar_box_height/2+12);
-		}
-		
+		base_context.fillStyle = "rgb(0,160,0)";
+		base_context.fillRect(this.avatar_box_x[i], this.avatar_box_y, this.avatar_box_width, this.avatar_box_height);
 	}
-	this.party_dirty = false;
 }
