@@ -29,6 +29,8 @@ base_context = baseCanvas.getContext("2d");
 animation_context = animationCanvas.getContext("2d");
 overlay_context = overlayCanvas.getContext("2d");
 
+set_canvas()
+
 mouse_x = 0;
 mouse_y = 0;
 

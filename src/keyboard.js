@@ -34,13 +34,13 @@ function doKeyDown(event)
 		case KB_RIGHT: Hud.message.add_message("You move east"); Player.move_right(); break;
 		case KB_DOWN: Hud.message.add_message("You move south"); Player.move_down(); break;
 		case KB_A: toggle_animate(); break;
-		case KB_C: Camera.refocus(Player.map_x, Player.map_y); break;
-		case KB_M: toggle_minimap(); break;
-		case KB_MINUS: Camera.zoom_out(); break;
-		case KB_PLUS: Camera.zoom_in(); break;
+		case KB_C: View.refocus(Player.map_x, Player.map_y); break;
+		case KB_M: View.toggle_minimap(); break;
+		case KB_MINUS: View.world_rescale_down(); break;
+		case KB_PLUS: View.world_rescale_up(); break;
 	}
 	
 	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
 	
-	Camera.render(base_context,animation_context,overlay_context);
+	View.render(base_context,animation_context,overlay_context);
 }

@@ -28,6 +28,10 @@ const COL_MAP_GRASS = 'rgb(20,150,50)';
 const COL_MAP_HILL = 'rgb(160,180,160)';
 const COL_MAP_LOW_MOUNTAIN = 'rgb(175,185,195)';
 const COL_MAP_HIGH_MOUNTAIN = 'rgb(185,195,200)';
+const COL_MOB_EASY = "rgb(128,240,128)";
+const COL_MOB_MEDIUM = "rgb(128,128,240)";
+const COL_MOB_HARD = "rgb(240,128,128)";
+const COL_MOB_UNIQUE = "rgb(240,240,128)";
  
 function random_grass_color()
 {

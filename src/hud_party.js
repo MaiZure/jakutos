@@ -68,7 +68,6 @@ Partymember.prototype.render = function()
 		animation_context.font = font_size
 		animation_context.fillText("@", xx, yy);
 		this.dirty = false;
-		console.log(this.partymember_id);
 		
 		/* Draw health */
 		animation_context.fillStyle = "rgb(0,240,0)";

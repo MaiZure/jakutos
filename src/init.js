@@ -25,21 +25,13 @@ function gameInit()
 {
 	var i;
 	
-	/* Set the three canvas dimensions on load and divisible by 8 (may help future calcs)*/
-	baseCanvas.width = Math.round(window.innerWidth*0.96); baseCanvas.width -= baseCanvas.width % 8;
-	baseCanvas.height = Math.round(window.innerHeight*0.96); baseCanvas.height -= baseCanvas.height % 8;
-	animationCanvas.width = Math.round(window.innerWidth*0.96); animationCanvas.width -= animationCanvas.width % 8;
-	animationCanvas.height = Math.round(window.innerHeight*0.96); animationCanvas.height -= animationCanvas.height % 8;
-	overlayCanvas.width = Math.round(window.innerWidth*0.96); overlayCanvas.width -= overlayCanvas.width % 8;
-	overlayCanvas.height = Math.round(window.innerHeight*0.96); overlayCanvas.height -= overlayCanvas.height % 8;
-	
 	/* Capture key presses in the document and mouse movements on the highest canvas */
 	document.addEventListener("keydown", doKeyDown, false);
 	overlayCanvas.addEventListener("mousemove", doMouseMove, false);
 	overlayCanvas.addEventListener("mousedown", doMouseClick, false);
 	
-	Camera = new initCamera();
-	Region = new initRegion();
+	View = new View();
+	World = new World();
 	Player = create_player();
 	Party = new Party();
 	
@@ -50,8 +42,8 @@ function gameInit()
 	
 	Minimap = new initMinimap();
 	
-	Camera.refocus(Player.map_x, Player.map_y, true);
-	Camera.render(base_context,animation_context);
+	View.refocus(Player.map_x, Player.map_y, true);
+	View.render(base_context,animation_context);
 	
 }
 
@@ -67,7 +59,7 @@ function create_player()
 	return actor;
 }
 
-function create_monster(type, level=MLEVEL_RANDOM, xx=0, yy=0)
+function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0)
 {
 	var monster = new Monster(type, level, xx, yy);
 	//monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;

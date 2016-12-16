@@ -25,22 +25,31 @@ function Monster(type, level, xx, yy)
 {
 	Actor.call(this);
 	
-	this.avatar = "g";
-	
+	/* Set monster world location */
 	if (xx == 0) { this.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2; } else { this.map_x = xx;}
 	if (yy == 0) { this.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2; } else { this.map_y = yy;}
 	this.next_x = this.map_x;
 	this.next_y = this.map_y;
-	
 	this.level = level == MLEVEL_RANDOM ? level+=Math.round(Math.random()*2+1) : level;
 	
+	/* Set monster world color */
 	switch (this.level)
 	{
-		case MLEVEL_EASY: this.color = "rgb(128,224,128)"; break;
-		case MLEVEL_MEDIUM: this.color = "rgb(128,128,224)"; break;
-		case MLEVEL_HARD: this.color = "rgb(224,128,128)"; break;
-		case MLEVEL_UNIQUE: this.color = "rgb(224,224,0)"; break;
-	}
+		case MLEVEL_EASY: this.color = COL_MOB_EASY; break;
+		case MLEVEL_MEDIUM: this.color = COL_MOB_MEDIUM; break;
+		case MLEVEL_HARD: this.color = COL_MOB_HARD; break;
+		case MLEVEL_UNIQUE: this.color = COL_MOB_UNIQUE; break;
+	}	
+	
+	/* Monster Stats */
+	this.name = "NoName";
+	this.avatar = "?";
+	this.max_hp = 1; this.current_hp = this.max_hp;
+	this.xp_reward = 0;
+	this.gold_reward = 0;
+	
+	this.load_monster(this, type, level);
+	
 }
 
 Monster.prototype = Object.create(Actor.prototype);
@@ -55,4 +64,22 @@ Monster.prototype.ai_move = function()
 		case 2: this.move_right(); break;
 		case 3: this.move_down(); break;
 	}
+}
+
+Monster.prototype.load_monster = function(m, type, level)
+{
+	switch (type)
+	{
+		case MTYPE_GOBLIN:
+		{
+			switch(level)
+			{
+				case MLEVEL_EASY: m.name = "Goblin"; m.max_hp = 13; m.avatar = "g"; break;
+				case MLEVEL_MEDIUM: m.name = "Goblin Shaman"; m.max_hp = 21; m.avatar = "g"; break;
+				case MLEVEL_HARD: m.name = "Goblin King"; m.max_hp = 40; m.avatar = "g"; break;
+			}
+		} break;
+	}
+	
+	m.current_hp = m.max_hp;
 }

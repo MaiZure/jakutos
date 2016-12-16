@@ -23,11 +23,11 @@
  
 
 /* Constructor for the region (map) */
-function initRegion()
+function World()
 {
 	this.dirty = true;
 	
-	this.render = renderRegion;
+	this.render = renderWorld;
 	this.is_clear = _is_clear;
 	this.grid = [[],[]]
 	this.gridcol = [[],[]];
@@ -38,19 +38,19 @@ function initRegion()
 	this.load_map();
 }
 
-function renderRegion(target_context)
+function renderWorld(target_context)
 {
 	var i,j, ch, col;
 	var start_grid_x, start_grid_y, end_grid_x, end_grid_y;
 	var px, py;
 	
-	target_context.font = Camera.font_size+" clacon";
+	target_context.font = View.font_size+" clacon";
 	target_context.textAlign = "left";
 	
-	start_grid_x = Camera.view_grid_x;
-	start_grid_y = Camera.view_grid_y;
-	end_grid_x = Math.min(Camera.view_grid_x+Camera.view_grid_width,WORLD_SIZE_X);
-	end_grid_y = Math.min(Camera.view_grid_y+Camera.view_grid_height,WORLD_SIZE_Y);
+	start_grid_x = View.view_grid_x;
+	start_grid_y = View.view_grid_y;
+	end_grid_x = Math.min(View.view_grid_x+View.view_grid_width,WORLD_SIZE_X);
+	end_grid_y = Math.min(View.view_grid_y+View.view_grid_height,WORLD_SIZE_Y);
 	
 	
 	for (j=start_grid_y; j<end_grid_y; j++)
@@ -58,7 +58,7 @@ function renderRegion(target_context)
 		for (i=start_grid_x; i<end_grid_x; i++)
 		{
 			target_context.fillStyle = this.gridcol[j][i];
-			target_context.fillText(this.grid[j][i],0+(i-Camera.view_grid_x)*Camera.grid_width,0+(j-Camera.view_grid_y)*Camera.grid_height);
+			target_context.fillText(this.grid[j][i],0+(i-View.view_grid_x)*View.grid_width,0+(j-View.view_grid_y)*View.grid_height);
 		}
 	}
 	this.dirty = false;

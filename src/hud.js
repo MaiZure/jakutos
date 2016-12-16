@@ -25,7 +25,7 @@ function Hud()
 {
 	/* These variables need to be deferred until instantiation */
 	var i;
-	this.view_px_x = Camera.view_px_width+16;
+	this.view_px_x = View.view_px_width+16;
 	this.view_px_y = 0;
 	this.view_px_width = baseCanvas.width-this.view_px_x;
 	this.view_px_height = baseCanvas.height-this.view_px_y;
@@ -90,4 +90,35 @@ Hud.prototype.debug = function()
 		base_context.fillStyle = "rgb(0,160,0)";
 		base_context.fillRect(this.avatar_box_x[i], this.avatar_box_y, this.avatar_box_width, this.avatar_box_height);
 	}
+}
+
+Hud.prototype.resize = function()
+{
+	this.dirty = true;
+	
+	var i;
+	this.view_px_x = View.view_px_width+16;
+	this.view_px_y = 0;
+	this.view_px_width = baseCanvas.width-this.view_px_x;
+	this.view_px_height = baseCanvas.height-this.view_px_y;
+	
+	this.avatar_box_width = Math.round((this.view_px_width-20)/4);
+	this.avatar_box_height = this.avatar_box_width;
+	this.avatar_box_y = this.view_px_height-this.avatar_box_height-5;
+	this.avatar_box_x = [];
+	for (i=0;i<4;i++) { this.avatar_box_x[i]=4+this.view_px_x+i*(this.avatar_box_width+4); }
+	
+	this.status_bar_x = this.view_px_x;
+	this.status_bar_y = 0;
+	this.status_bar_height = Math.round(baseCanvas.height*0.05);
+	this.message_box_x = this.view_px_x+4;
+	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.02);
+	this.message_box_width = this.view_px_width-8;
+	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height)*0.95);
+	
+	this.message_dirty = true
+	this.partymember[0].dirty = true;
+	this.partymember[1].dirty = true;
+	this.partymember[2].dirty = true;
+	this.partymember[3].dirty = true;
 }

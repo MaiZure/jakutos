@@ -21,7 +21,7 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-function initCamera()
+function View()
 {
 	this.dirty = false;
 	this.view_grid_x = 0;
@@ -30,6 +30,7 @@ function initCamera()
 	this.grid_height = 18;
 	this.view_px_x = 0;
 	this.view_px_y = 0;
+	
 	this.view_px_width = Math.round(baseCanvas.width*0.62); this.view_px_width+=this.view_px_width % this.grid_width; //768;
 	this.view_px_height = Math.round(baseCanvas.height*0.97); this.view_px_height+=this.view_px_height % this.grid_height; //576;
 	this.font_size = (this.grid_height*2)+"px";//(this.grid_width*2)+"px";
@@ -43,16 +44,14 @@ function initCamera()
 	this.px_offset_y = 0;
 	
 	this.animate_camera = _animate_camera;
-	this.zoom_in = world_rescale_up;
-	this.zoom_out = world_rescale_down;
-	this.refocus = refocus_view;
-	this.render = renderWorld;
-	this.rescale = recalculate_view_scale;
-	this.clear_world = clear_world;
-	this.clear_context = clear_context;
+	
+	set_canvas();
+	
+	/* Can't add this listener until View has been instantiated */
+	window.addEventListener("resize", this.resizeWindow, false);
 }
 
-function renderWorld(world_context, actor_context)
+View.prototype.render = function (world_context, actor_context)
 {	
 	var i;
 	if (Minimap.active)
@@ -73,12 +72,12 @@ function renderWorld(world_context, actor_context)
 					
 					for (i=0; i<Monsters.length; i++) { Monsters[i].moveAnimate(); }
 		
-					Camera.clear_world(actor_context);
+					View.clear_world(actor_context);
 					Player.render(actor_context);
 					
 					for (i=0; i<Monsters.length; i++) { Monsters[i].render(actor_context); }
 					
-					if (count > (Camera.grid_height/ANIMATION_STEPS)) { clearInterval(interval); clearTimeout(timer);}
+					if (count > (View.grid_height/ANIMATION_STEPS)) { clearInterval(interval); clearTimeout(timer);}
 					}, 0)
 				}, 24);
 			}
@@ -103,7 +102,7 @@ function renderWorld(world_context, actor_context)
 			
 		}
 		
-		if (Region.dirty) { this.clear_world(world_context); Region.render(world_context); }
+		if (World.dirty) { this.clear_world(world_context); World.render(world_context); }
 		if (Player.dirty) { this.clear_world(actor_context); Player.render(actor_context); }
 		Hud.render();
 		
@@ -117,38 +116,38 @@ function renderWorld(world_context, actor_context)
 	}
 }
  
-function world_rescale_down()
+View.prototype.world_rescale_down = function()
 {
 	if (this.grid_height > 8)
 	{
-		Region.dirty = true;
+		World.dirty = true;
 		this.grid_width/=2;
 		this.grid_height/=2;
-		this.rescale();
+		this.recalculate_view_scale();
 		this.refocus(Player.map_x, Player.map_y, true);
 	}
 }
 
-function world_rescale_up()
+View.prototype.world_rescale_up = function()
 {
 	if (this.grid_height < 128)
 	{
-		Region.dirty = true;
+		World.dirty = true;
 		this.grid_width*=2;
 		this.grid_height*=2;
-		this.rescale();
+		this.recalculate_view_scale();
 		this.refocus(Player.map_x, Player.map_y, true);
 	}
 }
 
-function recalculate_view_scale()
+View.prototype.recalculate_view_scale = function()
 {
 	this.font_size = (this.grid_height*2)+"px";
 	this.view_grid_width = Math.round(this.view_px_width/this.grid_width)+1;
 	this.view_grid_height = Math.round(this.view_px_height/this.grid_height)+1;
 }
 
-function refocus_view(xx, yy, immediate = false)
+View.prototype.refocus = function(xx, yy, immediate = false)
 {
 	var i;
 	var old_x = this.view_grid_x;
@@ -168,7 +167,7 @@ function refocus_view(xx, yy, immediate = false)
 		if (this.view_grid_x != old_x || this.view_grid_y != old_y)
 		{
 			this.dirty = true;
-			Region.dirty = true;
+			World.dirty = true;
 			Player.dirty = true;
 			for (i=0; i<Monsters.length; i++) { Monsters[i].dirty = true; }
 		}
@@ -177,25 +176,25 @@ function refocus_view(xx, yy, immediate = false)
 	{
 		this.dirty = true;
 		
-		this.target_view_x = Math.round(xx-Camera.view_grid_width/2);
-		this.target_view_y = Math.round(yy-Camera.view_grid_height/2);
-		this.target_view_x = Math.max(Camera.target_view_x,0);
-		this.target_view_y = Math.max(Camera.target_view_y,0);
-		this.target_view_x = Math.min(WORLD_SIZE_X-Camera.view_grid_width,Camera.target_view_x);
-		this.target_view_y = Math.min(WORLD_SIZE_Y-Camera.view_grid_height,Camera.target_view_y);
+		this.target_view_x = Math.round(xx-View.view_grid_width/2);
+		this.target_view_y = Math.round(yy-View.view_grid_height/2);
+		this.target_view_x = Math.max(View.target_view_x,0);
+		this.target_view_y = Math.max(View.target_view_y,0);
+		this.target_view_x = Math.min(WORLD_SIZE_X-View.view_grid_width,View.target_view_x);
+		this.target_view_y = Math.min(WORLD_SIZE_Y-View.view_grid_height,View.target_view_y);
 		
-		if (Camera.dirty) {Camera.animate_camera();}
+		if (View.dirty) {View.animate_camera();}
 	}
 }
 
-function toggle_animate()
+View.prototype.toggle_animate = function()
 {
-	Region.dirty = true;
+	World.dirty = true;
 	Hud.dirty = true;
 	SETTING_ANIMATE = !SETTING_ANIMATE;
 }
 
-function toggle_minimap()
+View.prototype.toggle_minimap = function()
 {
 	Minimap.active = !Minimap.active
 	if (Minimap.active)
@@ -205,9 +204,35 @@ function toggle_minimap()
 	}
 	else
 	{
-		Camera.clear_context(overlay_context);
+		View.clear_context(overlay_context);
 	}
-	Region.dirty = true;
+	World.dirty = true;
+}
+
+View.prototype.clear_world = function(target_context)
+{
+	var xx = this.view_px_x;
+	var yy = this.view_px_y;
+	var ww = this.view_px_width + 16;
+	var hh = target_context.canvas.height;
+	target_context.clearRect(xx, yy, ww, hh);
+}
+
+View.prototype.clear_context = function(target_context)
+{
+	target_context.clearRect(0,0,target_context.canvas.width,target_context.canvas.height);
+}
+	
+View.prototype.resizeWindow = function()
+{
+	set_canvas();
+	Hud.resize();
+	
+	World.dirty = true;
+	Hud.dirty = true;
+	
+	View.refocus(Player.map_x, Player.map_y, true);
+	View.render(base_context,animation_context);
 }
 
 function _animate_camera()
@@ -222,41 +247,44 @@ function _animate_camera()
 	var timer = setTimeout(function() {
 		var interval = setInterval(function(){
 			
-			if (Camera.view_grid_x < Camera.target_view_x) { Camera.view_grid_x++; }
-			if (Camera.view_grid_x > Camera.target_view_x) { Camera.view_grid_x--; }
-			if (Camera.view_grid_y < Camera.target_view_y) { Camera.view_grid_y++; }
-			if (Camera.view_grid_y > Camera.target_view_y) { Camera.view_grid_y--; }
+			if (View.view_grid_x < View.target_view_x) { View.view_grid_x++; }
+			if (View.view_grid_x > View.target_view_x) { View.view_grid_x--; }
+			if (View.view_grid_y < View.target_view_y) { View.view_grid_y++; }
+			if (View.view_grid_y > View.target_view_y) { View.view_grid_y--; }
 			
-			if (Camera.view_grid_x == Camera.target_view_x && Camera.view_grid_y == Camera.target_view_y)
+			if (View.view_grid_x == View.target_view_x && View.view_grid_y == View.target_view_y)
 			{
-				Camera.dirty = false;
+				View.dirty = false;
 				//Hud.Minimap.minimap_viewbox_dirty = true;
 			}
 			
-			Camera.clear_world(animation_context);
-			Camera.clear_world(base_context);
+			View.clear_world(animation_context);
+			View.clear_world(base_context);
 			
 			Player.render(animation_context);
-			Region.render(base_context);
+			World.render(base_context);
 			Hud.render();
 			for (i=0; i<Monsters.length; i++) { Monsters[i].render(animation_context); }
 		
-			if (!Camera.dirty) { clearInterval(interval); clearTimeout(timer);}
+			if (!View.dirty) { clearInterval(interval); clearTimeout(timer);}
 		}, 0)
 	}, 24);
 }
 
-function clear_world(target_context)
+/* Global function */
+function set_canvas()
 {
-	var xx = this.view_px_x;
-	var yy = this.view_px_y;
-	var ww = this.view_px_width + 16;
-	var hh = target_context.canvas.height;
-	target_context.clearRect(xx, yy, ww, hh);
-}
-
-function clear_context(target_context) 
-{
-	target_context.clearRect(0,0,target_context.canvas.width,target_context.canvas.height);
-}
+	/* Set the three canvas dimensions on load and divisible by 8 (may help future calcs)*/
+	baseCanvas.width = Math.round(window.innerWidth*0.96); baseCanvas.width -= baseCanvas.width % 8;
+	baseCanvas.height = Math.round(window.innerHeight*0.96); baseCanvas.height -= baseCanvas.height % 8;
+	animationCanvas.width = Math.round(window.innerWidth*0.96); animationCanvas.width -= animationCanvas.width % 8;
+	animationCanvas.height = Math.round(window.innerHeight*0.96); animationCanvas.height -= animationCanvas.height % 8;
+	overlayCanvas.width = Math.round(window.innerWidth*0.96); overlayCanvas.width -= overlayCanvas.width % 8;
+	overlayCanvas.height = Math.round(window.innerHeight*0.96); overlayCanvas.height -= overlayCanvas.height % 8;
 	
+	View.view_px_width = Math.round(baseCanvas.width*0.62); View.view_px_width+=View.view_px_width % View.grid_width; //768;
+	View.view_px_height = Math.round(baseCanvas.height*0.97); View.view_px_height+=View.view_px_height % View.grid_height; //576;
+	View.font_size = (View.grid_height*2)+"px";//(this.grid_width*2)+"px";
+	View.view_grid_width = Math.round(View.view_px_width/View.grid_width)+1;
+	View.view_grid_height = Math.round(View.view_px_height/View.grid_height)+1;
+}
