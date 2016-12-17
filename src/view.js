@@ -47,8 +47,6 @@ function View()
 	
 	set_canvas();
 	
-	/* Can't add this listener until View has been instantiated */
-	window.addEventListener("resize", this.resizeWindow, false);
 }
 
 View.prototype.render = function (world_context, actor_context)
@@ -81,6 +79,7 @@ View.prototype.render = function (world_context, actor_context)
 					}, 0)
 				}, 24);
 			}
+			/*
 			else
 			{
 				Player.map_x = Player.next_x;
@@ -92,15 +91,14 @@ View.prototype.render = function (world_context, actor_context)
 					Monsters[i].map_y = Monsters[i].next_y;
 					Monsters[i].animating = false;
 				}
-			}
-			
-			if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)
+			} */
+		}
+		
+		if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)
 				this.refocus(Player.map_x, Player.map_y);
 			
 			if (Player.map_y - this.view_grid_y < 5 || this.view_grid_y+this.view_grid_height-Player.map_y < 5)
 				this.refocus(Player.map_x, Player.map_y);
-			
-		}
 		
 		if (World.dirty) { this.clear_world(world_context); World.render(world_context); }
 		if (Player.dirty) { this.clear_world(actor_context); Player.render(actor_context); }

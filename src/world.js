@@ -32,6 +32,7 @@ function World()
 	this.grid = [[],[]]
 	this.gridcol = [[],[]];
 	this.gridheight = [[],[]];
+	this.gridmob=[[],[]];
 	this.build_map = _build_map;
 	this.load_map = _load_map;
 
@@ -57,8 +58,10 @@ function renderWorld(target_context)
 	{
 		for (i=start_grid_x; i<end_grid_x; i++)
 		{
+			px = (i-View.view_grid_x)*View.grid_width;
+			py = (j-View.view_grid_y)*View.grid_height;
 			target_context.fillStyle = this.gridcol[j][i];
-			target_context.fillText(this.grid[j][i],0+(i-View.view_grid_x)*View.grid_width,0+(j-View.view_grid_y)*View.grid_height);
+			target_context.fillText(this.grid[j][i],px,py);
 		}
 	}
 	this.dirty = false;
@@ -80,12 +83,13 @@ function _build_map()
 		this.grid[i] = [];
 		this.gridcol[i] = [];
 		this.gridheight[i]= [];
+		this.gridmob[i] = [];
 	}
 	
 	for (j=0; j<WORLD_SIZE_Y; j++)
 	{
 		for (i=0; i<WORLD_SIZE_X; i++)
-		{
+		{	
 			if (Math.random() > 0.9) {this.grid[j][i] = 2; } else {this.grid[j][i] = 1;}
 			
 			switch (this.grid[j][i])
@@ -128,6 +132,7 @@ function _load_map()
 		this.grid[i] = [];
 		this.gridcol[i] = [];
 		this.gridheight[i] = [];
+		this.gridmob[i] = [];
 	}
 	
 	for (k=0; k<15; k++)
@@ -136,8 +141,9 @@ function _load_map()
 		{
 			for (i=0; i<region_size; i++)
 			{
-				ch = source_map[k].charAt(j*region_size+i);
+				this.gridmob[j][i] = null;
 				
+				ch = source_map[k].charAt(j*region_size+i);
 				/* Set heightmap */
 				switch (ch.charCodeAt(0))
 				{

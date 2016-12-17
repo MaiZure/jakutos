@@ -1,9 +1,11 @@
 --*v0.2---In Progress-------------------------------
-Cleaned up the minimap and made it an overlay popup
 Added a 'real' map to test based on Might & Magic 6
-Added HUD elements (party areas, message box, status bar)
+Added HUD elements (party areas, message box, status bar, and hover bar)
 Refactored objects to be more JS style instead of C procedures
 Got the mouse involved
+Window is fully resizable
+Added actual monsters
+Cleaned up the minimap and made it an overlay popup
 
 
 

@@ -20,14 +20,14 @@
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
+ 
+function Player()
+{
+	Actor.call(this);
+	
+	this.name = "Your Party";
+	this.avatar = "@";
+}
 
-baseCanvas = document.getElementById("Base");
-animationCanvas = document.getElementById("Animation");
-overlayCanvas = document.getElementById("Overlay");
-
-base_context = baseCanvas.getContext("2d");
-animation_context = animationCanvas.getContext("2d");
-overlay_context = overlayCanvas.getContext("2d");
-
-set_canvas()
-
+Player.prototype = Object.create(Actor.prototype);
+Player.prototype.constructor = Player;

@@ -95,3 +95,12 @@ Actor.prototype.moveAnimate = function()
 		this.animating = false;
 	}
 }
+
+Actor.prototype.execute_move = function()
+{
+	World.gridmob[this.map_y][this.map_x] = null;
+	World.gridmob[this.next_y][this.next_x] = this;
+	this.map_x = this.next_x;
+	this.map_y = this.next_y;
+	this.animating = false;
+}

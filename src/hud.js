@@ -39,13 +39,22 @@ function Hud()
 	this.status_bar_x = this.view_px_x;
 	this.status_bar_y = 0;
 	this.status_bar_height = Math.round(baseCanvas.height*0.05);
+	
+	this.hover_bar_x = this.view_px_x;
+	this.hover_bar_y = 0; /* deferred until after message box is defined */
+	this.hover_bar_height = Math.round(baseCanvas.height*0.05);
+	this.hover_bar_width = this.view_px_width;
+	
 	this.message_box_x = this.view_px_x+4;
-	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.02);
+	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.01);
 	this.message_box_width = this.view_px_width-8;
-	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height)*0.95);
+	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height-this.hover_bar_height)*0.95);
+	
+	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(baseCanvas.height*0.01);
 	
 	/* The hud should create its widgets */
 	this.message = new Message(this);
+	this.hover = new Hover(this);
 	for (i=0;i<4;i++) { this.partymember[i] = new Partymember(this,i); }
 }
 
@@ -59,6 +68,7 @@ Hud.prototype.render = function()
 	if (this.dirty) { this.render_text(animation_context); }
 	if (this.message_dirty) {this.message.render();}
 	for (i=0;i<4;i++) { if (this.partymember[i].dirty) {this.partymember[i].render();}}
+	if (this.hover.dirty) {this.hover.render();}
 	this.debug();
 	this.dirty = false;
 }
@@ -69,8 +79,9 @@ Hud.prototype.render_text = function(target_context)
 	target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
 	target_context.fillStyle = FG_COLOR;
 	target_context.textAlign = "right";
-	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
-	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-50);	
+	//target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
+	//target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-75);	
+	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	
 }
 
 Hud.prototype.debug = function()
@@ -84,6 +95,9 @@ Hud.prototype.debug = function()
 	
 	base_context.fillStyle = "rgb(0,0,160)";
 	base_context.fillRect(this.message_box_x, this.message_box_y, this.message_box_width, this.message_box_height);
+	
+	base_context.fillStyle = "rgb(32,32,32)";
+	base_context.fillRect(this.hover_bar_x, this.hover_bar_y, this.view_px_width, this.hover_bar_height);
 	
 	for (var i=0;i<4;i++)
 	{
@@ -111,10 +125,18 @@ Hud.prototype.resize = function()
 	this.status_bar_x = this.view_px_x;
 	this.status_bar_y = 0;
 	this.status_bar_height = Math.round(baseCanvas.height*0.05);
+	
+	this.hover_bar_x = this.view_px_x;
+	this.hover_bar_y = 0; /* deferred until after message box is defined */
+	this.hover_bar_height = Math.round(baseCanvas.height*0.05);
+	this.hover_bar_width = this.view_px_width;
+	
 	this.message_box_x = this.view_px_x+4;
-	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.02);
+	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.01);
 	this.message_box_width = this.view_px_width-8;
-	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height)*0.95);
+	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height-this.hover_bar_height)*0.95);
+	
+	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(baseCanvas.height*0.01);
 	
 	this.message_dirty = true
 	this.partymember[0].dirty = true;

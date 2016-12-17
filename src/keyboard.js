@@ -40,6 +40,8 @@ function doKeyDown(event)
 		case KB_PLUS: View.world_rescale_up(); break;
 	}
 	
+	Player.execute_move();
+	
 	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
 	
 	View.render(base_context,animation_context,overlay_context);

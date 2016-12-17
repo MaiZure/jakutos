@@ -45,28 +45,24 @@ function gameInit()
 	View.refocus(Player.map_x, Player.map_y, true);
 	View.render(base_context,animation_context);
 	
+	/* Can't add this listener until View has been instantiated */
+	window.addEventListener("resize", View.resizeWindow, false);
+	
 }
 
 function create_player()
 {
-	var actor = new Actor();
+	var actor = new Player();
 	actor.is_player = true;
 	actor.map_x = 1096;
 	actor.map_y = 671;
 	actor.next_x = 1096;
 	actor.next_y = 671;
-	actor.avatar = "@";
 	return actor;
 }
 
 function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0)
 {
 	var monster = new Monster(type, level, xx, yy);
-	//monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;
-	//monster.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2;
-	//monster.next_x = monster.map_x
-	//monster.next_y = monster.map_y
-	//monster.avatar = "s";
-	//monster.color = "rgb(224,224,0)";
 	return monster;
 }

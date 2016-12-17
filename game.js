@@ -74,6 +74,15 @@ Actor.prototype.moveAnimate = function()
 	}
 }
 
+Actor.prototype.execute_move = function()
+{
+	World.gridmob[this.map_y][this.map_x] = null;
+	World.gridmob[this.next_y][this.next_x] = this;
+	this.map_x = this.next_x;
+	this.map_y = this.next_y;
+	this.animating = false;
+}
+
 const COL_MAP_BUILDING = 'rgb(200,180,100)';
 const COL_MAP_WATER = 'rgb(100,100,175)';
 const COL_MAP_DIRT = 'rgb(170,100,50)';
@@ -169,13 +178,22 @@ function Hud()
 	this.status_bar_x = this.view_px_x;
 	this.status_bar_y = 0;
 	this.status_bar_height = Math.round(baseCanvas.height*0.05);
+	
+	this.hover_bar_x = this.view_px_x;
+	this.hover_bar_y = 0; /* deferred until after message box is defined */
+	this.hover_bar_height = Math.round(baseCanvas.height*0.05);
+	this.hover_bar_width = this.view_px_width;
+	
 	this.message_box_x = this.view_px_x+4;
-	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.02);
+	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.01);
 	this.message_box_width = this.view_px_width-8;
-	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height)*0.95);
+	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height-this.hover_bar_height)*0.95);
+	
+	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(baseCanvas.height*0.01);
 	
 	/* The hud should create its widgets */
 	this.message = new Message(this);
+	this.hover = new Hover(this);
 	for (i=0;i<4;i++) { this.partymember[i] = new Partymember(this,i); }
 }
 
@@ -189,6 +207,7 @@ Hud.prototype.render = function()
 	if (this.dirty) { this.render_text(animation_context); }
 	if (this.message_dirty) {this.message.render();}
 	for (i=0;i<4;i++) { if (this.partymember[i].dirty) {this.partymember[i].render();}}
+	if (this.hover.dirty) {this.hover.render();}
 	this.debug();
 	this.dirty = false;
 }
@@ -199,8 +218,9 @@ Hud.prototype.render_text = function(target_context)
 	target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
 	target_context.fillStyle = FG_COLOR;
 	target_context.textAlign = "right";
-	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
-	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-50);	
+	//target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
+	//target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-75);	
+	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	
 }
 
 Hud.prototype.debug = function()
@@ -214,6 +234,9 @@ Hud.prototype.debug = function()
 	
 	base_context.fillStyle = "rgb(0,0,160)";
 	base_context.fillRect(this.message_box_x, this.message_box_y, this.message_box_width, this.message_box_height);
+	
+	base_context.fillStyle = "rgb(32,32,32)";
+	base_context.fillRect(this.hover_bar_x, this.hover_bar_y, this.view_px_width, this.hover_bar_height);
 	
 	for (var i=0;i<4;i++)
 	{
@@ -241,16 +264,67 @@ Hud.prototype.resize = function()
 	this.status_bar_x = this.view_px_x;
 	this.status_bar_y = 0;
 	this.status_bar_height = Math.round(baseCanvas.height*0.05);
+	
+	this.hover_bar_x = this.view_px_x;
+	this.hover_bar_y = 0; /* deferred until after message box is defined */
+	this.hover_bar_height = Math.round(baseCanvas.height*0.05);
+	this.hover_bar_width = this.view_px_width;
+	
 	this.message_box_x = this.view_px_x+4;
-	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.02);
+	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.01);
 	this.message_box_width = this.view_px_width-8;
-	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height)*0.95);
+	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height-this.hover_bar_height)*0.95);
+	
+	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(baseCanvas.height*0.01);
 	
 	this.message_dirty = true
 	this.partymember[0].dirty = true;
 	this.partymember[1].dirty = true;
 	this.partymember[2].dirty = true;
 	this.partymember[3].dirty = true;
+}
+ 
+function Hover(hud_instance)
+{
+	this.hud = hud_instance;
+	this.dirty = true;
+	this.message = "";
+}
+
+Hover.prototype.render = function()
+{
+	if (this.dirty)
+	{
+		var font_size = Math.round(this.hud.hover_bar_height*0.80);
+		this.clear_hover_bar();
+		animation_context.font = font_size+"px Courier";
+		animation_context.fillStyle = "rgb(224,224,0)";
+		animation_context.textAlign = "center";
+		animation_context.fillText(this.message,this.hud.hover_bar_x+this.hud.hover_bar_width/2,this.hud.hover_bar_y+font_size);
+		this.dirty = false;
+	}
+}
+
+Hover.prototype.clear_hover_bar = function()
+{
+	animation_context.clearRect(this.hud.hover_bar_x,this.hud.hover_bar_y,this.hud.hover_bar_width,this.hud.hover_bar_height);
+}
+
+Hover.prototype.add_message = function(msg)
+{
+	if (msg != this.message) 
+	{ 
+		this.message = msg;	
+		this.dirty = true;
+	}
+}
+
+Hover.prototype.get_hover_message = function(xx, yy)
+{
+	var pos = World.gridmob[yy][xx];
+	if (pos)
+		return pos.name;
+	return ""
 }
  
 function Message(hud_instance)
@@ -270,13 +344,15 @@ Message.prototype.render = function()
 {
 	var i;
 	var num = this.message_index;
+	var font_size = Math.round(this.hud.status_bar_height*0.80);
+	this.message_rows = Math.round(this.hud.message_box_height/font_size)-1;
 	this.clear_message_window()
 	for (i=0; i<this.message_rows; i++)
 	{
-		animation_context.font = BASE_FONT_SIZE+"px Courier";
+		animation_context.font = font_size+"px Courier";
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
-		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+24+i*24);	
+		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);	
 		num=(++num)%this.message_buffer_size;
 	}
 	this.hud.message_dirty = false;
@@ -379,29 +455,25 @@ function gameInit()
 	View.refocus(Player.map_x, Player.map_y, true);
 	View.render(base_context,animation_context);
 	
+	/* Can't add this listener until View has been instantiated */
+	window.addEventListener("resize", View.resizeWindow, false);
+	
 }
 
 function create_player()
 {
-	var actor = new Actor();
+	var actor = new Player();
 	actor.is_player = true;
 	actor.map_x = 1096;
 	actor.map_y = 671;
 	actor.next_x = 1096;
 	actor.next_y = 671;
-	actor.avatar = "@";
 	return actor;
 }
 
 function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0)
 {
 	var monster = new Monster(type, level, xx, yy);
-	//monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;
-	//monster.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2;
-	//monster.next_x = monster.map_x
-	//monster.next_y = monster.map_y
-	//monster.avatar = "s";
-	//monster.color = "rgb(224,224,0)";
 	return monster;
 }
 
@@ -424,6 +496,8 @@ function doKeyDown(event)
 		case KB_PLUS: View.world_rescale_up(); break;
 	}
 	
+	Player.execute_move();
+	
 	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
 	
 	View.render(base_context,animation_context,overlay_context);
@@ -438,9 +512,6 @@ animation_context = animationCanvas.getContext("2d");
 overlay_context = overlayCanvas.getContext("2d");
 
 set_canvas()
-
-mouse_x = 0;
-mouse_y = 0;
 
 
 
@@ -540,8 +611,8 @@ function Monster(type, level, xx, yy)
 	Actor.call(this);
 	
 	/* Set monster world location */
-	if (xx == 0) { this.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2; } else { this.map_x = xx;}
-	if (yy == 0) { this.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2; } else { this.map_y = yy;}
+	if (xx == 0) { this.map_x = Math.round(Math.random()*(WORLD_SIZE_X-4))+2; } else { this.map_x = xx;}
+	if (yy == 0) { this.map_y = Math.round(Math.random()*(WORLD_SIZE_Y-4))+2; } else { this.map_y = yy;}
 	this.next_x = this.map_x;
 	this.next_y = this.map_y;
 	this.level = level == MLEVEL_RANDOM ? level+=Math.round(Math.random()*2+1) : level;
@@ -564,6 +635,9 @@ function Monster(type, level, xx, yy)
 	
 	this.load_monster(this, type, level);
 	
+	/* Load actor in to the logic grid */
+	World.gridmob[this.map_y][this.map_x]=this;
+	
 }
 
 Monster.prototype = Object.create(Actor.prototype);
@@ -577,7 +651,9 @@ Monster.prototype.ai_move = function()
 		case 1: this.move_up(); break;
 		case 2: this.move_right(); break;
 		case 3: this.move_down(); break;
-	}
+	} 
+	
+	this.execute_move();
 }
 
 Monster.prototype.load_monster = function(m, type, level)
@@ -596,15 +672,33 @@ Monster.prototype.load_monster = function(m, type, level)
 	}
 	
 	m.current_hp = m.max_hp;
-	m.current_mp = m.max_mp;
 }
  
+ 
+mouse_x = 0;
+mouse_y = 0;
+mouse_gx = 0;
+mouse_gy = 0;
+last_mouse_gx = 0;
+last_mouse_gy = 0;
+
 function doMouseMove(event)
 {
 	mouse_x = event.clientX;
 	mouse_y = event.clientY;
-	Hud.dirty = true;
-	Hud.render();
+	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;
+	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y+1;
+	
+	/* Mouse hit a new grid position */
+	if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) 
+	{
+		last_mouse_gx = mouse_gx;
+		last_mouse_gy = mouse_gy;
+		//Hud.hover.add_message("X:"+mouse_gx+", Y:"+mouse_gy);
+		Hud.hover.add_message(Hud.hover.get_hover_message(mouse_gx,mouse_gy));
+		Hud.dirty = true;
+		Hud.render();
+	}
 }
 
 function doMouseClick(event)
@@ -635,6 +729,17 @@ Party.prototype.max_hp = [];
 Party.prototype.max_mp = [];
 Party.prototype.current_hp = [];
 Party.prototype.current_mp = [];
+ 
+function Player()
+{
+	Actor.call(this);
+	
+	this.name = "Your Party";
+	this.avatar = "@";
+}
+
+Player.prototype = Object.create(Actor.prototype);
+Player.prototype.constructor = Player;
  
  /* Game Constants */
 const WORLD_SIZE_X = 252*5;
@@ -827,8 +932,6 @@ function View()
 	
 	set_canvas();
 	
-	/* Can't add this listener until View has been instantiated */
-	window.addEventListener("resize", this.resizeWindow, false);
 }
 
 View.prototype.render = function (world_context, actor_context)
@@ -861,6 +964,7 @@ View.prototype.render = function (world_context, actor_context)
 					}, 0)
 				}, 24);
 			}
+			/*
 			else
 			{
 				Player.map_x = Player.next_x;
@@ -872,15 +976,14 @@ View.prototype.render = function (world_context, actor_context)
 					Monsters[i].map_y = Monsters[i].next_y;
 					Monsters[i].animating = false;
 				}
-			}
-			
-			if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)
+			} */
+		}
+		
+		if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)
 				this.refocus(Player.map_x, Player.map_y);
 			
 			if (Player.map_y - this.view_grid_y < 5 || this.view_grid_y+this.view_grid_height-Player.map_y < 5)
 				this.refocus(Player.map_x, Player.map_y);
-			
-		}
 		
 		if (World.dirty) { this.clear_world(world_context); World.render(world_context); }
 		if (Player.dirty) { this.clear_world(actor_context); Player.render(actor_context); }
@@ -1080,6 +1183,7 @@ function World()
 	this.grid = [[],[]]
 	this.gridcol = [[],[]];
 	this.gridheight = [[],[]];
+	this.gridmob=[[],[]];
 	this.build_map = _build_map;
 	this.load_map = _load_map;
 
@@ -1105,8 +1209,10 @@ function renderWorld(target_context)
 	{
 		for (i=start_grid_x; i<end_grid_x; i++)
 		{
+			px = (i-View.view_grid_x)*View.grid_width;
+			py = (j-View.view_grid_y)*View.grid_height;
 			target_context.fillStyle = this.gridcol[j][i];
-			target_context.fillText(this.grid[j][i],0+(i-View.view_grid_x)*View.grid_width,0+(j-View.view_grid_y)*View.grid_height);
+			target_context.fillText(this.grid[j][i],px,py);
 		}
 	}
 	this.dirty = false;
@@ -1128,12 +1234,13 @@ function _build_map()
 		this.grid[i] = [];
 		this.gridcol[i] = [];
 		this.gridheight[i]= [];
+		this.gridmob[i] = [];
 	}
 	
 	for (j=0; j<WORLD_SIZE_Y; j++)
 	{
 		for (i=0; i<WORLD_SIZE_X; i++)
-		{
+		{	
 			if (Math.random() > 0.9) {this.grid[j][i] = 2; } else {this.grid[j][i] = 1;}
 			
 			switch (this.grid[j][i])
@@ -1176,6 +1283,7 @@ function _load_map()
 		this.grid[i] = [];
 		this.gridcol[i] = [];
 		this.gridheight[i] = [];
+		this.gridmob[i] = [];
 	}
 	
 	for (k=0; k<15; k++)
@@ -1184,8 +1292,9 @@ function _load_map()
 		{
 			for (i=0; i<region_size; i++)
 			{
-				ch = source_map[k].charAt(j*region_size+i);
+				this.gridmob[j][i] = null;
 				
+				ch = source_map[k].charAt(j*region_size+i);
 				/* Set heightmap */
 				switch (ch.charCodeAt(0))
 				{

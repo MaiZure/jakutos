@@ -38,13 +38,15 @@ Message.prototype.render = function()
 {
 	var i;
 	var num = this.message_index;
+	var font_size = Math.round(this.hud.status_bar_height*0.80);
+	this.message_rows = Math.round(this.hud.message_box_height/font_size)-1;
 	this.clear_message_window()
 	for (i=0; i<this.message_rows; i++)
 	{
-		animation_context.font = BASE_FONT_SIZE+"px Courier";
+		animation_context.font = font_size+"px Courier";
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
-		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+24+i*24);	
+		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);	
 		num=(++num)%this.message_buffer_size;
 	}
 	this.hud.message_dirty = false;

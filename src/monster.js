@@ -26,8 +26,8 @@ function Monster(type, level, xx, yy)
 	Actor.call(this);
 	
 	/* Set monster world location */
-	if (xx == 0) { this.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2; } else { this.map_x = xx;}
-	if (yy == 0) { this.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2; } else { this.map_y = yy;}
+	if (xx == 0) { this.map_x = Math.round(Math.random()*(WORLD_SIZE_X-4))+2; } else { this.map_x = xx;}
+	if (yy == 0) { this.map_y = Math.round(Math.random()*(WORLD_SIZE_Y-4))+2; } else { this.map_y = yy;}
 	this.next_x = this.map_x;
 	this.next_y = this.map_y;
 	this.level = level == MLEVEL_RANDOM ? level+=Math.round(Math.random()*2+1) : level;
@@ -50,6 +50,9 @@ function Monster(type, level, xx, yy)
 	
 	this.load_monster(this, type, level);
 	
+	/* Load actor in to the logic grid */
+	World.gridmob[this.map_y][this.map_x]=this;
+	
 }
 
 Monster.prototype = Object.create(Actor.prototype);
@@ -63,7 +66,9 @@ Monster.prototype.ai_move = function()
 		case 1: this.move_up(); break;
 		case 2: this.move_right(); break;
 		case 3: this.move_down(); break;
-	}
+	} 
+	
+	this.execute_move();
 }
 
 Monster.prototype.load_monster = function(m, type, level)
