@@ -132,3 +132,20 @@ Monster.prototype.monster_die = function()
 		Party.add_xp(this.xp_reward);
 	}
 }
+
+Monster.prototype.execute_melee_attack = function(target)
+{
+	/* Right now, monsters will only attack the player */
+	if (target != Player) { return false; }
+	
+	var i
+	var damage = 0;
+	for (i=0; i<this.die_num; i++)
+		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
+	
+	if (damage > 0)
+	{
+		target.last_hit = this;
+		Party.damage_party(this, damage, DAM_PHYSICAL);
+	}
+}

@@ -140,19 +140,3 @@ Actor.prototype.execute_move = function()
 	this.map_y = this.next_y;
 	this.animating = false;
 }
-
-Actor.prototype.execute_melee_attack = function(target)
-{
-	var i
-	var damage = 0;
-	for (i=0;i<this.die_num;i++)
-		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
-	
-	if (damage > 0)
-	{
-		target.last_hit = this;
-		target.current_hp-=damage
-		Hud.message.add_message(this.name + " hits the " + target.name + " for " + damage);
-		if (target.current_hp < 1) { target.monster_die(); }
-	}
-}

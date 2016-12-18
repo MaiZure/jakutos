@@ -1,3 +1,26 @@
+/**
+ * Project Jakutos
+ *
+ *  Copyright 2016 by MaiZure <maizure@member.fsf.org>
+ *
+ * This file is part of the project Jakutos.
+ * 
+ * Some open source application is free software: you can redistribute 
+ * it and/or modify it under the terms of the GNU General Public 
+ * License as published by the Free Software Foundation, either 
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * Some open source application is distributed in the hope that it will 
+ * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
+ */
+
  
 /* This Object will almost always be inhereted by a more specific object (Player, Monster, NPC) */
 function Actor(){ 
@@ -117,22 +140,6 @@ Actor.prototype.execute_move = function()
 	this.map_x = this.next_x;
 	this.map_y = this.next_y;
 	this.animating = false;
-}
-
-Actor.prototype.execute_melee_attack = function(target)
-{
-	var i
-	var damage = 0;
-	for (i=0;i<this.die_num;i++)
-		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
-	
-	if (damage > 0)
-	{
-		target.last_hit = this;
-		target.current_hp-=damage
-		Hud.message.add_message(this.name + " hits the " + target.name + " for " + damage);
-		if (target.current_hp < 1) { target.monster_die(); }
-	}
 }
 
 const COL_MAP_BUILDING = 'rgb(200,180,100)';
@@ -552,6 +559,8 @@ function doKeyDown(event)
 	
 	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
 	
+	Player.update_tick();
+	
 	View.render(base_context,animation_context,overlay_context);
 }
 
@@ -769,6 +778,23 @@ Monster.prototype.monster_die = function()
 		Party.add_xp(this.xp_reward);
 	}
 }
+
+Monster.prototype.execute_melee_attack = function(target)
+{
+	/* Right now, monsters will only attack the player */
+	if (target != Player) { return false; }
+	
+	var i
+	var damage = 0;
+	for (i=0; i<this.die_num; i++)
+		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
+	
+	if (damage > 0)
+	{
+		target.last_hit = this;
+		Party.damage_party(this, damage, DAM_PHYSICAL);
+	}
+}
  
  
 mouse_x = 0;
@@ -807,10 +833,10 @@ function Party()
 	var i;
 	
 	/* Temporary constructor for a default party */
-	this.job[0] = CLASS_KNIGHT;
-	this.job[1] = CLASS_PALADIN;
-	this.job[2] = CLASS_CLERIC;
-	this.job[3] = CLASS_SORCERER;
+	this.job[0] = CLASS_KNIGHT; this.name[0] = "Cyan";
+	this.job[1] = CLASS_PALADIN; this.name[1] = "Cecil";
+	this.job[2] = CLASS_CLERIC; this.name[2] = "Celes";
+	this.job[3] = CLASS_SORCERER; this.name[3] = "Rydia";
 	
 	this.max_hp[0] = 30; this.current_hp[0]=this.max_hp[0];
 	this.max_hp[1] = 25; this.current_hp[1]=this.max_hp[1];
@@ -822,14 +848,23 @@ function Party()
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
 	
+	this.base_delay[0] = 5; this.current_delay[0] = this.base_delay[0];
+	this.base_delay[1] = 6; this.current_delay[1] = this.base_delay[1];
+	this.base_delay[2] = 7; this.current_delay[2] = this.base_delay[2];
+	this.base_delay[3] = 8; this.current_delay[3] = this.base_delay[3];
+	
+	this.die_num[0] = 2; this.die_side[0] = 4; this.die_bonus[0] = 1;
+	this.die_num[1] = 2; this.die_side[1] = 3; this.die_bonus[1] = 1;
+	this.die_num[2] = 1; this.die_side[2] = 3; this.die_bonus[2] = 0;
+	this.die_num[3] = 1; this.die_side[3] = 2; this.die_bonus[3] = 0;
+	
 	for (i=0;i<4;i++)
 	{
 		this.status[i] = 0;
 		this.xp[i] = 0;
 	}
 	
-	
-	
+	this.active_partymember = 0;
 }
 
 Party.prototype.job = [];
@@ -839,6 +874,13 @@ Party.prototype.current_hp = [];
 Party.prototype.current_mp = [];
 Party.prototype.status = [];
 Party.prototype.xp = [];
+Party.prototype.name = [];
+Party.prototype.base_delay = [];
+Party.prototype.current_delay = [];
+Party.prototype.die_num = [];
+Party.prototype.die_side = [];
+Party.prototype.die_bonus = [];
+
 
 Party.prototype.add_xp = function(xp_amount)
 {
@@ -848,6 +890,61 @@ Party.prototype.add_xp = function(xp_amount)
 		if (!((this.status[i] & STATUS_DEAD) | (this.status[i] & STATUS_UNCONCIOUS)))
 			this.xp[i] += xp_amount
 	}
+}
+
+Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
+{
+	var target = Math.floor(Math.random()*3.99);
+	
+	/* Definite bug here if everyone is dead/knocked out */
+	while (Party.status[target] & (STATUS_DEAD | STATUS_UNCONCIOUS))
+	{
+		target = Math.floor(Math.random()*3.99);
+	}
+	
+	Party.current_hp[target] -= damage_amount;
+	Hud.partymember[target].dirty = true;
+	
+	Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount);
+}
+
+Party.prototype.reduce_delay = function(amount = 1)
+{
+	Party.current_delay[0] = Math.max(Party.current_delay[0]-amount, 0);
+	Party.current_delay[1] = Math.max(Party.current_delay[1]-amount, 0); 
+	Party.current_delay[2] = Math.max(Party.current_delay[2]-amount, 0);
+	Party.current_delay[3] = Math.max(Party.current_delay[3]-amount, 0);
+}
+
+Party.prototype.find_ready_party_member = function()
+{
+	var i;
+	var current = Party.active_partymember;
+	/* Check if active party member is legit */
+	if (current != -1)
+	{
+		if (Party.status[current] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED))
+		{
+			current = -1;
+		}
+	}
+	
+	/* If someone is already active, keep them active */
+	if (current != -1) { return current; }
+	
+	/* Find new party member */
+	for (i=0; i<4; i++)
+	{
+		if (Party.current_delay[i] == 0)
+		{
+			if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED)))
+			{
+				return i;
+			}
+		}
+	}
+	
+	return -1;
 }
  
 function Player()
@@ -863,6 +960,39 @@ function Player()
 
 Player.prototype = Object.create(Actor.prototype);
 Player.prototype.constructor = Player;
+
+Player.prototype.execute_melee_attack = function(target)
+{
+	if (Party.active_partymember == -1) { return false; }
+	
+	var i
+	var damage = 0;
+	var party_member = Party.active_partymember;
+	var die_num = Party.die_num[party_member];
+	var die_side = Party.die_side[party_member];
+	var die_bonus = Party.die_bonus[party_member];
+	var attacker = Party.name[party_member];
+	var attack_type = DAM_PHYSICAL;
+	
+	for (i=0;i<die_num;i++)
+		damage+=Math.round(Math.random()*(die_side-1)+1)+die_bonus;
+	
+	if (damage > 0)
+	{
+		target.last_hit = this;
+		target.current_hp-=damage
+		Hud.message.add_message(attacker + " hits the " + target.name + " for " + damage);
+		if (target.current_hp < 1) { target.monster_die(); }
+	}
+	Party.current_delay[party_member] = Party.base_delay[party_member];
+	Party.active_partymember = -1;
+}
+
+Player.prototype.update_tick = function()
+{	
+	Party.reduce_delay();	
+	Party.active_partymember = Party.find_ready_party_member();
+}
  
  /* Game Constants */
 const WORLD_SIZE_X = 252*5;
@@ -902,6 +1032,17 @@ const STATUS_STONED = 1 << 10;
 const STATUS_ZOMBIE = 1 << 11;
 const STATUS_DEAD = 1 << 12;
 const STATUS_ERADICATED = 1 << 13;
+
+/* Damage types */
+const DAM_PHYSICAL = 0;
+const DAM_MAGIC = 1;
+const DAM_FIRE = 2;
+const DAM_EARTH = 3;
+const DAM_WATER = 4;
+const DAM_AIR = 5;
+const DAM_DARK = 6;
+const DAM_LIGHT = 7;
+const DAM_ANCIENT = 8;
 
 /* Monster Levels */
 const MLEVEL_RANDOM = 0;

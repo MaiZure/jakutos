@@ -60,6 +60,17 @@ const STATUS_ZOMBIE = 1 << 11;
 const STATUS_DEAD = 1 << 12;
 const STATUS_ERADICATED = 1 << 13;
 
+/* Damage types */
+const DAM_PHYSICAL = 0;
+const DAM_MAGIC = 1;
+const DAM_FIRE = 2;
+const DAM_EARTH = 3;
+const DAM_WATER = 4;
+const DAM_AIR = 5;
+const DAM_DARK = 6;
+const DAM_LIGHT = 7;
+const DAM_ANCIENT = 8;
+
 /* Monster Levels */
 const MLEVEL_RANDOM = 0;
 const MLEVEL_EASY = 1;

@@ -44,5 +44,7 @@ function doKeyDown(event)
 	
 	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
 	
+	Player.update_tick();
+	
 	View.render(base_context,animation_context,overlay_context);
 }
