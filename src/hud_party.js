@@ -26,13 +26,13 @@ function Partymember(hud_id, new_id)
 	this.partymember_id = new_id;
 	this.hud = hud_id
 	this.party = Party;
+	this.dirty = true;
 }
 
-Partymember.prototype.hud = 0;  /* Hud object reference */
-Partymember.prototype.party = 0; /* Party object reference */
-Partymember.prototype.partymember_id = -1;
-Partymember.prototype.dirty = true;
-
+/* Hud object reference */
+Partymember.prototype.hud = 0;
+/* Party object reference */
+Partymember.prototype.party = 0;
 
 Partymember.prototype.clear_partymember = function()
 {
@@ -51,6 +51,10 @@ Partymember.prototype.render = function()
 		var yy = this.hud.avatar_box_y + Math.round(this.hud.avatar_box_height*0.6);
 		var font_size = Math.round(this.hud.avatar_box_height*0.8)+"px Sans-Serif";
 		
+		var color = "rgb(224,224,224)";
+		if (this.party.current_delay[this.partymember_id] > 0) { color = "rgb(128,128,128)"; }
+		if (this.partymember_id == this.party.active_partymember) { color = "rgb(128,240,128)"; }
+		
 		var hp_bar_width = Math.round(this.party.current_hp[this.partymember_id]/this.party.max_hp[this.partymember_id]*this.hud.avatar_box_width);
 		var hp_bar_height = Math.round(this.hud.avatar_box_height*0.04);
 		var hp_bar_x = this.hud.avatar_box_x[this.partymember_id];
@@ -61,9 +65,10 @@ Partymember.prototype.render = function()
 		var mp_bar_x = this.hud.avatar_box_x[this.partymember_id];
 		var mp_bar_y = Math.round(this.hud.avatar_box_y+this.hud.avatar_box_height*0.92);
 		
+		
 		/* Draw @ sign */
 		this.clear_partymember();
-		animation_context.fillStyle = "rgb(224,224,224)";
+		animation_context.fillStyle = color
 		animation_context.textAlign = "center";
 		animation_context.font = font_size
 		animation_context.fillText("@", xx, yy);

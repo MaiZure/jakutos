@@ -1,8 +1,12 @@
+Hover over avatar for name/class
+Make party members die
+Make terrain climbing progressive
+Ranged attacks
+
 Make move turn PQ
 Make diagonal movement
-Make fighting
+Make some of the older objects more JS-like
 
-Make a static monster loader
 Fill out monsters
 
 

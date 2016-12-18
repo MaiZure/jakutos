@@ -47,7 +47,7 @@ Message.prototype.render = function()
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
 		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);	
-		num=(++num)%this.message_buffer_size;
+		num = (++num) % this.message_buffer_size;
 	}
 	this.hud.message_dirty = false;
 }
@@ -62,7 +62,6 @@ Message.prototype.add_message = function(msg)
 	this.message_index--;
 	if (this.message_index < 0) {this.message_index = this.message_buffer_size-1;}
 	
-	//console.log(msg);
 	this.message_log[this.message_index] = msg;
 	this.hud.message_dirty = true;
 }

@@ -44,10 +44,6 @@ Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
 
-/* External Refs */
-//Actor.prototype.world = World; //Doesn't exist at def time
-
-
 /* Methods */
 Actor.prototype.render = function(target_context)
 {
@@ -208,16 +204,7 @@ function height_to_color(height)
 /* Kick off the game when the window loads */
 window.addEventListener("load", gameInit, false);
 
-//document.addEventListener("DOMContentLoaded", gameInit, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("keydown", doKeyDown, false);
-
-/* Capture key pressed when the Document has focus */
-//baseCanvas.addEventListener("mousemove", doMouseMove, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("mousedown", doMouseClick, false);
+/* Other events are added after init */
 
 function Hud()
 {
@@ -412,7 +399,7 @@ Message.prototype.render = function()
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
 		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);	
-		num=(++num)%this.message_buffer_size;
+		num = (++num) % this.message_buffer_size;
 	}
 	this.hud.message_dirty = false;
 }
@@ -427,7 +414,6 @@ Message.prototype.add_message = function(msg)
 	this.message_index--;
 	if (this.message_index < 0) {this.message_index = this.message_buffer_size-1;}
 	
-	//console.log(msg);
 	this.message_log[this.message_index] = msg;
 	this.hud.message_dirty = true;
 }
@@ -437,13 +423,13 @@ function Partymember(hud_id, new_id)
 	this.partymember_id = new_id;
 	this.hud = hud_id
 	this.party = Party;
+	this.dirty = true;
 }
 
-Partymember.prototype.hud = 0;  /* Hud object reference */
-Partymember.prototype.party = 0; /* Party object reference */
-Partymember.prototype.partymember_id = -1;
-Partymember.prototype.dirty = true;
-
+/* Hud object reference */
+Partymember.prototype.hud = 0;
+/* Party object reference */
+Partymember.prototype.party = 0;
 
 Partymember.prototype.clear_partymember = function()
 {
@@ -462,6 +448,10 @@ Partymember.prototype.render = function()
 		var yy = this.hud.avatar_box_y + Math.round(this.hud.avatar_box_height*0.6);
 		var font_size = Math.round(this.hud.avatar_box_height*0.8)+"px Sans-Serif";
 		
+		var color = "rgb(224,224,224)";
+		if (this.party.current_delay[this.partymember_id] > 0) { color = "rgb(128,128,128)"; }
+		if (this.partymember_id == this.party.active_partymember) { color = "rgb(128,240,128)"; }
+		
 		var hp_bar_width = Math.round(this.party.current_hp[this.partymember_id]/this.party.max_hp[this.partymember_id]*this.hud.avatar_box_width);
 		var hp_bar_height = Math.round(this.hud.avatar_box_height*0.04);
 		var hp_bar_x = this.hud.avatar_box_x[this.partymember_id];
@@ -472,9 +462,10 @@ Partymember.prototype.render = function()
 		var mp_bar_x = this.hud.avatar_box_x[this.partymember_id];
 		var mp_bar_y = Math.round(this.hud.avatar_box_y+this.hud.avatar_box_height*0.92);
 		
+		
 		/* Draw @ sign */
 		this.clear_partymember();
-		animation_context.fillStyle = "rgb(224,224,224)";
+		animation_context.fillStyle = color
 		animation_context.textAlign = "center";
 		animation_context.font = font_size
 		animation_context.fillText("@", xx, yy);
@@ -848,10 +839,10 @@ function Party()
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
 	
-	this.base_delay[0] = 5; this.current_delay[0] = this.base_delay[0];
-	this.base_delay[1] = 6; this.current_delay[1] = this.base_delay[1];
-	this.base_delay[2] = 7; this.current_delay[2] = this.base_delay[2];
-	this.base_delay[3] = 8; this.current_delay[3] = this.base_delay[3];
+	this.base_delay[0] = 5; this.current_delay[0] = 0;
+	this.base_delay[1] = 6; this.current_delay[1] = 0;
+	this.base_delay[2] = 7; this.current_delay[2] = 0;
+	this.base_delay[3] = 8; this.current_delay[3] = 0;
 	
 	this.die_num[0] = 2; this.die_side[0] = 4; this.die_bonus[0] = 1;
 	this.die_num[1] = 2; this.die_side[1] = 3; this.die_bonus[1] = 1;
@@ -881,26 +872,24 @@ Party.prototype.die_num = [];
 Party.prototype.die_side = [];
 Party.prototype.die_bonus = [];
 
-
+/* Interface to add experience to party members */
 Party.prototype.add_xp = function(xp_amount)
 {
 	var i;
 	for (i=0;i<4;i++)
 	{
-		if (!((this.status[i] & STATUS_DEAD) | (this.status[i] & STATUS_UNCONCIOUS)))
-			this.xp[i] += xp_amount
+		if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS))) { this.xp[i] += xp_amount; }
 	}
 }
 
+/* Interface to damage party members */
 Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
 {
 	var target = Math.floor(Math.random()*3.99);
 	
 	/* Definite bug here if everyone is dead/knocked out */
 	while (Party.status[target] & (STATUS_DEAD | STATUS_UNCONCIOUS))
-	{
-		target = Math.floor(Math.random()*3.99);
-	}
+		{ target = Math.floor(Math.random()*3.99); }
 	
 	Party.current_hp[target] -= damage_amount;
 	Hud.partymember[target].dirty = true;
@@ -908,18 +897,25 @@ Party.prototype.damage_party = function(attacker, damage_amount, damage_type = D
 	Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount);
 }
 
+/* Tick the party delay counter */
 Party.prototype.reduce_delay = function(amount = 1)
 {
-	Party.current_delay[0] = Math.max(Party.current_delay[0]-amount, 0);
-	Party.current_delay[1] = Math.max(Party.current_delay[1]-amount, 0); 
-	Party.current_delay[2] = Math.max(Party.current_delay[2]-amount, 0);
-	Party.current_delay[3] = Math.max(Party.current_delay[3]-amount, 0);
+	var i;
+	
+	for (i=0; i<4; i++)
+	{
+		Party.current_delay[i]-= amount;
+		if (Party.current_delay[i] == 0) { Hud.partymember[i].dirty = true; }
+		Party.current_delay[i] = Math.max(Party.current_delay[i],0);
+	}
 }
 
+/* Find a ready party member */
 Party.prototype.find_ready_party_member = function()
 {
 	var i;
 	var current = Party.active_partymember;
+	
 	/* Check if active party member is legit */
 	if (current != -1)
 	{
@@ -939,6 +935,7 @@ Party.prototype.find_ready_party_member = function()
 		{
 			if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED)))
 			{
+				Hud.partymember[i].dirty = true;
 				return i;
 			}
 		}
@@ -985,12 +982,13 @@ Player.prototype.execute_melee_attack = function(target)
 		if (target.current_hp < 1) { target.monster_die(); }
 	}
 	Party.current_delay[party_member] = Party.base_delay[party_member];
+	Hud.partymember[party_member].dirty = true;
 	Party.active_partymember = -1;
 }
 
 Player.prototype.update_tick = function()
 {	
-	Party.reduce_delay();	
+	Party.reduce_delay();
 	Party.active_partymember = Party.find_ready_party_member();
 }
  
@@ -999,7 +997,7 @@ const WORLD_SIZE_X = 252*5;
 const WORLD_SIZE_Y = 252*3;
 const BASE_FONT_SIZE = 24;
 const VERSION_MAJOR = 0;
-const VERSION_MINOR = 1;
+const VERSION_MINOR = 2;
 
 /* Game Settings */
 const SETTING_ANIMATE = false;

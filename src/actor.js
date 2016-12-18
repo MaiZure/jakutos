@@ -43,10 +43,6 @@ Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
 
-/* External Refs */
-//Actor.prototype.world = World; //Doesn't exist at def time
-
-
 /* Methods */
 Actor.prototype.render = function(target_context)
 {

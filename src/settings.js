@@ -26,7 +26,7 @@ const WORLD_SIZE_X = 252*5;
 const WORLD_SIZE_Y = 252*3;
 const BASE_FONT_SIZE = 24;
 const VERSION_MAJOR = 0;
-const VERSION_MINOR = 1;
+const VERSION_MINOR = 2;
 
 /* Game Settings */
 const SETTING_ANIMATE = false;

@@ -59,11 +59,12 @@ Player.prototype.execute_melee_attack = function(target)
 		if (target.current_hp < 1) { target.monster_die(); }
 	}
 	Party.current_delay[party_member] = Party.base_delay[party_member];
+	Hud.partymember[party_member].dirty = true;
 	Party.active_partymember = -1;
 }
 
 Player.prototype.update_tick = function()
 {	
-	Party.reduce_delay();	
+	Party.reduce_delay();
 	Party.active_partymember = Party.find_ready_party_member();
 }

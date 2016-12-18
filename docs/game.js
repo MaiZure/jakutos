@@ -1,7 +1,34 @@
+/**
+ * Project Jakutos
+ *
+ *  Copyright 2016 by MaiZure <maizure@member.fsf.org>
+ *
+ * This file is part of the project Jakutos.
+ * 
+ * Some open source application is free software: you can redistribute 
+ * it and/or modify it under the terms of the GNU General Public 
+ * License as published by the Free Software Foundation, either 
+ * version 3 of the License, or (at your option) any later version.
+ * 
+ * Some open source application is distributed in the hope that it will 
+ * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
+ */
+
  
 /* This Object will almost always be inhereted by a more specific object (Player, Monster, NPC) */
 function Actor(){ 
-	this.world = Region;
+	this.world = World;
+	this.die_num = 1;
+	this.die_side = 1;
+	this.die_bonus = 1;
+	this.last_hit = 0;
 }
 
 /* Properties */
@@ -17,24 +44,46 @@ Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
 
-/* External Refs */
-//Actor.prototype.world = Region; //Doesn't exist at def time
-
-
 /* Methods */
 Actor.prototype.render = function(target_context)
 {
 	if (!this.is_visible()) { this.dirty = false; return; } /* culling */
 	
-	target_context.font = Camera.font_size+" Sans-Serif";
+	target_context.font = View.font_size+" Sans-Serif";
 	target_context.fillStyle = this.color;
 	target_context.textAlign = "center";
 	
-	var current_view_grid_x = this.map_x-Camera.view_grid_x;
-	var current_view_grid_y = this.map_y-Camera.view_grid_y;
-	var current_view_pixel_x = current_view_grid_x*Camera.grid_width+Camera.grid_width/2+this.offset_x;
-	var current_view_pixel_y = current_view_grid_y*Camera.grid_height+this.offset_y;
+	var current_view_grid_x = this.map_x-View.view_grid_x;
+	var current_view_grid_y = this.map_y-View.view_grid_y;
+	var current_view_pixel_x = current_view_grid_x*View.grid_width+View.grid_width/2+this.offset_x;
+	var current_view_pixel_y = current_view_grid_y*View.grid_height+this.offset_y;
 	target_context.fillText(this.avatar,current_view_pixel_x,current_view_pixel_y);	
+}
+
+Actor.prototype.check_action = function(direction)
+{
+	var xx, yy, move_check, mob_check, npc_check;
+	switch (direction)
+	{
+		case DIR_N:  xx = this.map_x;     yy = this.map_y - 1; break;
+		case DIR_NE: xx = this.map_x + 1; yy = this.map_y - 1; break;
+		case DIR_E:  xx = this.map_x + 1; yy = this.map_y; break;
+		case DIR_SE: xx = this.map_x + 1; yy = this.map_y + 1; break;
+		case DIR_S:  xx = this.map_x;     yy = this.map_y + 1; break;
+		case DIR_SW: xx = this.map_x - 1; yy = this.map_y + 1; break;
+		case DIR_W:  xx = this.map_x - 1; yy = this.map_y; break;
+		case DIR_NW: xx = this.map_x - 1; yy = this.map_y - 1; break;
+	}
+	
+	move_check = this.can_move(xx,yy);
+	
+	if (move_check)
+	{
+		mob_check = World.gridmob[yy][xx];	
+		if (mob_check) { this.execute_melee_attack(mob_check); }
+		else
+		{ this.next_x = xx; this.next_y = yy; }
+	}
 }
 
 Actor.prototype.move_left = function() { if (this.can_move(this.map_x-1,this.map_y)) { this.next_x-=1; this.animating = true; this.dirty = true; }}
@@ -44,10 +93,16 @@ Actor.prototype.move_down = function() { if (this.can_move(this.map_x,this.map_y
 
 Actor.prototype.is_visible = function()
 {
-	if (this.map_x < Camera.view_grid_x) {return false;}
-	if (this.map_x > Camera.view_grid_x+Camera.view_grid_width-1) {return false;}
-	if (this.map_y < Camera.view_grid_y) {return false;}
-	if (this.map_y > Camera.view_grid_y+Camera.view_grid_height-1) {return false;}	
+	if (this.map_x < View.view_grid_x) { return false; }
+	if (this.map_x > View.view_grid_x + View.view_grid_width-1) { return false; }
+	if (this.map_y < View.view_grid_y) { return false; }
+	if (this.map_y > View.view_grid_y + View.view_grid_height-1) { return false; }	
+	
+	if (this != Player)
+	{
+		if (this.status & STATUS_DEAD) { return false; }
+	}
+	
 	return true;
 }
 
@@ -64,7 +119,7 @@ Actor.prototype.moveAnimate = function()
 	if (this.next_y < this.map_y) { this.offset_y-=ANIMATION_STEPS;}
 	if (this.next_y > this.map_y) { this.offset_y+=ANIMATION_STEPS;}
 	
-	if (Math.abs(this.offset_x) >= Camera.grid_width || Math.abs(this.offset_y) >= Camera.grid_height) 
+	if (Math.abs(this.offset_x) >= View.grid_width || Math.abs(this.offset_y) >= View.grid_height) 
 	{
 		this.offset_x = 0;
 		this.offset_y = 0;
@@ -74,245 +129,14 @@ Actor.prototype.moveAnimate = function()
 	}
 }
 
-function initCamera()
+Actor.prototype.execute_move = function()
 {
-	this.dirty = false;
-	this.view_grid_x = 0;
-	this.view_grid_y = 0;
-	this.grid_width = 14;
-	this.grid_height = 18;
-	this.view_px_x = 0;
-	this.view_px_y = 0;
-	this.view_px_width = Math.round(baseCanvas.width*0.62); this.view_px_width+=this.view_px_width % this.grid_width; //768;
-	this.view_px_height = Math.round(baseCanvas.height*0.97); this.view_px_height+=this.view_px_height % this.grid_height; //576;
-	this.font_size = (this.grid_height*2)+"px";//(this.grid_width*2)+"px";
-	this.view_grid_width = Math.round(this.view_px_width/this.grid_width)+1;
-	this.view_grid_height = Math.round(this.view_px_height/this.grid_height)+1;
-	
-	
-	this.target_view_x = 0;
-	this.target_view_y = 0;
-	this.px_offset_x = 0;
-	this.px_offset_y = 0;
-	
-	this.animate_camera = _animate_camera;
-	this.zoom_in = world_rescale_up;
-	this.zoom_out = world_rescale_down;
-	this.refocus = refocus_view;
-	this.render = renderWorld;
-	this.rescale = recalculate_view_scale;
-	this.clear_world = clear_world;
-	this.clear_context = clear_context;
+	World.gridmob[this.map_y][this.map_x] = null;
+	World.gridmob[this.next_y][this.next_x] = this;
+	this.map_x = this.next_x;
+	this.map_y = this.next_y;
+	this.animating = false;
 }
-
-function renderWorld(world_context, actor_context)
-{	
-	var i;
-	if (Minimap.active)
-	{
-		Minimap.draw(overlay_context);
-	}
-	else
-	{
-		if (Player.animating)
-		{
-			if (SETTING_ANIMATE)
-			{
-				var count = 0;
-				var timer = setTimeout(function() {
-					var interval = setInterval(function(){
-					count++;
-					Player.moveAnimate();
-					
-					for (i=0; i<Monsters.length; i++) { Monsters[i].moveAnimate(); }
-		
-					Camera.clear_world(actor_context);
-					Player.render(actor_context);
-					
-					for (i=0; i<Monsters.length; i++) { Monsters[i].render(actor_context); }
-					
-					if (count > (Camera.grid_height/ANIMATION_STEPS)) { clearInterval(interval); clearTimeout(timer);}
-					}, 0)
-				}, 24);
-			}
-			else
-			{
-				Player.map_x = Player.next_x;
-				Player.map_y = Player.next_y;
-				Player.animating = false;
-				for (i=0; i<Monsters.length; i++) 
-				{ 
-					Monsters[i].map_x = Monsters[i].next_x;
-					Monsters[i].map_y = Monsters[i].next_y;
-					Monsters[i].animating = false;
-				}
-			}
-			
-			if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)
-				this.refocus(Player.map_x, Player.map_y);
-			
-			if (Player.map_y - this.view_grid_y < 5 || this.view_grid_y+this.view_grid_height-Player.map_y < 5)
-				this.refocus(Player.map_x, Player.map_y);
-			
-		}
-		
-		if (Region.dirty) { this.clear_world(world_context); Region.render(world_context); }
-		if (Player.dirty) { this.clear_world(actor_context); Player.render(actor_context); }
-		Hud.render();
-		
-		for (i=0; i<Monsters.length; i++)
-		{
-			if (Monsters[i].dirty) 
-			{ 
-				Monsters[i].render(actor_context); 
-			}
-		}
-	}
-}
- 
-function world_rescale_down()
-{
-	if (this.grid_height > 8)
-	{
-		Region.dirty = true;
-		this.grid_width/=2;
-		this.grid_height/=2;
-		this.rescale();
-		this.refocus(Player.map_x, Player.map_y, true);
-	}
-}
-
-function world_rescale_up()
-{
-	if (this.grid_height < 128)
-	{
-		Region.dirty = true;
-		this.grid_width*=2;
-		this.grid_height*=2;
-		this.rescale();
-		this.refocus(Player.map_x, Player.map_y, true);
-	}
-}
-
-function recalculate_view_scale()
-{
-	this.font_size = (this.grid_height*2)+"px";
-	this.view_grid_width = Math.round(this.view_px_width/this.grid_width)+1;
-	this.view_grid_height = Math.round(this.view_px_height/this.grid_height)+1;
-}
-
-function refocus_view(xx, yy, immediate = false)
-{
-	var i;
-	var old_x = this.view_grid_x;
-	var old_y = this.view_grid_y;
-	
-	if (!SETTING_ANIMATE || immediate)
-	{
-		this.view_grid_x = Math.round(xx-this.view_grid_width/2);
-		this.view_grid_y = Math.round(yy-this.view_grid_height/2);
-		
-		this.view_grid_x = Math.max(this.view_grid_x,0);
-		this.view_grid_y = Math.max(this.view_grid_y,0);
-		
-		this.view_grid_x = Math.min(WORLD_SIZE_X-this.view_grid_width,this.view_grid_x);
-		this.view_grid_y = Math.min(WORLD_SIZE_Y-this.view_grid_height,this.view_grid_y);
-		
-		if (this.view_grid_x != old_x || this.view_grid_y != old_y)
-		{
-			this.dirty = true;
-			Region.dirty = true;
-			Player.dirty = true;
-			for (i=0; i<Monsters.length; i++) { Monsters[i].dirty = true; }
-		}
-	}
-	else
-	{
-		this.dirty = true;
-		
-		this.target_view_x = Math.round(xx-Camera.view_grid_width/2);
-		this.target_view_y = Math.round(yy-Camera.view_grid_height/2);
-		this.target_view_x = Math.max(Camera.target_view_x,0);
-		this.target_view_y = Math.max(Camera.target_view_y,0);
-		this.target_view_x = Math.min(WORLD_SIZE_X-Camera.view_grid_width,Camera.target_view_x);
-		this.target_view_y = Math.min(WORLD_SIZE_Y-Camera.view_grid_height,Camera.target_view_y);
-		
-		if (Camera.dirty) {Camera.animate_camera();}
-	}
-}
-
-function toggle_animate()
-{
-	Region.dirty = true;
-	Hud.dirty = true;
-	SETTING_ANIMATE = !SETTING_ANIMATE;
-}
-
-function toggle_minimap()
-{
-	Minimap.active = !Minimap.active
-	if (Minimap.active)
-	{
-		Minimap.minimap_world_dirty = true;
-		Minimap.minimap_viewbox_dirty = true;
-	}
-	else
-	{
-		Camera.clear_context(overlay_context);
-	}
-	Region.dirty = true;
-}
-
-function _animate_camera()
-{
-	
-	if (this.view_grid_x == this.target_view_x && this.view_grid_y == this.target_view_y)
-	{
-		this.dirty = false;
-		return;
-	}
-	
-	var timer = setTimeout(function() {
-		var interval = setInterval(function(){
-			
-			if (Camera.view_grid_x < Camera.target_view_x) { Camera.view_grid_x++; }
-			if (Camera.view_grid_x > Camera.target_view_x) { Camera.view_grid_x--; }
-			if (Camera.view_grid_y < Camera.target_view_y) { Camera.view_grid_y++; }
-			if (Camera.view_grid_y > Camera.target_view_y) { Camera.view_grid_y--; }
-			
-			if (Camera.view_grid_x == Camera.target_view_x && Camera.view_grid_y == Camera.target_view_y)
-			{
-				Camera.dirty = false;
-				//Hud.Minimap.minimap_viewbox_dirty = true;
-			}
-			
-			Camera.clear_world(animation_context);
-			Camera.clear_world(base_context);
-			
-			Player.render(animation_context);
-			Region.render(base_context);
-			Hud.render();
-			for (i=0; i<Monsters.length; i++) { Monsters[i].render(animation_context); }
-		
-			if (!Camera.dirty) { clearInterval(interval); clearTimeout(timer);}
-		}, 0)
-	}, 24);
-}
-
-function clear_world(target_context)
-{
-	var xx = this.view_px_x;
-	var yy = this.view_px_y;
-	var ww = this.view_px_width + 16;
-	var hh = target_context.canvas.height;
-	target_context.clearRect(xx, yy, ww, hh);
-}
-
-function clear_context(target_context) 
-{
-	target_context.clearRect(0,0,target_context.canvas.width,target_context.canvas.height);
-}
-	
 
 const COL_MAP_BUILDING = 'rgb(200,180,100)';
 const COL_MAP_WATER = 'rgb(100,100,175)';
@@ -321,6 +145,10 @@ const COL_MAP_GRASS = 'rgb(20,150,50)';
 const COL_MAP_HILL = 'rgb(160,180,160)';
 const COL_MAP_LOW_MOUNTAIN = 'rgb(175,185,195)';
 const COL_MAP_HIGH_MOUNTAIN = 'rgb(185,195,200)';
+const COL_MOB_EASY = "rgb(128,240,128)";
+const COL_MOB_MEDIUM = "rgb(128,128,240)";
+const COL_MOB_HARD = "rgb(240,128,128)";
+const COL_MOB_UNIQUE = "rgb(240,240,128)";
  
 function random_grass_color()
 {
@@ -375,112 +203,281 @@ function height_to_color(height)
  
 /* Kick off the game when the window loads */
 window.addEventListener("load", gameInit, false);
-//document.addEventListener("DOMContentLoaded", gameInit, false);
 
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("keydown", doKeyDown, false);
-
-/* Capture key pressed when the Document has focus */
-//baseCanvas.addEventListener("mousemove", doMouseMove, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("mousedown", doMouseClick, false);
+/* Other events are added after init */
 
 function Hud()
 {
 	/* These variables need to be deferred until instantiation */
-	
-	this.view_px_x = Camera.view_px_width+16;
+	var i;
+	this.view_px_x = View.view_px_width+16;
 	this.view_px_y = 0;
 	this.view_px_width = baseCanvas.width-this.view_px_x;
 	this.view_px_height = baseCanvas.height-this.view_px_y;
+	
 	this.avatar_box_width = Math.round((this.view_px_width-20)/4);
 	this.avatar_box_height = this.avatar_box_width;
-	this.avatar_box_topline = this.view_px_height-this.avatar_box_height-5;
+	this.avatar_box_y = this.view_px_height-this.avatar_box_height-5;
+	this.avatar_box_x = [];
+	for (i=0;i<4;i++) { this.avatar_box_x[i]=4+this.view_px_x+i*(this.avatar_box_width+4); }
+	
 	this.status_bar_x = this.view_px_x;
 	this.status_bar_y = 0;
 	this.status_bar_height = Math.round(baseCanvas.height*0.05);
+	
+	this.hover_bar_x = this.view_px_x;
+	this.hover_bar_y = 0; /* deferred until after message box is defined */
+	this.hover_bar_height = Math.round(baseCanvas.height*0.05);
+	this.hover_bar_width = this.view_px_width;
+	
 	this.message_box_x = this.view_px_x+4;
-	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.02);
+	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.01);
 	this.message_box_width = this.view_px_width-8;
-	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height)*0.95);
+	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height-this.hover_bar_height)*0.95);
+	
+	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(baseCanvas.height*0.01);
 	
 	/* The hud should create its widgets */
 	this.message = new Message(this);
-	this.message.render();
+	this.hover = new Hover(this);
+	for (i=0;i<4;i++) { this.partymember[i] = new Partymember(this,i); }
 }
 
 Hud.prototype.dirty = true;
 Hud.prototype.party_dirty = true;
 Hud.prototype.message_dirty = true;
+Hud.prototype.partymember = [];
 
 Hud.prototype.render = function()
 {
 	if (this.dirty) { this.render_text(animation_context); }
+	if (this.message_dirty) {this.message.render();}
+	for (i=0;i<4;i++) { if (this.partymember[i].dirty) {this.partymember[i].render();}}
+	if (this.hover.dirty) {this.hover.render();}
 	this.debug();
 	this.dirty = false;
 }
 
 Hud.prototype.render_text = function(target_context)
 {
-	target_context.clearRect(target_context.canvas.width-150,0,target_context.canvas.width,150);
-	target_context.font = BASE_FONT_SIZE+" Sans-Serif";
-	target_context.fillStyle = FG_COLOR;
-	target_context.textAlign = "right";
-	target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,50);	
-	target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,100);	
+	//target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
+	//target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
+	//target_context.fillStyle = FG_COLOR;
+	//target_context.textAlign = "right";
+	//target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
+	//target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-75);	
+	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	
 }
 
 Hud.prototype.debug = function()
 {
 	var i;
-	base_context.fillStyle = "rgb(200,0,0)";
+	base_context.fillStyle = "rgb(160,0,0)";
 	base_context.fillRect(this.view_px_x, this.view_px_y, this.view_px_width, this.view_px_height);
 	
-	base_context.fillStyle = "rgb(0,200,0)";
+	base_context.fillStyle = "rgb(0,160,0)";
 	base_context.fillRect(this.status_bar_x, this.status_bar_y, this.view_px_width, this.status_bar_height);
 	
 	base_context.fillStyle = "rgb(0,0,160)";
 	base_context.fillRect(this.message_box_x, this.message_box_y, this.message_box_width, this.message_box_height);
 	
+	base_context.fillStyle = "rgb(32,32,32)";
+	base_context.fillRect(this.hover_bar_x, this.hover_bar_y, this.view_px_width, this.hover_bar_height);
+	
 	for (var i=0;i<4;i++)
 	{
-		base_context.fillStyle = "rgb(0,200,0)";
-		base_context.fillRect(4+this.view_px_x+i*(this.avatar_box_width+4), this.avatar_box_topline, this.avatar_box_width, this.avatar_box_height);
-		if (this.party_dirty)
-		{
-			
-			animation_context.fillStyle = "rgb(224,224,224)";
-			animation_context.textAlign = "center";
-			animation_context.font = Math.round(this.avatar_box_height*0.8)+"px Sans-Serif";
-			animation_context.fillText("@", this.view_px_x+i*(this.avatar_box_width+4)+this.avatar_box_width/2, this.avatar_box_topline+this.avatar_box_height/2+12);
-		}
-		
+		base_context.fillStyle = "rgb(0,160,0)";
+		base_context.fillRect(this.avatar_box_x[i], this.avatar_box_y, this.avatar_box_width, this.avatar_box_height);
 	}
-	this.party_dirty = false;
+}
+
+Hud.prototype.resize = function()
+{
+	this.dirty = true;
 	
+	var i;
+	this.view_px_x = View.view_px_width+16;
+	this.view_px_y = 0;
+	this.view_px_width = baseCanvas.width-this.view_px_x;
+	this.view_px_height = baseCanvas.height-this.view_px_y;
+	
+	this.avatar_box_width = Math.round((this.view_px_width-20)/4);
+	this.avatar_box_height = this.avatar_box_width;
+	this.avatar_box_y = this.view_px_height-this.avatar_box_height-5;
+	this.avatar_box_x = [];
+	for (i=0;i<4;i++) { this.avatar_box_x[i]=4+this.view_px_x+i*(this.avatar_box_width+4); }
+	
+	this.status_bar_x = this.view_px_x;
+	this.status_bar_y = 0;
+	this.status_bar_height = Math.round(baseCanvas.height*0.05);
+	
+	this.hover_bar_x = this.view_px_x;
+	this.hover_bar_y = 0; /* deferred until after message box is defined */
+	this.hover_bar_height = Math.round(baseCanvas.height*0.05);
+	this.hover_bar_width = this.view_px_width;
+	
+	this.message_box_x = this.view_px_x+4;
+	this.message_box_y = this.status_bar_height+Math.round(baseCanvas.height*0.01);
+	this.message_box_width = this.view_px_width-8;
+	this.message_box_height = Math.round((baseCanvas.height-this.status_bar_height-this.avatar_box_height-this.hover_bar_height)*0.95);
+	
+	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(baseCanvas.height*0.01);
+	
+	this.message_dirty = true
+	this.partymember[0].dirty = true;
+	this.partymember[1].dirty = true;
+	this.partymember[2].dirty = true;
+	this.partymember[3].dirty = true;
+}
+ 
+function Hover(hud_instance)
+{
+	this.hud = hud_instance;
+	this.dirty = true;
+	this.message = "";
+}
+
+Hover.prototype.render = function()
+{
+	if (this.dirty)
+	{
+		var font_size = Math.round(this.hud.hover_bar_height*0.80);
+		this.clear_hover_bar();
+		animation_context.font = font_size+"px Courier";
+		animation_context.fillStyle = "rgb(224,224,0)";
+		animation_context.textAlign = "center";
+		animation_context.fillText(this.message,this.hud.hover_bar_x+this.hud.hover_bar_width/2,this.hud.hover_bar_y+font_size);
+		this.dirty = false;
+	}
+}
+
+Hover.prototype.clear_hover_bar = function()
+{
+	animation_context.clearRect(this.hud.hover_bar_x,this.hud.hover_bar_y,this.hud.hover_bar_width,this.hud.hover_bar_height);
+}
+
+Hover.prototype.add_message = function(msg)
+{
+	if (msg != this.message) 
+	{ 
+		this.message = msg;	
+		this.dirty = true;
+	}
+}
+
+Hover.prototype.get_hover_message = function(xx, yy)
+{
+	var pos = World.gridmob[yy][xx];
+	if (pos)
+		return pos.name;
+	return ""
 }
  
 function Message(hud_instance)
 {
+	var i;
 	this.hud = hud_instance; /* save parent pinter */
+	for (i=0;i<this.message_buffer_size;i++) { this.message_log.push(""); }
+	this.message_index = this.message_buffer_size-1;
+	this.message_rows = Math.round(this.hud.message_box_height/BASE_FONT_SIZE)-1;
 }
 
-Message.prototype.message_log = ["first","2","third","4","5","6","7","8","9","10"];
-Message.prototype.message_index = 5;
+Message.prototype.message_buffer_size = 64;
+Message.prototype.message_log = [];
 Message.prototype.hud = 0 /* parent pointer unknown during prototyping */
 
 Message.prototype.render = function()
 {
 	var i;
-	var num = this.message_index
-	for (i=0; i<10; i++)
+	var num = this.message_index;
+	var font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
+	this.message_rows = Math.round(this.hud.message_box_height/font_size)-1;
+	this.clear_message_window()
+	for (i=0; i<this.message_rows; i++)
 	{
-		animation_context.font = BASE_FONT_SIZE+" Courier";
+		animation_context.font = font_size+"px Courier";
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
-		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+24+i*24);	
-		num=(++num)%10;
+		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);	
+		num = (++num) % this.message_buffer_size;
+	}
+	this.hud.message_dirty = false;
+}
+
+Message.prototype.clear_message_window = function()
+{
+	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
+}
+
+Message.prototype.add_message = function(msg)
+{
+	this.message_index--;
+	if (this.message_index < 0) {this.message_index = this.message_buffer_size-1;}
+	
+	this.message_log[this.message_index] = msg;
+	this.hud.message_dirty = true;
+}
+ 
+function Partymember(hud_id, new_id)
+{
+	this.partymember_id = new_id;
+	this.hud = hud_id
+	this.party = Party;
+	this.dirty = true;
+}
+
+/* Hud object reference */
+Partymember.prototype.hud = 0;
+/* Party object reference */
+Partymember.prototype.party = 0;
+
+Partymember.prototype.clear_partymember = function()
+{
+	var xx = this.hud.avatar_box_x[this.partymember_id];
+	var yy = this.hud.avatar_box_y;
+	var ww = this.hud.avatar_box_width;
+	var hh = this.hud.avatar_box_height;
+	animation_context.clearRect(xx,yy,ww,hh);
+}
+
+Partymember.prototype.render = function()
+{	
+	if (this.dirty)
+	{
+		var xx = this.hud.avatar_box_x[this.partymember_id] + this.hud.avatar_box_width/2;
+		var yy = this.hud.avatar_box_y + Math.round(this.hud.avatar_box_height*0.6);
+		var font_size = Math.round(this.hud.avatar_box_height*0.8)+"px Sans-Serif";
+		
+		var color = "rgb(224,224,224)";
+		if (this.party.current_delay[this.partymember_id] > 0) { color = "rgb(128,128,128)"; }
+		if (this.partymember_id == this.party.active_partymember) { color = "rgb(128,240,128)"; }
+		
+		var hp_bar_width = Math.round(this.party.current_hp[this.partymember_id]/this.party.max_hp[this.partymember_id]*this.hud.avatar_box_width);
+		var hp_bar_height = Math.round(this.hud.avatar_box_height*0.04);
+		var hp_bar_x = this.hud.avatar_box_x[this.partymember_id];
+		var hp_bar_y = Math.round(this.hud.avatar_box_y+this.hud.avatar_box_height*0.85);
+		
+		var mp_bar_width = Math.round(this.party.current_mp[this.partymember_id]/this.party.max_mp[this.partymember_id]*this.hud.avatar_box_width);
+		var mp_bar_height = Math.round(this.hud.avatar_box_height*0.04);
+		var mp_bar_x = this.hud.avatar_box_x[this.partymember_id];
+		var mp_bar_y = Math.round(this.hud.avatar_box_y+this.hud.avatar_box_height*0.92);
+		
+		
+		/* Draw @ sign */
+		this.clear_partymember();
+		animation_context.fillStyle = color
+		animation_context.textAlign = "center";
+		animation_context.font = font_size
+		animation_context.fillText("@", xx, yy);
+		this.dirty = false;
+		
+		/* Draw health */
+		animation_context.fillStyle = "rgb(0,240,0)";
+		animation_context.fillRect(hp_bar_x,hp_bar_y,hp_bar_width,hp_bar_height);
+		
+		/* Draw magic */
+		animation_context.fillStyle = "rgb(0,0,240)";
+		animation_context.fillRect(mp_bar_x,mp_bar_y,mp_bar_width,mp_bar_height);
 	}
 }
 
@@ -488,22 +485,15 @@ function gameInit()
 {
 	var i;
 	
-	/* Set the three canvas dimensions on load and divisible by 8 (may help future calcs)*/
-	baseCanvas.width = Math.round(window.innerWidth*0.96); baseCanvas.width -= baseCanvas.width % 8;
-	baseCanvas.height = Math.round(window.innerHeight*0.96); baseCanvas.height -= baseCanvas.height % 8;
-	animationCanvas.width = Math.round(window.innerWidth*0.96); animationCanvas.width -= animationCanvas.width % 8;
-	animationCanvas.height = Math.round(window.innerHeight*0.96); animationCanvas.height -= animationCanvas.height % 8;
-	overlayCanvas.width = Math.round(window.innerWidth*0.96); overlayCanvas.width -= overlayCanvas.width % 8;
-	overlayCanvas.height = Math.round(window.innerHeight*0.96); overlayCanvas.height -= overlayCanvas.height % 8;
-	
 	/* Capture key presses in the document and mouse movements on the highest canvas */
 	document.addEventListener("keydown", doKeyDown, false);
 	overlayCanvas.addEventListener("mousemove", doMouseMove, false);
 	overlayCanvas.addEventListener("mousedown", doMouseClick, false);
 	
-	Camera = new initCamera();
-	Region = new initRegion();
+	View = new View();
+	World = new World();
 	Player = create_player();
+	Party = new Party();
 	
 	Monsters = [];
 	for (i=0; i<NUMBER_OF_MONSTERS; i++) { Monsters[i] = create_monster(); }
@@ -512,32 +502,28 @@ function gameInit()
 	
 	Minimap = new initMinimap();
 	
-	Camera.refocus(Player.map_x, Player.map_y, true);
-	Camera.render(base_context,animation_context);
+	View.refocus(Player.map_x, Player.map_y, true);
+	View.render(base_context,animation_context);
+	
+	/* Can't add this listener until View has been instantiated */
+	window.addEventListener("resize", View.resizeWindow, false);
 	
 }
 
 function create_player()
 {
-	var actor = new Actor();
+	var actor = new Player();
 	actor.is_player = true;
 	actor.map_x = 1096;
 	actor.map_y = 671;
 	actor.next_x = 1096;
 	actor.next_y = 671;
-	actor.avatar = "@";
 	return actor;
 }
 
-function create_monster()
+function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0)
 {
-	var monster = new Monster();
-	monster.map_x = Math.round(Math.random()*WORLD_SIZE_X-4)+2;
-	monster.map_y = Math.round(Math.random()*WORLD_SIZE_Y-4)+2;
-	monster.next_x = monster.map_x
-	monster.next_y = monster.map_y
-	monster.avatar = "s";
-	monster.color = "rgb(224,224,0)";
+	var monster = new Monster(type, level, xx, yy);
 	return monster;
 }
 
@@ -549,20 +535,24 @@ function doKeyDown(event)
 	
 	switch (event.keyCode)
 	{	
-		case KB_LEFT: Player.move_left(); break;
-		case KB_UP: Player.move_up(); break;
-		case KB_RIGHT: Player.move_right(); break;
-		case KB_DOWN: Player.move_down(); break;
+		case KB_LEFT: Player.check_action(DIR_W); break;
+		case KB_UP: Player.check_action(DIR_N); break;
+		case KB_RIGHT: Player.check_action(DIR_E); break;
+		case KB_DOWN: Player.check_action(DIR_S); break;
 		case KB_A: toggle_animate(); break;
-		case KB_C: Camera.refocus(Player.map_x, Player.map_y); break;
-		case KB_M: toggle_minimap(); break;
-		case KB_MINUS: Camera.zoom_out(); break;
-		case KB_PLUS: Camera.zoom_in(); break;
+		case KB_C: View.refocus(Player.map_x, Player.map_y); break;
+		case KB_M: View.toggle_minimap(); break;
+		case KB_MINUS: View.world_rescale_down(); break;
+		case KB_PLUS: View.world_rescale_up(); break;
 	}
+	
+	Player.execute_move();
 	
 	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
 	
-	Camera.render(base_context,animation_context,overlay_context);
+	Player.update_tick();
+	
+	View.render(base_context,animation_context,overlay_context);
 }
 
 baseCanvas = document.getElementById("Base");
@@ -573,8 +563,7 @@ base_context = baseCanvas.getContext("2d");
 animation_context = animationCanvas.getContext("2d");
 overlay_context = overlayCanvas.getContext("2d");
 
-mouse_x = 0;
-mouse_y = 0;
+set_canvas()
 
 
 
@@ -597,8 +586,8 @@ function initMinimap()
 	
 	this._renderTerrain(overlay_context);
 	this.minimap_image = overlay_context.getImageData(0,0,WORLD_SIZE_X,WORLD_SIZE_Y);
-	//Camera.clear_world(overlay_context);
-	Camera.clear_context(overlay_context);
+	//View.clear_world(overlay_context);
+	View.clear_context(overlay_context);
 }
 
 function renderMinimap()
@@ -620,7 +609,7 @@ function renderTerrain(target_context)
 			px = this.base_x+i;
 			py = this.base_y+j;
 			
-			target_context.fillStyle = Region.gridcol[j][i];
+			target_context.fillStyle = World.gridcol[j][i];
 			target_context.fillRect(px/2,py/2,1,1);
 		}
 	}
@@ -632,14 +621,14 @@ function renderViewbox(target_context)
 {
 	clear_minimap(target_context);
 	
-	px = worldCanvas.width-WORLD_SIZE_X+Camera.view_grid_x+1;
-	py = worldCanvas.height-WORLD_SIZE_Y+Camera.view_grid_y+1;
+	px = worldCanvas.width-WORLD_SIZE_X+View.view_grid_x+1;
+	py = worldCanvas.height-WORLD_SIZE_Y+View.view_grid_y+1;
 	target_context.strokeStyle = "rgb(255,255,0)";
 	target_context.beginPath();
 	target_context.lineTo(px,py);
-	target_context.lineTo(px+Camera.view_grid_width,py);
-	target_context.lineTo(px+Camera.view_grid_width,py+Camera.view_grid_height);
-	target_context.lineTo(px,py+Camera.view_grid_height);
+	target_context.lineTo(px+View.view_grid_width,py);
+	target_context.lineTo(px+View.view_grid_width,py+View.view_grid_height);
+	target_context.lineTo(px,py+View.view_grid_height);
 	target_context.lineTo(px,py);
 	target_context.stroke();
 
@@ -652,8 +641,8 @@ function drawMinimap(target_context)
 	var screen_height = target_context.canvas.height;
 	var player_x = Player.map_x;
 	var player_y = Player.map_y;
-	var minimap_x = (Camera.view_px_width-this.minimap_width)/2;
-	var minimap_y = (Camera.view_px_height-this.minimap_height)/2;
+	var minimap_x = (View.view_px_width-this.minimap_width)/2;
+	var minimap_y = (View.view_px_height-this.minimap_height)/2;
 	target_context.putImageData(this.minimap_image, minimap_x,minimap_y);
 	target_context.fillStyle = "rgb(255,0,0)";
 	target_context.fillRect(minimap_x+player_x/2-5, minimap_y+player_y/2-5, 10, 10);
@@ -669,9 +658,40 @@ function clear_minimap(target_context)
 	target_context.clearRect(xx,yy,ww,hh);
 }
  
-function Monster()
+function Monster(type, level, xx, yy)
 {
 	Actor.call(this);
+	
+	/* Set monster world location */
+	if (xx == 0) { this.map_x = Math.round(Math.random()*(WORLD_SIZE_X-4))+2; } else { this.map_x = xx;}
+	if (yy == 0) { this.map_y = Math.round(Math.random()*(WORLD_SIZE_Y-4))+2; } else { this.map_y = yy;}
+	this.next_x = this.map_x;
+	this.next_y = this.map_y;
+	this.level = level == MLEVEL_RANDOM ? level+=Math.round(Math.random()*2+1) : level;
+	
+	/* Set monster world color */
+	switch (this.level)
+	{
+		case MLEVEL_EASY: this.color = COL_MOB_EASY; break;
+		case MLEVEL_MEDIUM: this.color = COL_MOB_MEDIUM; break;
+		case MLEVEL_HARD: this.color = COL_MOB_HARD; break;
+		case MLEVEL_UNIQUE: this.color = COL_MOB_UNIQUE; break;
+	}	
+	
+	/* Monster Stats */
+	this.name = "NoName";
+	this.avatar = "?";
+	this.max_hp = 1; this.current_hp = this.max_hp;
+	this.xp_reward = 0;
+	this.gold_reward = 0;
+	this.status = 0; /* flags variable */
+	this.mode = 0
+	
+	this.load_monster(this, type, level);
+	
+	/* Load actor in to the logic grid */
+	World.gridmob[this.map_y][this.map_x]=this;
+	
 }
 
 Monster.prototype = Object.create(Actor.prototype);
@@ -679,21 +699,119 @@ Monster.prototype.constructor = Monster;
 
 Monster.prototype.ai_move = function() 
 {
+	if (!this.is_active()) { return false; }
+	
 	switch (Math.floor(Math.random()*4))
 	{
-		case 0: this.move_left(); break;
-		case 1: this.move_up(); break;
-		case 2: this.move_right(); break;
-		case 3: this.move_down(); break;
+		case 0: this.check_action(DIR_W); break;
+		case 1: this.check_action(DIR_N); break;
+		case 2: this.check_action(DIR_E); break;
+		case 3: this.check_action(DIR_S); break;
+	} 
+	
+	this.execute_move();
+}
+
+Monster.prototype.load_monster = function(m, type, level)
+{
+	switch (type)
+	{
+		case MTYPE_GOBLIN:
+		{
+			switch(level)
+			{
+				case MLEVEL_EASY: 
+				{
+					m.name = "Goblin";
+					m.max_hp = 13;
+					m.avatar = "g";
+					m.die_num = 1; m.die_side = 9; m.die_bonus = 0;
+					m.xp_reward = 56;
+				} break;
+				case MLEVEL_MEDIUM: 
+				{
+					m.name = "Goblin Shaman"; 
+					m.max_hp = 21; 
+					m.avatar = "g"; 
+					m.die_num = 1; m.die_side = 9; m.die_bonus = 2;
+					m.xp_reward = 96;
+				} break;
+				case MLEVEL_HARD: 
+				{
+					m.name = "Goblin King"; 
+					m.max_hp = 40; 
+					m.avatar = "g"; 
+					m.die_num = 1; m.die_side = 9; m.die_bonus = 4;
+					m.xp_reward = 200;
+				} break;
+			}
+		} break;
+	}
+	
+	m.current_hp = m.max_hp;
+}
+
+Monster.prototype.is_active = function()
+{
+	if (this.status & STATUS_DEAD) { return false; }
+	
+	return true;
+}
+
+Monster.prototype.monster_die = function()
+{
+	this.status |= STATUS_DEAD;
+	World.gridmob[this.map_y][this.map_x] = null;
+	Hud.message.add_message(this.name + " dies");
+	
+	if (this.last_hit == Player)
+	{
+		Party.add_xp(this.xp_reward);
+	}
+}
+
+Monster.prototype.execute_melee_attack = function(target)
+{
+	/* Right now, monsters will only attack the player */
+	if (target != Player) { return false; }
+	
+	var i
+	var damage = 0;
+	for (i=0; i<this.die_num; i++)
+		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
+	
+	if (damage > 0)
+	{
+		target.last_hit = this;
+		Party.damage_party(this, damage, DAM_PHYSICAL);
 	}
 }
  
+ 
+mouse_x = 0;
+mouse_y = 0;
+mouse_gx = 0;
+mouse_gy = 0;
+last_mouse_gx = 0;
+last_mouse_gy = 0;
+
 function doMouseMove(event)
 {
 	mouse_x = event.clientX;
 	mouse_y = event.clientY;
-	Hud.dirty = true;
-	Hud.render();
+	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;
+	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y+1;
+	
+	/* Mouse hit a new grid position */
+	if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) 
+	{
+		last_mouse_gx = mouse_gx;
+		last_mouse_gy = mouse_gy;
+		//Hud.hover.add_message("X:"+mouse_gx+", Y:"+mouse_gy);
+		Hud.hover.add_message(Hud.hover.get_hover_message(mouse_gx,mouse_gy));
+		Hud.dirty = true;
+		Hud.render();
+	}
 }
 
 function doMouseClick(event)
@@ -701,12 +819,15 @@ function doMouseClick(event)
 	
 }
  
-function initParty()
+function Party()
 {
-	this.job[0] = CLASS_KNIGHT;
-	this.job[1] = CLASS_PALADIN;
-	this.job[2] = CLASS_CLERIC;
-	this.job[3] = CLASS_SORCERER;
+	var i;
+	
+	/* Temporary constructor for a default party */
+	this.job[0] = CLASS_KNIGHT; this.name[0] = "Cyan";
+	this.job[1] = CLASS_PALADIN; this.name[1] = "Cecil";
+	this.job[2] = CLASS_CLERIC; this.name[2] = "Celes";
+	this.job[3] = CLASS_SORCERER; this.name[3] = "Rydia";
 	
 	this.max_hp[0] = 30; this.current_hp[0]=this.max_hp[0];
 	this.max_hp[1] = 25; this.current_hp[1]=this.max_hp[1];
@@ -717,190 +838,276 @@ function initParty()
 	this.max_mp[1] = 6; this.current_mp[1]=this.max_mp[1];
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
+	
+	this.base_delay[0] = 5; this.current_delay[0] = 0;
+	this.base_delay[1] = 6; this.current_delay[1] = 0;
+	this.base_delay[2] = 7; this.current_delay[2] = 0;
+	this.base_delay[3] = 8; this.current_delay[3] = 0;
+	
+	this.die_num[0] = 2; this.die_side[0] = 4; this.die_bonus[0] = 1;
+	this.die_num[1] = 2; this.die_side[1] = 3; this.die_bonus[1] = 1;
+	this.die_num[2] = 1; this.die_side[2] = 3; this.die_bonus[2] = 0;
+	this.die_num[3] = 1; this.die_side[3] = 2; this.die_bonus[3] = 0;
+	
+	for (i=0;i<4;i++)
+	{
+		this.status[i] = 0;
+		this.xp[i] = 0;
+	}
+	
+	this.active_partymember = 0;
+}
+
+Party.prototype.job = [];
+Party.prototype.max_hp = [];
+Party.prototype.max_mp = [];
+Party.prototype.current_hp = [];
+Party.prototype.current_mp = [];
+Party.prototype.status = [];
+Party.prototype.xp = [];
+Party.prototype.name = [];
+Party.prototype.base_delay = [];
+Party.prototype.current_delay = [];
+Party.prototype.die_num = [];
+Party.prototype.die_side = [];
+Party.prototype.die_bonus = [];
+
+/* Interface to add experience to party members */
+Party.prototype.add_xp = function(xp_amount)
+{
+	var i;
+	for (i=0;i<4;i++)
+	{
+		if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS))) { this.xp[i] += xp_amount; }
+	}
+}
+
+/* Interface to damage party members */
+Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
+{
+	var target = Math.floor(Math.random()*3.99);
+	
+	/* Definite bug here if everyone is dead/knocked out */
+	while (Party.status[target] & (STATUS_DEAD | STATUS_UNCONCIOUS))
+		{ target = Math.floor(Math.random()*3.99); }
+	
+	Party.current_hp[target] -= damage_amount;
+	Hud.partymember[target].dirty = true;
+	
+	Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount);
+}
+
+/* Tick the party delay counter */
+Party.prototype.reduce_delay = function(amount = 1)
+{
+	var i;
+	
+	for (i=0; i<4; i++)
+	{
+		Party.current_delay[i]-= amount;
+		if (Party.current_delay[i] == 0) { Hud.partymember[i].dirty = true; }
+		Party.current_delay[i] = Math.max(Party.current_delay[i],0);
+	}
+}
+
+/* Find a ready party member */
+Party.prototype.find_ready_party_member = function()
+{
+	var i;
+	var current = Party.active_partymember;
+	
+	/* Check if active party member is legit */
+	if (current != -1)
+	{
+		if (Party.status[current] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED))
+		{
+			current = -1;
+		}
+	}
+	
+	/* If someone is already active, keep them active */
+	if (current != -1) { return current; }
+	
+	/* Find new party member */
+	for (i=0; i<4; i++)
+	{
+		if (Party.current_delay[i] == 0)
+		{
+			if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED)))
+			{
+				Hud.partymember[i].dirty = true;
+				return i;
+			}
+		}
+	}
+	
+	return -1;
 }
  
-
-/* Constructor for the region (map) */
-function initRegion()
+function Player()
 {
-	this.dirty = true;
+	Actor.call(this);
 	
-	this.render = renderRegion;
-	this.is_clear = _is_clear;
-	this.grid = [[],[]]
-	this.gridcol = [[],[]];
-	this.gridheight = [[],[]];
-	this.build_map = _build_map;
-	this.load_map = _load_map;
-
-	this.load_map();
+	this.name = "Your Party";
+	this.avatar = "@";
+	this.die_num = 2;
+	this.die_side = 4;
+	this.die_bonus = 1;
 }
 
-function renderRegion(target_context)
+Player.prototype = Object.create(Actor.prototype);
+Player.prototype.constructor = Player;
+
+Player.prototype.execute_melee_attack = function(target)
 {
-	var i,j, ch, col;
-	var start_grid_x, start_grid_y, end_grid_x, end_grid_y;
-	var px, py;
+	if (Party.active_partymember == -1) { return false; }
 	
-	target_context.font = Camera.font_size+" clacon";
-	target_context.textAlign = "left";
+	var i
+	var damage = 0;
+	var party_member = Party.active_partymember;
+	var die_num = Party.die_num[party_member];
+	var die_side = Party.die_side[party_member];
+	var die_bonus = Party.die_bonus[party_member];
+	var attacker = Party.name[party_member];
+	var attack_type = DAM_PHYSICAL;
 	
-	start_grid_x = Camera.view_grid_x;
-	start_grid_y = Camera.view_grid_y;
-	end_grid_x = Math.min(Camera.view_grid_x+Camera.view_grid_width,WORLD_SIZE_X);
-	end_grid_y = Math.min(Camera.view_grid_y+Camera.view_grid_height,WORLD_SIZE_Y);
+	for (i=0;i<die_num;i++)
+		damage+=Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	
-	
-	for (j=start_grid_y; j<end_grid_y; j++)
+	if (damage > 0)
 	{
-		for (i=start_grid_x; i<end_grid_x; i++)
-		{
-			target_context.fillStyle = this.gridcol[j][i];
-			target_context.fillText(this.grid[j][i],0+(i-Camera.view_grid_x)*Camera.grid_width,0+(j-Camera.view_grid_y)*Camera.grid_height);
-		}
+		target.last_hit = this;
+		target.current_hp-=damage
+		Hud.message.add_message(attacker + " hits the " + target.name + " for " + damage);
+		if (target.current_hp < 1) { target.monster_die(); }
 	}
-	this.dirty = false;
+	Party.current_delay[party_member] = Party.base_delay[party_member];
+	Hud.partymember[party_member].dirty = true;
+	Party.active_partymember = -1;
 }
 
-function _is_clear(xx, yy)
-{
-	if (xx < 0) { return false; }
-	if (yy < 0) { return false; }
-	if (xx >= WORLD_SIZE_X) { return false; }
-	if (yy >= WORLD_SIZE_Y) { return false; }
-	if (this.grid[yy][xx] != '^') { return true; } else { return false; }
-}
-
-function _build_map()
-{
-	for (i=0; i<WORLD_SIZE_X; i++) 
-	{
-		this.grid[i] = [];
-		this.gridcol[i] = [];
-		this.gridheight[i]= [];
-	}
-	
-	for (j=0; j<WORLD_SIZE_Y; j++)
-	{
-		for (i=0; i<WORLD_SIZE_X; i++)
-		{
-			if (Math.random() > 0.9) {this.grid[j][i] = 2; } else {this.grid[j][i] = 1;}
-			
-			switch (this.grid[j][i])
-			{
-				case 0: this.gridcol[j][i] = random_water_color(); break;
-				case 1: this.gridcol[j][i] = GRASSLAND ? random_grass_color() : random_dirt_color(); break;
-				case 2: this.gridcol[j][i] = random_mountain_color(); break;
-			}
-		}
-	}
-}
-
-function _load_map()
-{
-	
-	var ch, i ,j, k;
-	var source_map = [];
-	var target_base_x = [];
-	var target_base_y = [];
-	var region_size = 252;
-	
-	source_map[0] = WORLD_MAP_1; target_base_x[0]  = 0; target_base_y[0]  = 0;
-	source_map[1] = WORLD_MAP_2; target_base_x[1]  = region_size; target_base_y[1]  = 0;
-	source_map[2] = WORLD_MAP_3; target_base_x[2]  = region_size*2; target_base_y[2]  = 0;
-	source_map[3] = WORLD_MAP_4; target_base_x[3]  = region_size*3; target_base_y[3]  = 0;
-	source_map[4] = WORLD_MAP_5; target_base_x[4]  = region_size*4; target_base_y[4]  = 0;
-	source_map[5] = WORLD_MAP_6; target_base_x[5]  = 0; target_base_y[5]  = region_size;
-	source_map[6] = WORLD_MAP_7; target_base_x[6]  = region_size; target_base_y[6] = region_size;
-	source_map[7] = WORLD_MAP_8; target_base_x[7]  = region_size*2; target_base_y[7]  = region_size;
-	source_map[8] = WORLD_MAP_9; target_base_x[8]  = region_size*3; target_base_y[8]  = region_size;
-	source_map[9] = WORLD_MAP_10; target_base_x[9]  = region_size*4; target_base_y[9]  = region_size;
-	source_map[10] = WORLD_MAP_11; target_base_x[10]  = 0; target_base_y[10]  = region_size*2;
-	source_map[11] = WORLD_MAP_12; target_base_x[11]  = region_size; target_base_y[11]  = region_size*2;
-	source_map[12] = WORLD_MAP_13; target_base_x[12]  = region_size*2; target_base_y[12]  = region_size*2;
-	source_map[13] = WORLD_MAP_14; target_base_x[13]  = region_size*3; target_base_y[13]  = region_size*2;
-	source_map[14] = WORLD_MAP_15; target_base_x[14]  = region_size*4; target_base_y[14]  = region_size*2;
-	
-	for (i=0; i<WORLD_SIZE_X; i++) 
-	{
-		this.grid[i] = [];
-		this.gridcol[i] = [];
-		this.gridheight[i] = [];
-	}
-	
-	for (k=0; k<15; k++)
-	{
-		for (j=0; j<region_size; j++)
-		{
-			for (i=0; i<region_size; i++)
-			{
-				ch = source_map[k].charAt(j*region_size+i);
-				
-				/* Set heightmap */
-				switch (ch.charCodeAt(0))
-				{
-					case 126: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=0; break;
-					case 35: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=-1; break;
-					default: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=ch.charCodeAt(0)-64; break;
-				}
-				
-				/* Set character and color */
-				switch (this.gridheight[target_base_y[k]+j][target_base_x[k]+i])
-				{
-					case -1: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '#'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_BUILDING; break;
-					case 0: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '='; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_WATER; break;
-					case 1: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '~'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_DIRT; break;
-					case 2: 
-					case 3: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '~'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_GRASS; break;
-					case 4: 
-					case 5: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '^'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_HILL; break;
-					case 6: 
-					case 7: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '{'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_LOW_MOUNTAIN; break;
-					default: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '}'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_HIGH_MOUNTAIN; break;
-				}
-			}
-		}
-	}
+Player.prototype.update_tick = function()
+{	
+	Party.reduce_delay();
+	Party.active_partymember = Party.find_ready_party_member();
 }
  
  /* Game Constants */
 const WORLD_SIZE_X = 252*5;
 const WORLD_SIZE_Y = 252*3;
-const BASE_FONT_SIZE = "24px";
+const BASE_FONT_SIZE = 24;
 const VERSION_MAJOR = 0;
-const VERSION_MINOR = 1;
+const VERSION_MINOR = 2;
 
 /* Game Settings */
-var SETTING_ANIMATE = false;
-var NUMBER_OF_MONSTERS = 100;
-var ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
-var FG_COLOR = "rgb(170,170,170)"
-var GRASSLAND = Math.round(Math.random());
+const SETTING_ANIMATE = false;
+const NUMBER_OF_MONSTERS = 500;
+const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
+const FG_COLOR = "rgb(170,170,170)"
+const GRASSLAND = Math.round(Math.random());
 
 /* ENUM TYPES (sort of)*/
 /* classes */ 
-var CLASS_KNIGHT = 1 << 0;
-var CLASS_PALADIN = 1 << 1;
-var CLASS_ARCHER = 1 << 2;
-var CLASS_DRUID = 1 << 3;
-var CLASS_CLERIC = 1 << 4;
-var CLASS_SORCERER = 1 << 5;
+const CLASS_KNIGHT = 1 << 0;
+const CLASS_PALADIN = 1 << 1;
+const CLASS_ARCHER = 1 << 2;
+const CLASS_DRUID = 1 << 3;
+const CLASS_CLERIC = 1 << 4;
+const CLASS_SORCERER = 1 << 5;
 
 /* status effects */
-var STATUS_CURSED = 1 << 0;
-var STATUS_WEAK = 1 << 1;
-var STATUS_AFRAID = 1 << 2;
-var STATUS_DRUNK = 1 << 3;
-var STATUS_INSANE = 1 << 4;
-var STATUS_POISONED = 1 << 5;
-var STATUS_DISEASED = 1 << 6;
-var STATUS_ASLEEP = 1 << 7;
-var STATUS_PARALYZED = 1 << 8;
-var STATUS_UNCONCIOUS = 1 << 9;
-var STATUS_STONED = 1 << 10;
-var STATUS_ZOMBIE = 1 << 11;
-var STATUS_DEAD = 1 << 12;
-var STATUS_ERADICATED = 1 << 13;
+const STATUS_CURSED = 1 << 0;
+const STATUS_WEAK = 1 << 1;
+const STATUS_AFRAID = 1 << 2;
+const STATUS_DRUNK = 1 << 3;
+const STATUS_INSANE = 1 << 4;
+const STATUS_POISONED = 1 << 5;
+const STATUS_DISEASED = 1 << 6;
+const STATUS_ASLEEP = 1 << 7;
+const STATUS_PARALYZED = 1 << 8;
+const STATUS_UNCONCIOUS = 1 << 9;
+const STATUS_STONED = 1 << 10;
+const STATUS_ZOMBIE = 1 << 11;
+const STATUS_DEAD = 1 << 12;
+const STATUS_ERADICATED = 1 << 13;
+
+/* Damage types */
+const DAM_PHYSICAL = 0;
+const DAM_MAGIC = 1;
+const DAM_FIRE = 2;
+const DAM_EARTH = 3;
+const DAM_WATER = 4;
+const DAM_AIR = 5;
+const DAM_DARK = 6;
+const DAM_LIGHT = 7;
+const DAM_ANCIENT = 8;
+
+/* Monster Levels */
+const MLEVEL_RANDOM = 0;
+const MLEVEL_EASY = 1;
+const MLEVEL_MEDIUM = 2;
+const MLEVEL_HARD = 3;
+const MLEVEL_UNIQUE = 4;
+
+/* Monster Types */
+const MTYPE_ARCHER = 1;
+const MTYPE_BARBARIAN = 2;
+const MTYPE_BAT = 3;
+const MTYPE_BEHOLDER = 4;
+const MTYPE_BLOODSUCKER = 5;
+const MTYPE_CLERIC = 6;
+const MTYPE_COBRA = 7;
+const MTYPE_COCKATRICE = 8;
+const MTYPE_DEMONFLY = 9;
+const MTYPE_DEMON = 10;
+const MTYPE_DRAGONCAVE = 11;
+const MTYPE_DRAGONFLY = 12;
+const MTYPE_DRAGONLAND = 13;
+const MTYPE_DRAGONCOVER = 14;
+const MTYPE_DRUIDESS = 15;
+const MTYPE_DWARF = 16;
+const MTYPE_ELEMAIR = 17;
+const MTYPE_ELEMEARTH = 18;
+const MTYPE_ELEMFIRE = 19;
+const MTYPE_ELEMWATER = 20;
+const MTYPE_FIGHTERCHAIN = 21;
+const MTYPE_FIGHTERLEATHER = 22;
+const MTYPE_GARGOYLE = 23;
+const MTYPE_GENIE = 24;
+const MTYPE_GHOST = 25;
+const MTYPE_GOBLIN = 26;
+const MTYPE_GUARD = 27;
+const MTYPE_HARPY = 28;
+const MTYPE_HYDRA = 29;
+const MTYPE_JACKALMAN = 30;
+const MTYPE_KNIGHTPLATE = 31;
+const MTYPE_LICH = 32;
+const MTYPE_LIZARDARCH = 33;
+const MTYPE_MAGE = 34;
+const MTYPE_MEDUSA = 35;
+const MTYPE_MERCHANT = 36;
+const MTYPE_MINOTAUR = 37;
+const MTYPE_MONK = 38;
+const MTYPE_NOBLEMAN = 39;
+const MTYPE_OOZE = 40;
+const MTYPE_OGRE = 41;
+const MTYPE_RAT = 42;
+const MTYPE_ROBOT = 43;
+const MTYPE_SEASERPENT = 44;
+const MTYPE_SKELETON = 45;
+const MTYPE_SORCERER = 46;
+const MTYPE_SPIDER = 47;
+const MTYPE_THIEF = 48;
+const MTYPE_TITAN = 49;
+const MTYPE_WEREWOLF = 50;
+const MTYPE_DEMONQUEEN = 51;
+const MTYPE_REACTOR = 52;
+const MTYPE_BAA = 53;
+
+/* Monster AI */
+const AISTATE_WAIT = 0;
+const AISTATE_CHASE = 1;
+const AISTATE_FLEE = 2;
 
 /* Keyboard Codes */
 const KB_LEFT = 37;
@@ -912,6 +1119,16 @@ const KB_C = 67;
 const KB_M = 77;
 const KB_MINUS = 189;
 const KB_PLUS = 187;
+
+/* Direction Enum */
+const DIR_N = 1;
+const DIR_NE = 2;
+const DIR_E = 3;
+const DIR_SE = 4;
+const DIR_S = 5;
+const DIR_SW = 6;
+const DIR_W = 7;
+const DIR_NW = 8;
  
 /* Might & Magic 6 test maps */
 /* Sweet Water */
@@ -958,3 +1175,419 @@ const WORLD_MAP_14 = "AAAAAAAABBBBCCCDDDDDDDDDDCCCCBBBAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 /* New Sporigal */
 const WORLD_MAP_15 = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABCCCBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABA~~~~~~~~~BCDEDCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCB~~~~~~~~~BCEFECB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~A#AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABCCCBA~~~~~ABCCEFECB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~A###AAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCB~~~~~BCCCEFECB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~A###AAAAAAA#AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBCCDEDCCBBBBBCCDEEFECCBBBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAABBBAAAAAAAAAAA###AAAAAA###AA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCEFECCCCCCCCCEFFFECCCCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AABBBBBBBAAAAAAAAAAAAAAAAA###AA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCDEEEEFEEEEEEEEEEEFFFEEEEDCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~AAABBBBBBBBBAAAAAAAAAAAAAAAA###AA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCEFFFFFFFFFFFFFFFFFFFFFFFECB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~AABBBBCCCBBBAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCEFFGGGGGGGGGGGGGGGGGGGFFECB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAABBBBCCCCCBBBAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCEFGGGHHIHHHHHHGGGGGGGGGFECB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAABBBBCCCCCBBBAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCEFGGGHHIHHFDDDFGHHHGGGGFECCBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAABBBBCCCCCBBBAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCEFGGGHHIHHDAAADHHIHHGGGFECCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAABBBBCCCCCBBBBAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBCCEFGGGHHIGDCAAACDGIHHGGGFEEDCCBBBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAABBBBBCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCEFGGGHHIEAA##AAAEIHHGGGFFFECCCCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAABBBBBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBCCDEEEEFGGGHHIEAA##AAAEIHHGGGFFFEEEEDCCBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAABBBBBBBBAAAAAAAAAAAAAAAAAABBBBAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCEFFFFFGGGHHIEAAAAAAAEIHHGGGGFFFFFFECCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAABBBBBAAAAAAAAAAAAAAAAAAABBBBBBAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCDEEFFFFGGGHIGDCAAACDFHHHGGFFFFEEEEDCCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCCCEFFFFFFFGIHHDAAADHHHHHGFFFFFECCCCCCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBBBCCDEEEEEEFGHHHFDDDFGGGGGGFEEEEDCCBBBBBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCCCEFGGGHHHHHGGGGGGGFECCCCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAA~~~~~AAAAAAAAAAAAAAAABBBBBBBAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBBBCCEFFGGGGGGGGGGGGGFFECCBBBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAA~~~~~AAAAAAAAAAAAAAAABBBBBBAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCEFFFGGGGGFFFFFFFFFECB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCDEEFFGGGFFEEEEEEEEDCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCEFFFFFFFECCCCCCCCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABCCDEEEEFEEDCCBBBBBBBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCEFECCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBCCDEDCCBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCBBBA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAA####AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAA####AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAA####AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAA#A##AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAA~~~~~~~AAAAAAA~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~AAAAAAA~~~~~~~~~~~~~AAAAAAAAAAAAA###AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~AAAAAAAAAAAAAAAAA###AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~AAAAAAAAAAAAAAAAA###AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBA~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BDDCB~~~~~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BDDDDEDDB~~~~~~~~~~~~~AAA~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DGGGFEEDB~~~~~~~~~~~~~AAA~~~~~~~~~ABBBA~~~~~~~~~~~~~~~~~~~~~AAAABBAAAAAAAAAAAAAAAAAAAAABBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~BDFHHHGFEEC~~~~~~~~~~~AAAAAAAAAAAAAABBBBBAA~~~~~~~~~~~~~~~~~~~ABBBBBBBBAAAAAAAAAAAAAAAAABBBBBAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~ABA~~~~~DHIIIIHGFEC~~~~~~~~~~~AAAAAAAAAABBBBBBBBBBA~~~~~~~~~~~~~~~~~~~ABBBBBBBBBBBBBBAAAAAAAAAABBBBBBBAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~BCCCCDDEGIJJJJIGFEC~~~~~~~~~~~AAAAABBBBBBBBBBCCCCBBBA~~~~~~~~~~~~~~~AABBBCBBBBBBBBBBBBBBBBBBBBBBBBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~BDDEFGHIJKKKKKIHGFC~~~~~~~~~~~AAAABBBBBBBBCCCCCCCCCCB~~~~~~~~~~~~~~~ABBCCCCCCCCCCBBBBBBBBBBBBBBBBBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAABBBBBBBBBBBBA~~~~~~~~~AAAAABCDEFGHIJKKLLKKJHGFC~~~~~~~~~~~AAABBCCCCCCCCCCCCCCCCCB~~~~~~~~~ABBBBBBCCCCCCCCCCCCCCCCCCCBBBBBBBBBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAABBBBBCCCCCCCCB~~~~~~~~~AAAABCDEFGHIJKLLLMLLJIHFC~~~~~~~~~~~AABBCCCCCCCCCCCDDDCCCCB~~~~~~~~~BCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCBBBBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AABBBBCCCDDDDDDDDDCCCB~~~~~ABBBBCDEFGHHGFGGGGIKJIHGD~~~~~~~~~~~AABBCCCCCCCCCCDDDDDDDCCBBBBBBBBBCCCCCCCCCCCCCCDDCCCCCCCCCCCCCCCBBBBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBBCCDDEEEEEEEEEEEEC~~~~~ABBBCCDEFGGGDA###AFJIIHGD~~~~~~~~~~~AABBC##CC###CCDDDDDDDDD###DDDDDDDDDDDDDDDDDDDDDDDCCCCCCCCCCCCCCBBBBBBBBAAAAAAAAAAAAA#AAAA##AAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBCCDDEEFFFGGGGGGFFFDCCCBBBCCCCCDEFHGFDA###AEHHHGFC~~~~~~~~~~~AABBC#C#C###CCDDDEEEDD##D###DDDDDDDDDDDDDDDDDDDDDCCCCCCCCCCDDDCCCCCBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABCCDEEFFGGHHHHHHHHGGFFEEDDCCCCCCDEGHGFDA##AADGGHFEC~~~~~~~~~~~~~ABC#######CCDDEEEEED##D#D#DDDDDDDDDDDD#D##DDDDDCCCCCCCCCDEEEDDDCCBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCDEFFGHHIIJJJJIIIIHHGFFEEDDDDDDEEGHGFDAAAAACDEFEECBA~~~~~~~~~~~ABC#CCCCC#CCDEEFFEED#DDDD#DDDEEEEEDDDD####DDDDDCCCDDEEEEEFFEEEDDCCBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCDEFGGHIJJKKKKKKKJJJIHHGFFEEDDEEEFGHGECAAAAAAACDDDDDB~~~~~~~~~~~ABC#C#CC##CCDEEFFEED#DDDD#DDDEEFFEEDDD####DDDDDCCCEFFFFFGGFFEEEDDCCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CDEFGGHIJKKKLLLLLLKKKJIIHGGFEEEEEEFGHFECAAAAAAABCCDDCBBA~~~~~~~~~ABC###CC##CCDEEEEEDD##DDD#DDDEEFEEEDDD####DDDDDCCCEFFGGGGGGFFEEDDCCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CDEFGHIJKKLLMMMMMLLLKKJIIHGGFFEEEFFGHFDCAAAAAAAAABCCCCCB~~~~~~##~ABCCCCCC#CCCDEEEEDDDD####DDDDEEEEEDDDDDD##DDDDDCCCEGGGGGGHGGFFEEDDCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DEFGHIJKLLMMMMNMMMMMLKKJIIHGGFFFFFFGHFDC##ABBBBBABBBCCCB~~~~~~~~~ABCCCCCCCCCCDDDDDDDDD###DDDDDEEDDDDCCCCCDDDDDDDDDEFGGGGHHHHGGFEEDDCCBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DEFHIJKLMMNNNNNNNNNMMLLKJJIHGGGFFFFGHFDCAAABCCCBAAABBBBA~~~~~~~~~ABBCCCCCCCCCCCDDDDDDDDDDDDDEEEDDCCCCCCCCCCCDDDEEEFFGGHHHHHHHGFFEDDCCBBBAAAAAAAAAAAAAAAAAA~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFGHJKLLMNNNOOOOONNNMMLKKJIIHGGGGGGHIGFEDDDDDDDDCBABBBBBAA~~~~~~~ABBCCCCCCCCCCCCCCCCCCCCCCCDDDDDCCCCCCCCCCCCCDDEEEFFGGHHHHHHHGFFEDDCCBBBAAAAAAAAAAAAAAAAAA~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFHIJKLMNNOOOOOOOOONNMMLKKJIHHHGGGGHIHGFFFFFFFFEECAAABBBBA~~~~~~~AABBBBBBCCCCCCCCCCCCCCCCCCCCCDCCCCCCCCCCCCCCDDEEEEFGGHHIIIHHGFFEEDCCBBBAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFHIKKLMNNOOOOOOOOONNNMLLKJJIHHHGGGHIHHGGGGGGGGFFDCBABBBBA~~~~~~~AAABBBBBBBBBBCCCCCCCCCCCCCCCCCCCCCCCCCBBCCCCDEFFFEFGGHHIIHHHGFFEDDCCBBBAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EGHIKLMMNOOOPPPPPOOONNMMLKKJIIHHHGGHIIHHHHHHHHGGGFECAAAAAA~~~~~~~~~AABBBBBBBBBBBBBBCCCCCCCCCCCBBBBBBBBBBBBBCCEGGGFEFGGHHIHHHHGFFEDDCCBBBAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EGHJKLMMNOOOPPPPPOOONNMMLLKJIIIHHHHIJIIIIIJIIIHHGGFDCBAAAA~~~~~~~~~AAABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBCEGGGFEFGGHHHHHHGGFEEDDCCBBAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FGHJKLMNNOOOPPPPPOOONNMMLLKJJIIIHHHIJJJJJKKKJJIIHGFEDCAAAA~~~~~~~~~AAABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBEGGGFEFGGHHHHHGGFFEEDCCBBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FGHJKLMMNOOOPPPPPOOONNMMLLKJJIIIIIIJKKKKKLLKKKJIIHGFECBAAA~~~~~~~~~AAAAAABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBCEEEEEFFGGGGGGGGFEEDDCCBBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FGHJKLMMNOOOPPPPPOOONNMMLLKKJJIIIIIJKLLLMMMLLKKJIHGFEDCB~~~~~~~~~~~~~AAAAAAAAAAAABBBBBBBBBBBBBBBBBAAAAAAABBBBBBCDDEEFFGGGGGGFFEEDCCCBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EGHIKKLMNNOOOOOOOOOONNMMLLKJJJIIIIIJLLMMMMMMMLKJIHGFEDCB~~#~#####~#~~AAAAAAAAAAAAAAAAAABBBBBBBBBAAAAAAAAAAABBBBCCDDEFFFGGGGFFEEDDCCBBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFGIJKLMNNOOOOOOOOONNMMMLKKJJJIIIJJKLMMMNNNMMLKJIHGFEDCB~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBCCDDEEFFFFFFFFEEDDCCBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFGHIKLLMNNNOOOOONNNNMMLLKKJJIIIJJJKLMNNNNNNMLKJIHGFEDCB~~#~#####~#~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBCCDDEEFFFFFFEEDDCCBBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DEFHIJKLMMNNNNNNNNNMMMLLKKJJIIIIJJKLMMNNONNNMLKJIHGFEDBA~~~~~~~~~~~~~AAA###A###AA###AAAAAAAA###AA###A###AAAAABBBCCDDEEEEEEEEEDDDCCBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DEFGHIJKLLMMNNNNNMMMMLLKKJJIIIIIJJKLMNNOOONNMLKJIHFFECAA~~~~~~~~~~~~~AAA###A###AA###AAAAAAAA###AA###A###AAAAABBBCCCDDEEEEEEEEDDCCCBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CDEFGHIJKLLMMMMMMMMLLLKKJJIIIIIIJKKLMNOOOONNMLKJIGFEDB~~~~~~~~~~~~~~~A#####A###AA##AAAAAAAAA##AAA###A###A###ABBBBCCDDEEEEEEEDDDCCBBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CCDEFGHIJJKKLLLLLLKKKJJIIIHHHHIIJKLMNNOOOONMMKJIHGEDBA~~~~~~~~~~~~~AAA##AAAA#AAAA###AAAAAAAAAAAAAAAA##A###A#ABBBBCCDDDEEEEEDDDCCCBBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAA###AAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCDDEFGHHIIJJJJJJJJJIIIHHHGGGHHIJKLMNNOOONNMLKJIGFEC~~~~~~~~~~~~~~~A#AAA#AA###AA####AAAAAAAA####AAA#########AABBBCCCDDDDEEEDDDCCCBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAA###AAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BBCDEEFGGHHIIIIIIIIIHHGGGGGGGGHIJKLMNNOOONMLKJIHGECB~~~~~~~~~~~~~~~AA#A##A#####A###AAAAAAAAA#AAAAAA#A###A###AABBBBCCDDDDDDDDDCCCBBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAA###AAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABCCDDEFFGGGHHHHHHHGGGFFFFFFFGHIIKLMMNNNNNMLKJHGFC~~~~~~~~~~~~~~~~~AA#A#############AAAAAAAA####AAA####AAAAAAAABBBCCCDDDDDDDDCCCBBBAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBCCDDEEEFFGGGGGGFFFFEEEEEFFFGHIJKLMMNNNMLKJGDDCB~~~~~~~~~~~~~AAAAAAAA##A#####A####AAA###AA###A#######AA###AAABBBBCCCDDDDDDCCCBBBBAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA###AA#AAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBCCCDDDEEEEEEEEEEEEEDDDEEEFGHIJKLMMMMMLKJIE~~~~~~~~~~~~~~~~~AAAAAA#A##AAAAAAA####AAA###AAA##A####A#####A#AAABBBBCCCCDDDDCCCCBBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAA###AA#AAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AABBBBCCCDDDDDDDDDDDDDDDDDDDEEFGHIJKLLLLLKJIHD~~~~~~~~~~~~~~~AAAAAAA##A##AAAAAAA#####AA##AAAA##A############AAABBBBBCCCCCCCCCCBBBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAABBBBBCCCCCCCCCCCCCCCCCCCDDEFGHIJJKKLKKJIHGD~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA###A####AAA#A###AAAABBBBBCCCCCCCCCBBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAABBBBBBCCCCCCCCCCBBBBBCCCDDEFGHIIJJKJJIHFDB~~~~~~~~~~~~~AAAAAAAAAAAAA######A#######AAAA####AA########AAAAAAAABBBBBBCCCCCCCBBBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAABBBBBBBBBBBBBBBBBBBBBBCCDEFFGHHIIIIIHGD~~~~~~~~~~~~~~~AAAAAAAAAAAAA######A#######AAAAA##AA#########AAAAAAAAABBBBBBCCCBBBBBBAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAABBBBBBBBBBBBBBBBBBBBBBBBBCCDEFFGGHHHHHGFC~~~~~~~~~~~~~AAAAAAAAAAAAAAA######A#######AAAA####A#########AAAAAAAAABBBBBBBBBBBBBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AABBBBBBBBBBBBBBBBBBAAAAAAABBCCDEEFFGGGGFFEC~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAA#AA##AAAA###AA####AA##AAAAAAAAAAAABBBBBBBBBBBAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBBBBBCBBBBBBBBBBAAAAAAAABBCCDDEEEFFFFEEDB~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAA#AA##AAA#####AA###A####AAAAAAAAAAAAABBBBBBAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBBCCCCCCCBBBBBBAAAAAAAAAABBCCCDDDEEEEDDCB~~~~~~~~~AAAA##AAAAAAAAAAAAAAAAAAAAAA##A##AAA###AAAAAA#A####AAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BBBCCCCCCCCCCCBBBBBAAAAAAAAAABBCCCCDDCCCCCBA~~~~~~~~~AAAA##AAAAAAAAAAAAAAAAAAAAAA#AAA#AAAAA#AAAAAAAAA##AAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BBCCCCDDDDDCCCCBBBBAAAAAAAAAABBBBCCCCBABCB~~~~~~~~~~~AAAA##AAA#AA####AA##AA####AA##########AA##AA####AA##AA####AA####A~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAA~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCDDDDDDDDCCCCBBBBAAAAAAAAAABBBBBBBBAABA~~~~~~##~~~AAAA##AAAAAA####AAAAAA####AAAAAA##AA##AAAAAA####AAAAAA####AAAAAAA~~~#~~~~~##~~~#~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAA~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCDDDDDEDDDDDCCBBBBAAAAAAAAAAAAAAAAAAAA~~~#~#####~#~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~####~~##~~~#~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CCDDDDEEEEEDDDDCCBBBAAAAAAAAAAAAAAAAAAAA~~~#~#####~#~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CCDDEEEEEEEEEDDCCCBBAAAAAAAAAAAAAAAAAAAA~~~~~~~~##~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CCDDEEEEFEEEEDDDCCBBBAAAAAAAAAAAABBBAAAA~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCBAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CDDEEEFFFFFEEEDDCCBBBBAAAAAAAAAAABCB~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDCAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CDDEEFFFFFFFEEDDDCCBBBAAAABBBBBBBBBA~~~~~~~~~~~~~~~BCCCCCCCBBBBBBBBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDCCBAAAAABBBBBBBAA~~~~~~~~~~~~~~~~~~~~~~~ABBBBAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CDEEEFFFFFFFEEDDDCCBBBAAABBBBCCCDB~~~~~~~~~~~~~~~~~CEEDDDDDCCCCCBBBBBBBBAAAAAAAAAAAAAAAAAAAAAAABBBBCDDDCAAAAABBBBBBBBA~~~~~~~~~~~~~~~~~~~~~~~BDDDCAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DDEEFFFFFFFFEEDDDCCBBBABBBBBCCCCBA~~~~~~~~~~~~~~~~~CEEEEEDDDDCCCCCBBBBBBBAAAAAAAAAAAAAABBBBBBBBBBBBCDCCBAAABCCCCCBBBBBABBBBA~~~~~~~~~~~ABBBBBCDDDCAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DDEEFFFGGFFFEEEDDCCBBBABBBBCCCDB~~~~~~~~~~~~~~~~~~~CFFEEEEEDDDDCCCCBBBBBBBAAAAAAAAAAABBBBBBBBBBBBBBCDCAAAAACDCCCCCCCCBBCDDDB~~~~~~~~~~~BDDDDDDDDDCAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DDEFFFGGGFFFEEEDDCCBBBABBBABBBBA~~~~~~~~~~~~~~~~~BDEFFFFEEEEDDDDCCCCCBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBCDCAAAAACDDCCCCCCCCBCDDDCBBBBBBBBBBBCDDDDDDDCCBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DEEFFGGGGGFFEEEDDCCBBBABBA~~~~~~~~~~~~~~~~~~~~~~~DGGGGFFFFEEEEDDDCCCCCBBBBBBBBBBBBBBBBBBBBBBBBBCCCCCDCAAAAACDDDCCCCCCCCCDDDDDDDDDDDDDDDDCDDDDDDCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DEEFGGGGGGFFEEDDCCCBBBBBBA~~~~~~~~~~~~~~~~~CEEEEEFHHHGGGGFFFEEEDDDDDCCCCCCCCCCCCCCCBBBBBBBCCCCCCCCCDDCAAABCCDDDDDDDDCDDDDDDDDDDDDDDDDDDDCDDCCCCBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EEFFGGGGGGFFEEDDCCBBBBBBBA~~~~~~~~~~~~~~~~~EIIIIIIIHHHHGGGFFFEEEDDEDDDDDDCCDDDDDDCCCCCCCCCCCCCCCCCCDDCAAACDDDDDDDDDDDDEEEEEDDDDDDDDDDDDDCCCBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EEFFGGGGGFFFEEDDCCBBBBBBBA~~~~~~~~~~~~~~~CFHJJJJJIIIIHHHGGGFFFEEEEEEDDDDDDDDDDDDDDDDCCCCCCCCCCCCDDDDDCAAABCDEDCCCCCCCCCDEDCDDDCCCCCCCCCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFFGGGGGGFFEEDDCCCBBBBBBBA~~~~~~~~~~~~~~~FKKKKJJJJJIIIIHHHGGGFFFGFFEEEEEEEEEEEEEEDDDDDDDDDDDDDDDDDDDDCAAAAACECAAAAAAAAACDCACECAAAAAAAAAAAA~~~~~~~AAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFFGGGGGGFFEEDDCCBBBBBBBBA~~~~~~~~~~~CFFFIKKKKKJIIIIIIIHHHHHHGGGFFFFEEEEEEEEFEEEEEEEDDDDDDDDDDDDDDDDDCAAAAACECAAAAAAAAABCBABCBAAAAAAAAAAAA~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFFGGGHGGFFEEDCCBBBBABBBBA~~~~~~~~~~~FKKKLLLLKKJIIIIIIIIIIIIIIIGFFFFFFFFFFFFFFFFEEEEEEEEEEEEEEEDDDDDDCAAAAACECAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFGGGGGGGFFEDDCCBBBAABBBCBBBCCCDDEEEFHKKLLLLLLLJIIIIIIIIIIIIIIIGFFFFFFFFFFFFFFFFFEEEFEEEEEEEEEEEEEEDDDCBAAABCBAAABCBAAAAAAAAAAAAAAAAAAAA~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FFGGGGGGFFEEDDCBBBAAAABBCCDDEFFGHIIJKKKLLLLLLLLJII###III###IIIIHGGGFFFGGGGGGFFFFFFEFFFEFFFFEEEEEEEEEEDDCAAAAAAAAACDCAAAAAAAAAAAAAAAAAA~~~~~~~~~~~AAAAAAA##AAAAAAAA#AAAAAAA###AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~FFGGGGGGFFEDDCCBBAAAAABBCCDDEFFGHIIJKKKLLLLLLLLJII########IIIIIHGGGGFGGGGFFFFFFFEEEFFFFFFFFFEEEEEEEEEDDCAAAAAAAAACDCCCCCCCCBAAAAAAAAAA~~~~~~~~~~~AAAAAA#AAAAAAAAAAAAAAAAAA###AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFGGGGGGFEEDDCBBAAAAAABBBCDDEFFGHIIJKKKLLLLLLLLJII#I######IIIIIHGGGGGGGGGFEEEEEEEEFFFFFFFFFFEEEEEEEEEDDCAAAAAAAAACDDDDEDDDDCAAAAAAAAAA~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAA###AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFGGGGGFFEEDCCBBAAAAAABBBCCDEEFGHHIJJKKKLLLLLLLJII#########IIHHHGGGGFFFGGFFEEEFEEEEFFFFFFFFEEEEEEEEDDDDCBCCCCCCCCCDDDDEDDDDCAAAAAAAAAA~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EFGGGGFFEEDDCBBAAAAAAAABBCCDEEFGHHIIJKKKLLLLLLLJII####II###IIHHGGGFFFFFFGFFFEFFFEEEFFFEEFFEEEEEEEDDDDDDCCDDDDDDDDDDDDDEDDDDCAAAAAAAAAA~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EEFFGFFFEDDCCBBAAAAAAAABBCCDDEFFGFEEEFFHKKLLLLKJIIIIIIIIIIIIIHHGFFFFFFFFFFFEEEEEEEEEEEEEEEEEEEEDDDDDDCCCCCCCCCCCCCCCBBCBBBBBAAAAAAAAAA~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DEFFFFFEEDDCBBAAAA~~~~~ABBCDDEEFGD~~~~~FKKKKKKKJIIIIIIIIIIIIIIIGFFFFEFFFFFEEEEEEEEEEEEEEEEEDDDDDDDDDCCCCCCBBBBBBBBBA~~~~~~~AAAAAAAAAAA~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DDEEFEEEDDCCBBAAAA~~~~~AAABCDDEDDB~~~~~CFFFHKKKJIIIIIIIIHHHHHHGGFFEEEEEEEEEDDDDDDDDDDDDDDDDDDDDDCCCCCCCBBBBBBBBBBAAA~~~~~~~AAAAAAAAAAA~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CDDEEEEDDCCBBAAA~~~~~~~~~~~BDDEC~~~~~~~~~~~EJJJJJJJIIIIIHHHGGGFFFEEEEEEEEDDDDDDDDDDDDDDDDCCCCCCCCCCCCBBBBBBBBBAAAA~~~~~~~~~~~~~AAAAAAA~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CCDDDDDDCCBBAAAA~~~~~~~~~~~BCDDB~~~~~~~~~~~CEGIIIIIIIHHHHHGGGFFFEEEEDDDDDDDDCCCCCCCCCCCCCCCCCCCCCCCBBBBBBBAAAAAAAA~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CCCCCCCCCBBAAA~~~~~~~~~~~~~BCCDB~~~~~~~~~~~~~EIIIIHHHHHHGGGGFFFEEEEDDDDDDDDCCCCCCCCCCCCCCCCCCCCCBBBBBBAAAAAAAAAAAA~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCCCCCBBBAAAA~~~~~~~~~~~~~ABCCB~~~~~~~~~~~~~CEFHHHHHGGGGGFFFFEEEDDDDDCCCCCCCCCCBBBBBBBBCBBBBBBBBBAAAAAAAAAAAAAAAA~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BBBBBBBBBAAA~~~~~~~~~~~~~~~~~BCB~~~~~~~~~~~~~~~DGGGGGGGFFFFFEEEEEDCCCCCCCCCBBBBBBBBBBBBBBBBBBBBBBA~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BBBBBBBBAAAA~~~~~~~~~~~~~~~~~ABBBA~~~~~~~~~~~~~BDEFFFFFFFEEDCCCCCCCCBBCBBBBBBBAAAAAABBBBBBBBBAAAAA~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCDCCB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBBBAAAA~~~~~~~~~~~~~~~~~~~~~BCB~~~~~~~~~~~~~~~CFFFEEEEEEC~~~~~ABBBBBBBBBBAA~~~~~AAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CEFGFEC~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ABBBBAAAAA~~~~~~~~~~~~~~~~~~~~~BCBBA~~~~~~~~~~~~~BCDEEEEEDDB~~~~~AAAAABBBBAAAA~~~~~AAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAAAAAAAAAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BDGIJKJIE~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~ABBCB~~~~~~~~~~~~~~~BDDDDDDDB~~~~~~~~~AAAAAAAAA~~~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DHKMNONMG~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~ABBBA~~~~~~~~~~~~~~~ABCDDCCCB~~~~~~~~~AAAAAAAAA~~~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BDJPQQQPH~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~BCCCCCB~~~~~~~~~~~~~AAA~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~IRSTSRI~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAAA~~~~~~~~~~~~~~~~~~~~~~~AAA~~~~~~~~~~~~~~~~~~~ABBBBBA~~~~~~~~~~~~~AAA~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~###~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~JSTTTSMHFDB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~###~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~JTTUTTQOKGD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~###~~~~~~~~~~~~~~~~~~~~~~~AAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~JSTTTSQNIDB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~IRSTSRPMG~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~HPQQQPKGD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~GMNONMG~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EIJKIGD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CEFGD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BCCDB~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
+function View()
+{
+	this.dirty = false;
+	this.view_grid_x = 0;
+	this.view_grid_y = 0;
+	this.grid_width = 14;
+	this.grid_height = 18;
+	this.view_px_x = 0;
+	this.view_px_y = 0;
+	
+	this.view_px_width = Math.round(baseCanvas.width*0.62); this.view_px_width+=this.view_px_width % this.grid_width; //768;
+	this.view_px_height = Math.round(baseCanvas.height*0.97); this.view_px_height+=this.view_px_height % this.grid_height; //576;
+	this.font_size = (this.grid_height*2)+"px";//(this.grid_width*2)+"px";
+	this.view_grid_width = Math.round(this.view_px_width/this.grid_width)+1;
+	this.view_grid_height = Math.round(this.view_px_height/this.grid_height)+1;
+	
+	
+	this.target_view_x = 0;
+	this.target_view_y = 0;
+	this.px_offset_x = 0;
+	this.px_offset_y = 0;
+	
+	this.animate_camera = _animate_camera;
+	
+	set_canvas();
+	
+}
+
+View.prototype.render = function (world_context, actor_context)
+{	
+	var i;
+	if (Minimap.active)
+	{
+		Minimap.draw(overlay_context);
+	}
+	else
+	{
+		if (Player.animating)
+		{
+			if (SETTING_ANIMATE)
+			{
+				var count = 0;
+				var timer = setTimeout(function() {
+					var interval = setInterval(function(){
+					count++;
+					Player.moveAnimate();
+					
+					for (i=0; i<Monsters.length; i++) { Monsters[i].moveAnimate(); }
+		
+					View.clear_world(actor_context);
+					Player.render(actor_context);
+					
+					for (i=0; i<Monsters.length; i++) { Monsters[i].render(actor_context); }
+					
+					if (count > (View.grid_height/ANIMATION_STEPS)) { clearInterval(interval); clearTimeout(timer);}
+					}, 0)
+				}, 24);
+			}
+			/*
+			else
+			{
+				Player.map_x = Player.next_x;
+				Player.map_y = Player.next_y;
+				Player.animating = false;
+				for (i=0; i<Monsters.length; i++) 
+				{ 
+					Monsters[i].map_x = Monsters[i].next_x;
+					Monsters[i].map_y = Monsters[i].next_y;
+					Monsters[i].animating = false;
+				}
+			} */
+		}
+		
+		if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)
+				this.refocus(Player.map_x, Player.map_y);
+			
+			if (Player.map_y - this.view_grid_y < 5 || this.view_grid_y+this.view_grid_height-Player.map_y < 5)
+				this.refocus(Player.map_x, Player.map_y);
+		
+		if (World.dirty) { this.clear_world(world_context); World.render(world_context); }
+		if (Player.dirty) { this.clear_world(actor_context); Player.render(actor_context); }
+		Hud.render();
+		
+		for (i=0; i<Monsters.length; i++)
+		{
+			if (Monsters[i].dirty) 
+			{ 
+				Monsters[i].render(actor_context); 
+			}
+		}
+	}
+}
+ 
+View.prototype.world_rescale_down = function()
+{
+	if (this.grid_height > 8)
+	{
+		World.dirty = true;
+		this.grid_width/=2;
+		this.grid_height/=2;
+		this.recalculate_view_scale();
+		this.refocus(Player.map_x, Player.map_y, true);
+	}
+}
+
+View.prototype.world_rescale_up = function()
+{
+	if (this.grid_height < 128)
+	{
+		World.dirty = true;
+		this.grid_width*=2;
+		this.grid_height*=2;
+		this.recalculate_view_scale();
+		this.refocus(Player.map_x, Player.map_y, true);
+	}
+}
+
+View.prototype.recalculate_view_scale = function()
+{
+	this.font_size = (this.grid_height*2)+"px";
+	this.view_grid_width = Math.round(this.view_px_width/this.grid_width)+1;
+	this.view_grid_height = Math.round(this.view_px_height/this.grid_height)+1;
+}
+
+View.prototype.refocus = function(xx, yy, immediate = false)
+{
+	var i;
+	var old_x = this.view_grid_x;
+	var old_y = this.view_grid_y;
+	
+	if (!SETTING_ANIMATE || immediate)
+	{
+		this.view_grid_x = Math.round(xx-this.view_grid_width/2);
+		this.view_grid_y = Math.round(yy-this.view_grid_height/2);
+		
+		this.view_grid_x = Math.max(this.view_grid_x,0);
+		this.view_grid_y = Math.max(this.view_grid_y,0);
+		
+		this.view_grid_x = Math.min(WORLD_SIZE_X-this.view_grid_width,this.view_grid_x);
+		this.view_grid_y = Math.min(WORLD_SIZE_Y-this.view_grid_height,this.view_grid_y);
+		
+		if (this.view_grid_x != old_x || this.view_grid_y != old_y)
+		{
+			this.dirty = true;
+			World.dirty = true;
+			Player.dirty = true;
+			for (i=0; i<Monsters.length; i++) { Monsters[i].dirty = true; }
+		}
+	}
+	else
+	{
+		this.dirty = true;
+		
+		this.target_view_x = Math.round(xx-View.view_grid_width/2);
+		this.target_view_y = Math.round(yy-View.view_grid_height/2);
+		this.target_view_x = Math.max(View.target_view_x,0);
+		this.target_view_y = Math.max(View.target_view_y,0);
+		this.target_view_x = Math.min(WORLD_SIZE_X-View.view_grid_width,View.target_view_x);
+		this.target_view_y = Math.min(WORLD_SIZE_Y-View.view_grid_height,View.target_view_y);
+		
+		if (View.dirty) {View.animate_camera();}
+	}
+}
+
+View.prototype.toggle_animate = function()
+{
+	World.dirty = true;
+	Hud.dirty = true;
+	SETTING_ANIMATE = !SETTING_ANIMATE;
+}
+
+View.prototype.toggle_minimap = function()
+{
+	Minimap.active = !Minimap.active
+	if (Minimap.active)
+	{
+		Minimap.minimap_world_dirty = true;
+		Minimap.minimap_viewbox_dirty = true;
+	}
+	else
+	{
+		View.clear_context(overlay_context);
+	}
+	World.dirty = true;
+}
+
+View.prototype.clear_world = function(target_context)
+{
+	var xx = this.view_px_x;
+	var yy = this.view_px_y;
+	var ww = this.view_px_width + 16;
+	var hh = target_context.canvas.height;
+	target_context.clearRect(xx, yy, ww, hh);
+}
+
+View.prototype.clear_context = function(target_context)
+{
+	target_context.clearRect(0,0,target_context.canvas.width,target_context.canvas.height);
+}
+	
+View.prototype.resizeWindow = function()
+{
+	set_canvas();
+	Hud.resize();
+	
+	World.dirty = true;
+	Hud.dirty = true;
+	
+	View.refocus(Player.map_x, Player.map_y, true);
+	View.render(base_context,animation_context);
+}
+
+function _animate_camera()
+{
+	
+	if (this.view_grid_x == this.target_view_x && this.view_grid_y == this.target_view_y)
+	{
+		this.dirty = false;
+		return;
+	}
+	
+	var timer = setTimeout(function() {
+		var interval = setInterval(function(){
+			
+			if (View.view_grid_x < View.target_view_x) { View.view_grid_x++; }
+			if (View.view_grid_x > View.target_view_x) { View.view_grid_x--; }
+			if (View.view_grid_y < View.target_view_y) { View.view_grid_y++; }
+			if (View.view_grid_y > View.target_view_y) { View.view_grid_y--; }
+			
+			if (View.view_grid_x == View.target_view_x && View.view_grid_y == View.target_view_y)
+			{
+				View.dirty = false;
+				//Hud.Minimap.minimap_viewbox_dirty = true;
+			}
+			
+			View.clear_world(animation_context);
+			View.clear_world(base_context);
+			
+			Player.render(animation_context);
+			World.render(base_context);
+			Hud.render();
+			for (i=0; i<Monsters.length; i++) { Monsters[i].render(animation_context); }
+		
+			if (!View.dirty) { clearInterval(interval); clearTimeout(timer);}
+		}, 0)
+	}, 24);
+}
+
+/* Global function */
+function set_canvas()
+{
+	/* Set the three canvas dimensions on load and divisible by 8 (may help future calcs)*/
+	baseCanvas.width = Math.round(window.innerWidth*0.96); baseCanvas.width -= baseCanvas.width % 8;
+	baseCanvas.height = Math.round(window.innerHeight*0.96); baseCanvas.height -= baseCanvas.height % 8;
+	animationCanvas.width = Math.round(window.innerWidth*0.96); animationCanvas.width -= animationCanvas.width % 8;
+	animationCanvas.height = Math.round(window.innerHeight*0.96); animationCanvas.height -= animationCanvas.height % 8;
+	overlayCanvas.width = Math.round(window.innerWidth*0.96); overlayCanvas.width -= overlayCanvas.width % 8;
+	overlayCanvas.height = Math.round(window.innerHeight*0.96); overlayCanvas.height -= overlayCanvas.height % 8;
+	
+	View.view_px_width = Math.round(baseCanvas.width*0.62); View.view_px_width+=View.view_px_width % View.grid_width; //768;
+	View.view_px_height = Math.round(baseCanvas.height*0.97); View.view_px_height+=View.view_px_height % View.grid_height; //576;
+	View.font_size = (View.grid_height*2)+"px";//(this.grid_width*2)+"px";
+	View.view_grid_width = Math.round(View.view_px_width/View.grid_width)+1;
+	View.view_grid_height = Math.round(View.view_px_height/View.grid_height)+1;
+}
+ 
+
+/* Constructor for the region (map) */
+function World()
+{
+	this.dirty = true;
+	
+	this.render = renderWorld;
+	this.is_clear = _is_clear;
+	this.grid = [[],[]]
+	this.gridcol = [[],[]];
+	this.gridheight = [[],[]];
+	this.gridmob=[[],[]];
+	this.build_map = _build_map;
+	this.load_map = _load_map;
+
+	this.load_map();
+}
+
+function renderWorld(target_context)
+{
+	var i,j, ch, col;
+	var start_grid_x, start_grid_y, end_grid_x, end_grid_y;
+	var px, py;
+	
+	target_context.font = View.font_size+" clacon";
+	target_context.textAlign = "left";
+	
+	start_grid_x = View.view_grid_x;
+	start_grid_y = View.view_grid_y;
+	end_grid_x = Math.min(View.view_grid_x+View.view_grid_width,WORLD_SIZE_X);
+	end_grid_y = Math.min(View.view_grid_y+View.view_grid_height,WORLD_SIZE_Y);
+	
+	
+	for (j=start_grid_y; j<end_grid_y; j++)
+	{
+		for (i=start_grid_x; i<end_grid_x; i++)
+		{
+			px = (i-View.view_grid_x)*View.grid_width;
+			py = (j-View.view_grid_y)*View.grid_height;
+			target_context.fillStyle = this.gridcol[j][i];
+			target_context.fillText(this.grid[j][i],px,py);
+		}
+	}
+	this.dirty = false;
+}
+
+function _is_clear(xx, yy)
+{
+	if (xx < 0) { return false; }
+	if (yy < 0) { return false; }
+	if (xx >= WORLD_SIZE_X) { return false; }
+	if (yy >= WORLD_SIZE_Y) { return false; }
+	if (this.grid[yy][xx] != '^') { return true; } else { return false; }
+}
+
+function _build_map()
+{
+	for (i=0; i<WORLD_SIZE_X; i++) 
+	{
+		this.grid[i] = [];
+		this.gridcol[i] = [];
+		this.gridheight[i]= [];
+		this.gridmob[i] = [];
+	}
+	
+	for (j=0; j<WORLD_SIZE_Y; j++)
+	{
+		for (i=0; i<WORLD_SIZE_X; i++)
+		{	
+			if (Math.random() > 0.9) {this.grid[j][i] = 2; } else {this.grid[j][i] = 1;}
+			
+			switch (this.grid[j][i])
+			{
+				case 0: this.gridcol[j][i] = random_water_color(); break;
+				case 1: this.gridcol[j][i] = GRASSLAND ? random_grass_color() : random_dirt_color(); break;
+				case 2: this.gridcol[j][i] = random_mountain_color(); break;
+			}
+		}
+	}
+}
+
+function _load_map()
+{
+	
+	var ch, i ,j, k;
+	var source_map = [];
+	var target_base_x = [];
+	var target_base_y = [];
+	var region_size = 252;
+	
+	source_map[0] = WORLD_MAP_1; target_base_x[0]  = 0; target_base_y[0]  = 0;
+	source_map[1] = WORLD_MAP_2; target_base_x[1]  = region_size; target_base_y[1]  = 0;
+	source_map[2] = WORLD_MAP_3; target_base_x[2]  = region_size*2; target_base_y[2]  = 0;
+	source_map[3] = WORLD_MAP_4; target_base_x[3]  = region_size*3; target_base_y[3]  = 0;
+	source_map[4] = WORLD_MAP_5; target_base_x[4]  = region_size*4; target_base_y[4]  = 0;
+	source_map[5] = WORLD_MAP_6; target_base_x[5]  = 0; target_base_y[5]  = region_size;
+	source_map[6] = WORLD_MAP_7; target_base_x[6]  = region_size; target_base_y[6] = region_size;
+	source_map[7] = WORLD_MAP_8; target_base_x[7]  = region_size*2; target_base_y[7]  = region_size;
+	source_map[8] = WORLD_MAP_9; target_base_x[8]  = region_size*3; target_base_y[8]  = region_size;
+	source_map[9] = WORLD_MAP_10; target_base_x[9]  = region_size*4; target_base_y[9]  = region_size;
+	source_map[10] = WORLD_MAP_11; target_base_x[10]  = 0; target_base_y[10]  = region_size*2;
+	source_map[11] = WORLD_MAP_12; target_base_x[11]  = region_size; target_base_y[11]  = region_size*2;
+	source_map[12] = WORLD_MAP_13; target_base_x[12]  = region_size*2; target_base_y[12]  = region_size*2;
+	source_map[13] = WORLD_MAP_14; target_base_x[13]  = region_size*3; target_base_y[13]  = region_size*2;
+	source_map[14] = WORLD_MAP_15; target_base_x[14]  = region_size*4; target_base_y[14]  = region_size*2;
+	
+	for (i=0; i<WORLD_SIZE_X; i++) 
+	{
+		this.grid[i] = [];
+		this.gridcol[i] = [];
+		this.gridheight[i] = [];
+		this.gridmob[i] = [];
+	}
+	
+	for (k=0; k<15; k++)
+	{
+		for (j=0; j<region_size; j++)
+		{
+			for (i=0; i<region_size; i++)
+			{
+				this.gridmob[j][i] = null;
+				
+				ch = source_map[k].charAt(j*region_size+i);
+				/* Set heightmap */
+				switch (ch.charCodeAt(0))
+				{
+					case 126: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=0; break;
+					case 35: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=-1; break;
+					default: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=ch.charCodeAt(0)-64; break;
+				}
+				
+				/* Set character and color */
+				switch (this.gridheight[target_base_y[k]+j][target_base_x[k]+i])
+				{
+					case -1: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '#'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_BUILDING; break;
+					case 0: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '='; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_WATER; break;
+					case 1: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '~'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_DIRT; break;
+					case 2: 
+					case 3: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '~'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_GRASS; break;
+					case 4: 
+					case 5: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '^'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_HILL; break;
+					case 6: 
+					case 7: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '{'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_LOW_MOUNTAIN; break;
+					default: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '}'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_HIGH_MOUNTAIN; break;
+				}
+			}
+		}
+	}
+}

@@ -25,13 +25,4 @@
 /* Kick off the game when the window loads */
 window.addEventListener("load", gameInit, false);
 
-//document.addEventListener("DOMContentLoaded", gameInit, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("keydown", doKeyDown, false);
-
-/* Capture key pressed when the Document has focus */
-//baseCanvas.addEventListener("mousemove", doMouseMove, false);
-
-/* Capture key pressed when the Document has focus */
-//document.addEventListener("mousedown", doMouseClick, false);
+/* Other events are added after init */

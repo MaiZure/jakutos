@@ -41,10 +41,10 @@ function Party()
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
 	
-	this.base_delay[0] = 5; this.current_delay[0] = this.base_delay[0];
-	this.base_delay[1] = 6; this.current_delay[1] = this.base_delay[1];
-	this.base_delay[2] = 7; this.current_delay[2] = this.base_delay[2];
-	this.base_delay[3] = 8; this.current_delay[3] = this.base_delay[3];
+	this.base_delay[0] = 5; this.current_delay[0] = 0;
+	this.base_delay[1] = 6; this.current_delay[1] = 0;
+	this.base_delay[2] = 7; this.current_delay[2] = 0;
+	this.base_delay[3] = 8; this.current_delay[3] = 0;
 	
 	this.die_num[0] = 2; this.die_side[0] = 4; this.die_bonus[0] = 1;
 	this.die_num[1] = 2; this.die_side[1] = 3; this.die_bonus[1] = 1;
@@ -74,26 +74,24 @@ Party.prototype.die_num = [];
 Party.prototype.die_side = [];
 Party.prototype.die_bonus = [];
 
-
+/* Interface to add experience to party members */
 Party.prototype.add_xp = function(xp_amount)
 {
 	var i;
 	for (i=0;i<4;i++)
 	{
-		if (!((this.status[i] & STATUS_DEAD) | (this.status[i] & STATUS_UNCONCIOUS)))
-			this.xp[i] += xp_amount
+		if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS))) { this.xp[i] += xp_amount; }
 	}
 }
 
+/* Interface to damage party members */
 Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
 {
 	var target = Math.floor(Math.random()*3.99);
 	
 	/* Definite bug here if everyone is dead/knocked out */
 	while (Party.status[target] & (STATUS_DEAD | STATUS_UNCONCIOUS))
-	{
-		target = Math.floor(Math.random()*3.99);
-	}
+		{ target = Math.floor(Math.random()*3.99); }
 	
 	Party.current_hp[target] -= damage_amount;
 	Hud.partymember[target].dirty = true;
@@ -101,18 +99,25 @@ Party.prototype.damage_party = function(attacker, damage_amount, damage_type = D
 	Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount);
 }
 
+/* Tick the party delay counter */
 Party.prototype.reduce_delay = function(amount = 1)
 {
-	Party.current_delay[0] = Math.max(Party.current_delay[0]-amount, 0);
-	Party.current_delay[1] = Math.max(Party.current_delay[1]-amount, 0); 
-	Party.current_delay[2] = Math.max(Party.current_delay[2]-amount, 0);
-	Party.current_delay[3] = Math.max(Party.current_delay[3]-amount, 0);
+	var i;
+	
+	for (i=0; i<4; i++)
+	{
+		Party.current_delay[i]-= amount;
+		if (Party.current_delay[i] == 0) { Hud.partymember[i].dirty = true; }
+		Party.current_delay[i] = Math.max(Party.current_delay[i],0);
+	}
 }
 
+/* Find a ready party member */
 Party.prototype.find_ready_party_member = function()
 {
 	var i;
 	var current = Party.active_partymember;
+	
 	/* Check if active party member is legit */
 	if (current != -1)
 	{
@@ -132,6 +137,7 @@ Party.prototype.find_ready_party_member = function()
 		{
 			if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED)))
 			{
+				Hud.partymember[i].dirty = true;
 				return i;
 			}
 		}
