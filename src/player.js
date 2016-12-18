@@ -27,6 +27,9 @@ function Player()
 	
 	this.name = "Your Party";
 	this.avatar = "@";
+	this.die_num = 2;
+	this.die_side = 4;
+	this.die_bonus = 1;
 }
 
 Player.prototype = Object.create(Actor.prototype);

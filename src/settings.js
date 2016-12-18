@@ -29,105 +29,103 @@ const VERSION_MAJOR = 0;
 const VERSION_MINOR = 1;
 
 /* Game Settings */
-var SETTING_ANIMATE = false;
-var NUMBER_OF_MONSTERS = 500;
-var ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
-var FG_COLOR = "rgb(170,170,170)"
-var GRASSLAND = Math.round(Math.random());
+const SETTING_ANIMATE = false;
+const NUMBER_OF_MONSTERS = 500;
+const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
+const FG_COLOR = "rgb(170,170,170)"
+const GRASSLAND = Math.round(Math.random());
 
 /* ENUM TYPES (sort of)*/
 /* classes */ 
-var CLASS_KNIGHT = 1 << 0;
-var CLASS_PALADIN = 1 << 1;
-var CLASS_ARCHER = 1 << 2;
-var CLASS_DRUID = 1 << 3;
-var CLASS_CLERIC = 1 << 4;
-var CLASS_SORCERER = 1 << 5;
+const CLASS_KNIGHT = 1 << 0;
+const CLASS_PALADIN = 1 << 1;
+const CLASS_ARCHER = 1 << 2;
+const CLASS_DRUID = 1 << 3;
+const CLASS_CLERIC = 1 << 4;
+const CLASS_SORCERER = 1 << 5;
 
 /* status effects */
-var STATUS_CURSED = 1 << 0;
-var STATUS_WEAK = 1 << 1;
-var STATUS_AFRAID = 1 << 2;
-var STATUS_DRUNK = 1 << 3;
-var STATUS_INSANE = 1 << 4;
-var STATUS_POISONED = 1 << 5;
-var STATUS_DISEASED = 1 << 6;
-var STATUS_ASLEEP = 1 << 7;
-var STATUS_PARALYZED = 1 << 8;
-var STATUS_UNCONCIOUS = 1 << 9;
-var STATUS_STONED = 1 << 10;
-var STATUS_ZOMBIE = 1 << 11;
-var STATUS_DEAD = 1 << 12;
-var STATUS_ERADICATED = 1 << 13;
+const STATUS_CURSED = 1 << 0;
+const STATUS_WEAK = 1 << 1;
+const STATUS_AFRAID = 1 << 2;
+const STATUS_DRUNK = 1 << 3;
+const STATUS_INSANE = 1 << 4;
+const STATUS_POISONED = 1 << 5;
+const STATUS_DISEASED = 1 << 6;
+const STATUS_ASLEEP = 1 << 7;
+const STATUS_PARALYZED = 1 << 8;
+const STATUS_UNCONCIOUS = 1 << 9;
+const STATUS_STONED = 1 << 10;
+const STATUS_ZOMBIE = 1 << 11;
+const STATUS_DEAD = 1 << 12;
+const STATUS_ERADICATED = 1 << 13;
 
 /* Monster Levels */
-var MLEVEL_RANDOM = 0;
-var MLEVEL_EASY = 1;
-var MLEVEL_MEDIUM = 2;
-var MLEVEL_HARD = 3;
-var MLEVEL_UNIQUE = 4;
+const MLEVEL_RANDOM = 0;
+const MLEVEL_EASY = 1;
+const MLEVEL_MEDIUM = 2;
+const MLEVEL_HARD = 3;
+const MLEVEL_UNIQUE = 4;
 
 /* Monster Types */
-var MTYPE_ARCHER = 1;
-var MTYPE_BARBARIAN = 2;
-var MTYPE_BAT = 3;
-var MTYPE_BEHOLDER = 4;
-var MTYPE_BLOODSUCKER = 5;
-var MTYPE_CLERIC = 6;
-var MTYPE_COBRA = 7;
-var MTYPE_COCKATRICE = 8;
-var MTYPE_DEMONFLY = 9;
-var MTYPE_DEMON = 10;
-var MTYPE_DRAGONCAVE = 11;
-var MTYPE_DRAGONFLY = 12;
-var MTYPE_DRAGONLAND = 13;
-var MTYPE_DRAGONCOVER = 14;
-var MTYPE_DRUIDESS = 15;
-var MTYPE_DWARF = 16;
-var MTYPE_ELEMAIR = 17;
-var MTYPE_ELEMEARTH = 18;
-var MTYPE_ELEMFIRE = 19;
-var MTYPE_ELEMWATER = 20;
-var MTYPE_FIGHTERCHAIN = 21;
-var MTYPE_FIGHTERLEATHER = 22;
-var MTYPE_GARGOYLE = 23;
-var MTYPE_GENIE = 24;
-var MTYPE_GHOST = 25;
-var MTYPE_GOBLIN = 26;
-var MTYPE_GUARD = 27;
-var MTYPE_HARPY = 28;
-var MTYPE_HYDRA = 29;
-var MTYPE_JACKALMAN = 30;
-var MTYPE_KNIGHTPLATE = 31;
-var MTYPE_LICH = 32;
-var MTYPE_LIZARDARCH = 33;
-var MTYPE_MAGE = 34;
-var MTYPE_MEDUSA = 35;
-var MTYPE_MERCHANT = 36;
-var MTYPE_MINOTAUR = 37;
-var MTYPE_MONK = 38;
-var MTYPE_NOBLEMAN = 39;
-var MTYPE_OOZE = 40;
-var MTYPE_OGRE = 41;
-var MTYPE_RAT = 42;
-var MTYPE_ROBOT = 43;
-var MTYPE_SEASERPENT = 44;
-var MTYPE_SKELETON = 45;
-var MTYPE_SORCERER = 46;
-var MTYPE_SPIDER = 47;
-var MTYPE_THIEF = 48;
-var MTYPE_TITAN = 49;
-var MTYPE_WEREWOLF = 50;
-var MTYPE_DEMONQUEEN = 51;
-var MTYPE_REACTOR = 52;
-var MTYPE_BAA = 53;
+const MTYPE_ARCHER = 1;
+const MTYPE_BARBARIAN = 2;
+const MTYPE_BAT = 3;
+const MTYPE_BEHOLDER = 4;
+const MTYPE_BLOODSUCKER = 5;
+const MTYPE_CLERIC = 6;
+const MTYPE_COBRA = 7;
+const MTYPE_COCKATRICE = 8;
+const MTYPE_DEMONFLY = 9;
+const MTYPE_DEMON = 10;
+const MTYPE_DRAGONCAVE = 11;
+const MTYPE_DRAGONFLY = 12;
+const MTYPE_DRAGONLAND = 13;
+const MTYPE_DRAGONCOVER = 14;
+const MTYPE_DRUIDESS = 15;
+const MTYPE_DWARF = 16;
+const MTYPE_ELEMAIR = 17;
+const MTYPE_ELEMEARTH = 18;
+const MTYPE_ELEMFIRE = 19;
+const MTYPE_ELEMWATER = 20;
+const MTYPE_FIGHTERCHAIN = 21;
+const MTYPE_FIGHTERLEATHER = 22;
+const MTYPE_GARGOYLE = 23;
+const MTYPE_GENIE = 24;
+const MTYPE_GHOST = 25;
+const MTYPE_GOBLIN = 26;
+const MTYPE_GUARD = 27;
+const MTYPE_HARPY = 28;
+const MTYPE_HYDRA = 29;
+const MTYPE_JACKALMAN = 30;
+const MTYPE_KNIGHTPLATE = 31;
+const MTYPE_LICH = 32;
+const MTYPE_LIZARDARCH = 33;
+const MTYPE_MAGE = 34;
+const MTYPE_MEDUSA = 35;
+const MTYPE_MERCHANT = 36;
+const MTYPE_MINOTAUR = 37;
+const MTYPE_MONK = 38;
+const MTYPE_NOBLEMAN = 39;
+const MTYPE_OOZE = 40;
+const MTYPE_OGRE = 41;
+const MTYPE_RAT = 42;
+const MTYPE_ROBOT = 43;
+const MTYPE_SEASERPENT = 44;
+const MTYPE_SKELETON = 45;
+const MTYPE_SORCERER = 46;
+const MTYPE_SPIDER = 47;
+const MTYPE_THIEF = 48;
+const MTYPE_TITAN = 49;
+const MTYPE_WEREWOLF = 50;
+const MTYPE_DEMONQUEEN = 51;
+const MTYPE_REACTOR = 52;
+const MTYPE_BAA = 53;
 
 /* Monster AI */
-var AISTATE_WAITING = 0;
-var AISTATE_CHASING = 1;
-var AISTATE_RUNNING = 2;
-var AISTATE_DEAD = 3;
-
+const AISTATE_WAIT = 0;
+const AISTATE_CHASE = 1;
+const AISTATE_FLEE = 2;
 
 /* Keyboard Codes */
 const KB_LEFT = 37;
@@ -139,3 +137,13 @@ const KB_C = 67;
 const KB_M = 77;
 const KB_MINUS = 189;
 const KB_PLUS = 187;
+
+/* Direction Enum */
+const DIR_N = 1;
+const DIR_NE = 2;
+const DIR_E = 3;
+const DIR_SE = 4;
+const DIR_S = 5;
+const DIR_SW = 6;
+const DIR_W = 7;
+const DIR_NW = 8;

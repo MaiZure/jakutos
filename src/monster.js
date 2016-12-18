@@ -47,6 +47,8 @@ function Monster(type, level, xx, yy)
 	this.max_hp = 1; this.current_hp = this.max_hp;
 	this.xp_reward = 0;
 	this.gold_reward = 0;
+	this.status = 0; /* flags variable */
+	this.mode = 0
 	
 	this.load_monster(this, type, level);
 	
@@ -60,12 +62,14 @@ Monster.prototype.constructor = Monster;
 
 Monster.prototype.ai_move = function() 
 {
+	if (!this.is_active()) { return false; }
+	
 	switch (Math.floor(Math.random()*4))
 	{
-		case 0: this.move_left(); break;
-		case 1: this.move_up(); break;
-		case 2: this.move_right(); break;
-		case 3: this.move_down(); break;
+		case 0: this.check_action(DIR_W); break;
+		case 1: this.check_action(DIR_N); break;
+		case 2: this.check_action(DIR_E); break;
+		case 3: this.check_action(DIR_S); break;
 	} 
 	
 	this.execute_move();
@@ -79,12 +83,52 @@ Monster.prototype.load_monster = function(m, type, level)
 		{
 			switch(level)
 			{
-				case MLEVEL_EASY: m.name = "Goblin"; m.max_hp = 13; m.avatar = "g"; break;
-				case MLEVEL_MEDIUM: m.name = "Goblin Shaman"; m.max_hp = 21; m.avatar = "g"; break;
-				case MLEVEL_HARD: m.name = "Goblin King"; m.max_hp = 40; m.avatar = "g"; break;
+				case MLEVEL_EASY: 
+				{
+					m.name = "Goblin";
+					m.max_hp = 13;
+					m.avatar = "g";
+					m.die_num = 1; m.die_side = 9; m.die_bonus = 0;
+					m.xp_reward = 56;
+				} break;
+				case MLEVEL_MEDIUM: 
+				{
+					m.name = "Goblin Shaman"; 
+					m.max_hp = 21; 
+					m.avatar = "g"; 
+					m.die_num = 1; m.die_side = 9; m.die_bonus = 2;
+					m.xp_reward = 96;
+				} break;
+				case MLEVEL_HARD: 
+				{
+					m.name = "Goblin King"; 
+					m.max_hp = 40; 
+					m.avatar = "g"; 
+					m.die_num = 1; m.die_side = 9; m.die_bonus = 4;
+					m.xp_reward = 200;
+				} break;
 			}
 		} break;
 	}
 	
 	m.current_hp = m.max_hp;
+}
+
+Monster.prototype.is_active = function()
+{
+	if (this.status & STATUS_DEAD) { return false; }
+	
+	return true;
+}
+
+Monster.prototype.monster_die = function()
+{
+	this.status |= STATUS_DEAD;
+	World.gridmob[this.map_y][this.map_x] = null;
+	Hud.message.add_message(this.name + " dies");
+	
+	if (this.last_hit == Player)
+	{
+		Party.add_xp(this.xp_reward);
+	}
 }

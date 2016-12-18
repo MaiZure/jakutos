@@ -38,7 +38,7 @@ Message.prototype.render = function()
 {
 	var i;
 	var num = this.message_index;
-	var font_size = Math.round(this.hud.status_bar_height*0.80);
+	var font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
 	this.message_rows = Math.round(this.hud.message_box_height/font_size)-1;
 	this.clear_message_window()
 	for (i=0; i<this.message_rows; i++)

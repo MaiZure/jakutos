@@ -29,10 +29,10 @@ function doKeyDown(event)
 	
 	switch (event.keyCode)
 	{	
-		case KB_LEFT: Hud.message.add_message("You move west"); Player.move_left(); break;
-		case KB_UP: Hud.message.add_message("You move north"); Player.move_up(); break;
-		case KB_RIGHT: Hud.message.add_message("You move east"); Player.move_right(); break;
-		case KB_DOWN: Hud.message.add_message("You move south"); Player.move_down(); break;
+		case KB_LEFT: Player.check_action(DIR_W); break;
+		case KB_UP: Player.check_action(DIR_N); break;
+		case KB_RIGHT: Player.check_action(DIR_E); break;
+		case KB_DOWN: Player.check_action(DIR_S); break;
 		case KB_A: toggle_animate(); break;
 		case KB_C: View.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: View.toggle_minimap(); break;

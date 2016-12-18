@@ -24,6 +24,10 @@
 /* This Object will almost always be inhereted by a more specific object (Player, Monster, NPC) */
 function Actor(){ 
 	this.world = World;
+	this.die_num = 1;
+	this.die_side = 1;
+	this.die_bonus = 1;
+	this.last_hit = 0;
 }
 
 /* Properties */
@@ -59,6 +63,32 @@ Actor.prototype.render = function(target_context)
 	target_context.fillText(this.avatar,current_view_pixel_x,current_view_pixel_y);	
 }
 
+Actor.prototype.check_action = function(direction)
+{
+	var xx, yy, move_check, mob_check, npc_check;
+	switch (direction)
+	{
+		case DIR_N:  xx = this.map_x;     yy = this.map_y - 1; break;
+		case DIR_NE: xx = this.map_x + 1; yy = this.map_y - 1; break;
+		case DIR_E:  xx = this.map_x + 1; yy = this.map_y; break;
+		case DIR_SE: xx = this.map_x + 1; yy = this.map_y + 1; break;
+		case DIR_S:  xx = this.map_x;     yy = this.map_y + 1; break;
+		case DIR_SW: xx = this.map_x - 1; yy = this.map_y + 1; break;
+		case DIR_W:  xx = this.map_x - 1; yy = this.map_y; break;
+		case DIR_NW: xx = this.map_x - 1; yy = this.map_y - 1; break;
+	}
+	
+	move_check = this.can_move(xx,yy);
+	
+	if (move_check)
+	{
+		mob_check = World.gridmob[yy][xx];	
+		if (mob_check) { this.execute_melee_attack(mob_check); }
+		else
+		{ this.next_x = xx; this.next_y = yy; }
+	}
+}
+
 Actor.prototype.move_left = function() { if (this.can_move(this.map_x-1,this.map_y)) { this.next_x-=1; this.animating = true; this.dirty = true; }}
 Actor.prototype.move_up = function() { if (this.can_move(this.map_x,this.map_y-1)) { this.next_y-=1; this.animating = true; this.dirty = true; }}
 Actor.prototype.move_right = function() { if (this.can_move(this.map_x+1,this.map_y)) { this.next_x+=1; this.animating = true; this.dirty = true; }} 
@@ -66,10 +96,16 @@ Actor.prototype.move_down = function() { if (this.can_move(this.map_x,this.map_y
 
 Actor.prototype.is_visible = function()
 {
-	if (this.map_x < View.view_grid_x) {return false;}
-	if (this.map_x > View.view_grid_x+View.view_grid_width-1) {return false;}
-	if (this.map_y < View.view_grid_y) {return false;}
-	if (this.map_y > View.view_grid_y+View.view_grid_height-1) {return false;}	
+	if (this.map_x < View.view_grid_x) { return false; }
+	if (this.map_x > View.view_grid_x + View.view_grid_width-1) { return false; }
+	if (this.map_y < View.view_grid_y) { return false; }
+	if (this.map_y > View.view_grid_y + View.view_grid_height-1) { return false; }	
+	
+	if (this != Player)
+	{
+		if (this.status & STATUS_DEAD) { return false; }
+	}
+	
 	return true;
 }
 
@@ -103,4 +139,20 @@ Actor.prototype.execute_move = function()
 	this.map_x = this.next_x;
 	this.map_y = this.next_y;
 	this.animating = false;
+}
+
+Actor.prototype.execute_melee_attack = function(target)
+{
+	var i
+	var damage = 0;
+	for (i=0;i<this.die_num;i++)
+		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
+	
+	if (damage > 0)
+	{
+		target.last_hit = this;
+		target.current_hp-=damage
+		Hud.message.add_message(this.name + " hits the " + target.name + " for " + damage);
+		if (target.current_hp < 1) { target.monster_die(); }
+	}
 }

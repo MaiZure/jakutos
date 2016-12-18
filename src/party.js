@@ -23,6 +23,9 @@
  
 function Party()
 {
+	var i;
+	
+	/* Temporary constructor for a default party */
 	this.job[0] = CLASS_KNIGHT;
 	this.job[1] = CLASS_PALADIN;
 	this.job[2] = CLASS_CLERIC;
@@ -37,6 +40,15 @@ function Party()
 	this.max_mp[1] = 6; this.current_mp[1]=this.max_mp[1];
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
+	
+	for (i=0;i<4;i++)
+	{
+		this.status[i] = 0;
+		this.xp[i] = 0;
+	}
+	
+	
+	
 }
 
 Party.prototype.job = [];
@@ -44,3 +56,15 @@ Party.prototype.max_hp = [];
 Party.prototype.max_mp = [];
 Party.prototype.current_hp = [];
 Party.prototype.current_mp = [];
+Party.prototype.status = [];
+Party.prototype.xp = [];
+
+Party.prototype.add_xp = function(xp_amount)
+{
+	var i;
+	for (i=0;i<4;i++)
+	{
+		if (!((this.status[i] & STATUS_DEAD) | (this.status[i] & STATUS_UNCONCIOUS)))
+			this.xp[i] += xp_amount
+	}
+}

@@ -75,10 +75,10 @@ Hud.prototype.render = function()
 
 Hud.prototype.render_text = function(target_context)
 {
-	target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
-	target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
-	target_context.fillStyle = FG_COLOR;
-	target_context.textAlign = "right";
+	//target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
+	//target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
+	//target_context.fillStyle = FG_COLOR;
+	//target_context.textAlign = "right";
 	//target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
 	//target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-75);	
 	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	

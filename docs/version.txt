@@ -6,6 +6,8 @@ Got the mouse involved
 Window is fully resizable
 Added actual monsters
 Cleaned up the minimap and made it an overlay popup
+Made the player a "party" with basic health stats
+Monsters have health
 
 
 
