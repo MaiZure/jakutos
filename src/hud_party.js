@@ -54,8 +54,11 @@ Partymember.prototype.render = function()
 		var color = "rgb(224,224,224)";
 		if (this.party.current_delay[this.partymember_id] > 0) { color = "rgb(128,128,128)"; }
 		if (this.partymember_id == this.party.active_partymember) { color = "rgb(128,240,128)"; }
+		if (this.party.status[this.partymember_id] & STATUS_UNCONCIOUS) { color = "rgb(96,0,0)"; }
+		if (this.party.status[this.partymember_id] & STATUS_DEAD) { color = "rgb(0,0,0)"; }
 		
 		var hp_bar_width = Math.round(this.party.current_hp[this.partymember_id]/this.party.max_hp[this.partymember_id]*this.hud.avatar_box_width);
+			hp_bar_width = Math.max(hp_bar_width,0);
 		var hp_bar_height = Math.round(this.hud.avatar_box_height*0.04);
 		var hp_bar_x = this.hud.avatar_box_x[this.partymember_id];
 		var hp_bar_y = Math.round(this.hud.avatar_box_y+this.hud.avatar_box_height*0.85);

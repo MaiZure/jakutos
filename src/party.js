@@ -84,18 +84,34 @@ Party.prototype.add_xp = function(xp_amount)
 	}
 }
 
+
+Party.prototype.is_incapacitated = function(party_number)
+	{ return (this.status[party_number] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); }
+
+Party.prototype.is_ready = function(party_number)
+	{ return (this.current_delay[party_number] == 0 && !this.is_incapacitated(party_number)); }
+	
 /* Interface to damage party members */
 Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
 {
 	var target = Math.floor(Math.random()*3.99);
 	
 	/* Definite bug here if everyone is dead/knocked out */
-	while (Party.status[target] & (STATUS_DEAD | STATUS_UNCONCIOUS))
+	while (this.is_incapacitated(target))
 		{ target = Math.floor(Math.random()*3.99); }
 	
-	Party.current_hp[target] -= damage_amount;
-	Hud.partymember[target].dirty = true;
+	this.current_hp[target] -= damage_amount;
+	console.log(target+"/"+this.current_hp[target]);
+	if (this.current_hp[target] <= 0)
+		{ this.status[target] |= STATUS_UNCONCIOUS; }
+		
+	if (this.current_hp[target] <= -25)
+		{ this.status[target] |= STATUS_DEAD; }
+		
+	if (this.current_hp[target] <= -100)
+		{ this.status[target] |= STATUS_ERADICATED; }
 	
+	Hud.partymember[target].dirty = true;
 	Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount);
 }
 
@@ -119,13 +135,8 @@ Party.prototype.find_ready_party_member = function()
 	var current = Party.active_partymember;
 	
 	/* Check if active party member is legit */
-	if (current != -1)
-	{
-		if (Party.status[current] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED))
-		{
-			current = -1;
-		}
-	}
+	if (current != -1 && !this.is_ready(current))
+		{ current = -1; }
 	
 	/* If someone is already active, keep them active */
 	if (current != -1) { return current; }
@@ -133,15 +144,31 @@ Party.prototype.find_ready_party_member = function()
 	/* Find new party member */
 	for (i=0; i<4; i++)
 	{
-		if (Party.current_delay[i] == 0)
+		if (this.is_ready(i) && !this.is_incapacitated(i))
 		{
-			if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED)))
-			{
-				Hud.partymember[i].dirty = true;
-				return i;
-			}
+			Hud.partymember[i].dirty = true;
+			return i;
 		}
 	}
-	
+	/* If you get here, nobody must be ready */
 	return -1;
+}
+
+/* Procedurally changes active party member and functionally returns the slot */
+Party.prototype.change_active_party_member = function(next)
+{	
+	last = this.active_partymember;
+	delay = this.current_delay[next];
+	status = this.status[next];
+	
+	if (last == next) { return last; }
+	
+	if (this.is_ready(next) && !this.is_incapacitated(next))
+	{ 
+		this.active_partymember = next;
+		if (last >= 0) { Hud.partymember[last].dirty = true; }
+		Hud.partymember[next].dirty = true;		
+		return next;
+	}
+	return last;
 }

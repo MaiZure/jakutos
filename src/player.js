@@ -48,7 +48,7 @@ Player.prototype.execute_melee_attack = function(target)
 	var attacker = Party.name[party_member];
 	var attack_type = DAM_PHYSICAL;
 	
-	for (i=0;i<die_num;i++)
+	for (i=0; i<die_num ;i++)
 		damage+=Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	
 	if (damage > 0)
