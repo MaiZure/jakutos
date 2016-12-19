@@ -21,10 +21,9 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
-function Partymember(hud_id, new_id)
-{
+function Partymember(hud_id, new_id) {
 	this.partymember_id = new_id;
-	this.hud = hud_id
+	this.hud = hud_id;
 	this.party = Party;
 	this.dirty = true;
 }
@@ -34,19 +33,16 @@ Partymember.prototype.hud = 0;
 /* Party object reference */
 Partymember.prototype.party = 0;
 
-Partymember.prototype.clear_partymember = function()
-{
+Partymember.prototype.clear_partymember = function() {
 	var xx = this.hud.avatar_box_x[this.partymember_id];
 	var yy = this.hud.avatar_box_y;
 	var ww = this.hud.avatar_box_width;
 	var hh = this.hud.avatar_box_height;
 	animation_context.clearRect(xx,yy,ww,hh);
-}
+};
 
-Partymember.prototype.render = function()
-{	
-	if (this.dirty)
-	{
+Partymember.prototype.render = function() {	
+	if (this.dirty) {
 		var xx = this.hud.avatar_box_x[this.partymember_id] + this.hud.avatar_box_width/2;
 		var yy = this.hud.avatar_box_y + Math.round(this.hud.avatar_box_height*0.6);
 		var font_size = Math.round(this.hud.avatar_box_height*0.8)+"px Sans-Serif";
@@ -67,9 +63,9 @@ Partymember.prototype.render = function()
 		
 		/* Draw @ sign */
 		this.clear_partymember();
-		animation_context.fillStyle = color
+		animation_context.fillStyle = color;
 		animation_context.textAlign = "center";
-		animation_context.font = font_size
+		animation_context.font = font_size;
 		animation_context.fillText("@", xx, yy);
 		this.dirty = false;
 		
@@ -81,25 +77,41 @@ Partymember.prototype.render = function()
 		animation_context.fillStyle = "rgb(0,0,240)";
 		animation_context.fillRect(mp_bar_x,mp_bar_y,mp_bar_width,mp_bar_height);
 	}
-}
+};
 
-Partymember.prototype.get_hud_color = function(party, id)
-{
+Partymember.prototype.get_hud_color = function(party, id) {
 	/* Set default to normal and short circuit based on status priority */
 	var color = "rgb(224,224,224)";
 	
-	if (party.status[id] & STATUS_DEAD) { return "rgb(0,0,0)"; }
-	if (party.status[id] & STATUS_UNCONCIOUS) { return "rgb(96,0,0)"; }
-	if (party.status[id] & STATUS_POISONED) { return "rgb(160,160,92)"; }
-	if (party.current_delay[id] > 0) { return "rgb(160,160,160)"; }
-	if (id == party.active_partymember) { return "rgb(128,240,128)"; }
+	if (party.status[id] & STATUS_DEAD) {
+		return "rgb(0,0,0)"; 
+	}
+	
+	if (party.status[id] & STATUS_UNCONCIOUS) {
+		return "rgb(96,0,0)"; 
+	}
+	
+	if (party.status[id] & STATUS_POISONED) {
+		return "rgb(160,160,92)"; 
+	}
+	
+	if (party.current_delay[id] > 0) {
+		return "rgb(160,160,160)"; 
+	}
+	
+	if (id == party.active_partymember) {
+		return "rgb(128,240,128)"; 
+	}
 	
 	return color;
-}
+};
 
-Partymember.prototype.health_bar_color = function(full_width, current_width)
-{
-	if (current_width / full_width < 0.25) { return "rgb(240,0,0)"; }
-	if (current_width / full_width < 0.50) { return "rgb(240,240,0)"; }
+Partymember.prototype.health_bar_color = function(full_width, current_width) {
+	if (current_width / full_width < 0.25) {
+		return "rgb(240,0,0)"; 
+	}
+	if (current_width / full_width < 0.50) {
+		return "rgb(240,240,0)"; 
+	}
 	return "rgb(0,240,0)";
-}
+};

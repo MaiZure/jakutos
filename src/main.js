@@ -21,13 +21,20 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-baseCanvas = document.getElementById("Base");
-animationCanvas = document.getElementById("Animation");
-overlayCanvas = document.getElementById("Overlay");
+/* Kick off the game when the window loads 
+   Other events are added after init */
+window.addEventListener("load", gameInit, false);
+ 
+/* Grab DOM objects */
+base_canvas = document.getElementById("Base");
+animation_canvas = document.getElementById("Animation");
+overlay_canvas = document.getElementById("Overlay");
 
-base_context = baseCanvas.getContext("2d");
-animation_context = animationCanvas.getContext("2d");
-overlay_context = overlayCanvas.getContext("2d");
+/* Make global access for basic drawing */
+base_context = base_canvas.getContext("2d");
+animation_context = animation_canvas.getContext("2d");
+overlay_context = overlay_canvas.getContext("2d");
 
-set_canvas()
+/* Sizes the drawing canvas - function located in view.js */
+set_canvas_size();
 

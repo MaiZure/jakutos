@@ -22,7 +22,7 @@
  */
  
 /* This Object will almost always be inhereted by a more specific object (Player, Monster, NPC) */
-function Actor(){ 
+function Actor() { 
 	this.world = World;
 	this.die_num = 1;
 	this.die_side = 1;
@@ -31,8 +31,8 @@ function Actor(){
 }
 
 /* Properties */
-Actor.prototype.map_x = 1
-Actor.prototype.map_y = 1
+Actor.prototype.map_x = 1;
+Actor.prototype.map_y = 1;
 Actor.prototype.next_x = this.map_x;
 Actor.prototype.next_y = this.map_y;
 Actor.prototype.offset_x = 0;
@@ -44,23 +44,31 @@ Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
 
 /* Methods */
-Actor.prototype.render = function(target_context)
-{
-	if (!this.is_visible()) { this.dirty = false; return; } /* culling */
+
+/* Default renderer for actors in the game 
+   Actors include Player, Monsters, and NPCs *
+   @target_context is the ContextFunction2D to draw to */
+Actor.prototype.render = function(target_context) {
 	
-	target_context.font = View.font_size+" Sans-Serif";
-	target_context.fillStyle = this.color;
-	target_context.textAlign = "center";
+	/* Cull actors not visible on the screen */
+	if (!this.is_visible()) { this.dirty = false; return; }
 	
+	/* Set where we draw to */
 	var current_view_grid_x = this.map_x-View.view_grid_x;
 	var current_view_grid_y = this.map_y-View.view_grid_y;
 	var current_view_pixel_x = current_view_grid_x*View.grid_width+View.grid_width/2+this.offset_x;
 	var current_view_pixel_y = current_view_grid_y*View.grid_height+this.offset_y;
+	
+	/* Set drawing properties for the target context */
+	target_context.font = View.font_size+" Sans-Serif";
+	target_context.fillStyle = this.color;
+	target_context.textAlign = "center";
+	
+	/* Draw it */
 	target_context.fillText(this.avatar,current_view_pixel_x,current_view_pixel_y);	
-}
+};
 
-Actor.prototype.check_action = function(direction)
-{
+Actor.prototype.check_action = function(direction) {
 	var xx, yy, move_check, mob_check, npc_check;
 	switch (direction)
 	{
@@ -80,57 +88,76 @@ Actor.prototype.check_action = function(direction)
 	{
 		mob_check = World.gridmob[yy][xx];	
 		if (mob_check) { this.execute_melee_attack(mob_check); }
-		else
-		{ this.next_x = xx; this.next_y = yy; }
+		else { 
+			this.next_x = xx; this.next_y = yy; }
 	}
-}
+};
 
-Actor.prototype.move_left = function() { if (this.can_move(this.map_x, this.map_y, this.map_x-1,this.map_y)) { this.next_x-=1; this.animating = true; this.dirty = true; }}
-Actor.prototype.move_up = function() { if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y-1)) { this.next_y-=1; this.animating = true; this.dirty = true; }}
-Actor.prototype.move_right = function() { if (this.can_move(this.map_x, this.map_y, this.map_x+1,this.map_y)) { this.next_x+=1; this.animating = true; this.dirty = true; }} 
-Actor.prototype.move_down = function() { if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y+1)) { this.next_y+=1; this.animating = true; this.dirty = true; }}
+Actor.prototype.move_left = function() { 
+	if (this.can_move(this.map_x, this.map_y, this.map_x-1,this.map_y)) { 
+		this.next_x-=1; this.animating = true; this.dirty = true; }
+};
 
-Actor.prototype.is_visible = function()
-{
-	if (this.map_x < View.view_grid_x) { return false; }
-	if (this.map_x > View.view_grid_x + View.view_grid_width-1) { return false; }
-	if (this.map_y < View.view_grid_y) { return false; }
-	if (this.map_y > View.view_grid_y + View.view_grid_height-1) { return false; }	
-	
-	if (this != Player)
-	{
-		if (this.status & STATUS_DEAD) { return false; }
+Actor.prototype.move_up = function() { 
+	if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y-1)) { 
+		this.next_y-=1; this.animating = true; this.dirty = true; }
+};
+
+Actor.prototype.move_right = function() { 
+	if (this.can_move(this.map_x, this.map_y, this.map_x+1,this.map_y)) { 
+		this.next_x+=1; this.animating = true; this.dirty = true; }
+};
+ 
+Actor.prototype.move_down = function() { 
+	if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y+1)) { 
+		this.next_y+=1; this.animating = true; this.dirty = true; }
+};
+
+Actor.prototype.is_visible = function() {
+	if (this.map_x < View.view_grid_x) {
+		return false; 
+	}
+	if (this.map_x > View.view_grid_x + View.view_grid_width-1) {
+		return false; 
+	}
+	if (this.map_y < View.view_grid_y) { 
+		return false; 
+	}
+	if (this.map_y > View.view_grid_y + View.view_grid_height-1) { 
+		return false; 
+	}		
+	if (this != Player) {
+		if (this.status & STATUS_DEAD) { 
+			return false; 
+		}
 	}
 	
 	return true;
-}
+};
 
-Actor.prototype.can_move = function(from_x,from_y,to_x,to_y)
-{
-	if (this.animating) {return false;}
+Actor.prototype.can_move = function(from_x,from_y,to_x,to_y) {
+	if (this.animating) {
+		return false; }
 	return (this.world.is_clear(to_x,to_y) && this.world.is_movable(from_x,from_y,to_x,to_y));
 	
-}
+};
 
-Actor.prototype.moveAnimate = function()
-{
+Actor.prototype.moveAnimate = function() {
 	if (this.next_x < this.map_x) { this.offset_x-=ANIMATION_STEPS;}
 	if (this.next_x > this.map_x) { this.offset_x+=ANIMATION_STEPS;}
 	if (this.next_y < this.map_y) { this.offset_y-=ANIMATION_STEPS;}
 	if (this.next_y > this.map_y) { this.offset_y+=ANIMATION_STEPS;}
 	
-	if (Math.abs(this.offset_x) >= View.grid_width || Math.abs(this.offset_y) >= View.grid_height) 
-	{
+	if (Math.abs(this.offset_x) >= View.grid_width || Math.abs(this.offset_y) >= View.grid_height) {
 		this.offset_x = 0;
 		this.offset_y = 0;
 		this.map_x = this.next_x;
 		this.map_y = this.next_y;
 		this.animating = false;
 	}
-}
+};
 
-Actor.prototype.execute_move = function()
-{
+Actor.prototype.execute_move = function() {
 	World.gridmob[this.map_y][this.map_x] = null;
 	World.gridmob[this.next_y][this.next_x] = this;
 	
@@ -145,4 +172,4 @@ Actor.prototype.execute_move = function()
 	this.map_y = this.next_y;
 	this.animating = false;
 	
-}
+};

@@ -21,14 +21,13 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-function gameInit()
-{
+function gameInit() {
 	var i;
 	
 	/* Capture key presses in the document and mouse movements on the highest canvas */
 	document.addEventListener("keydown", doKeyDown, false);
-	overlayCanvas.addEventListener("mousemove", doMouseMove, false);
-	overlayCanvas.addEventListener("mousedown", doMouseClick, false);
+	overlay_canvas.addEventListener("mousemove", doMouseMove, false);
+	overlay_canvas.addEventListener("mousedown", doMouseClick, false);
 	
 	View = new View();
 	World = new World();
@@ -50,8 +49,7 @@ function gameInit()
 	
 }
 
-function create_player()
-{
+function create_player() {
 	var actor = new Player();
 	actor.is_player = true;
 	actor.map_x = 1096;
@@ -61,8 +59,7 @@ function create_player()
 	return actor;
 }
 
-function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0)
-{
+function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0) {
 	var monster = new Monster(type, level, xx, yy);
 	return monster;
 }

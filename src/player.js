@@ -21,8 +21,7 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
-function Player()
-{
+function Player() {
 	Actor.call(this);
 	
 	this.name = "Your Party";
@@ -35,11 +34,12 @@ function Player()
 Player.prototype = Object.create(Actor.prototype);
 Player.prototype.constructor = Player;
 
-Player.prototype.execute_melee_attack = function(target)
-{
-	if (Party.active_partymember == -1) { return false; }
+Player.prototype.execute_melee_attack = function(target) {
+	if (Party.active_partymember === -1) { 
+		return false; 
+	}
 	
-	var i
+	var i;
 	var damage = 0;
 	var party_member = Party.active_partymember;
 	var die_num = Party.die_num[party_member];
@@ -48,23 +48,25 @@ Player.prototype.execute_melee_attack = function(target)
 	var attacker = Party.name[party_member];
 	var attack_type = DAM_PHYSICAL;
 	
-	for (i=0; i<die_num ;i++)
-		damage+=Math.round(Math.random()*(die_side-1)+1)+die_bonus;
-	
-	if (damage > 0)
-	{
-		target.last_hit = this;
-		target.current_hp-=damage
-		Hud.message.add_message(attacker + " hits the " + target.name + " for " + damage);
-		if (target.current_hp < 1) { target.monster_die(); }
+	for (i=0; i<die_num; i++) {
+		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
+	
+	if (damage > 0) {
+		target.last_hit = this;
+		target.current_hp -= damage;
+		Hud.message.add_message(attacker + " hits the " + target.name + " for " + damage);
+		if (target.current_hp < 1) { 
+			target.monster_die(); 
+		}
+	}
+	
 	Party.current_delay[party_member] = Party.base_delay[party_member];
 	Hud.partymember[party_member].dirty = true;
 	Party.active_partymember = -1;
-}
+};
 
-Player.prototype.update_tick = function()
-{	
+Player.prototype.update_tick = function() {	
 	Party.reduce_delay();
 	Party.active_partymember = Party.find_ready_party_member();
-}
+};

@@ -21,20 +21,30 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
-function Monster(type, level, xx, yy)
-{
+function Monster(type, level, xx, yy) {
 	Actor.call(this);
 	
 	/* Set monster world location */
-	if (xx == 0) { this.map_x = Math.round(Math.random()*(WORLD_SIZE_X-4))+2; } else { this.map_x = xx;}
-	if (yy == 0) { this.map_y = Math.round(Math.random()*(WORLD_SIZE_Y-4))+2; } else { this.map_y = yy;}
+	if (xx === 0) { 
+		this.map_x = Math.round(Math.random()*(WORLD_SIZE_X-4))+2; 
+	} else { 
+		this.map_x = xx;
+	}
+	
+	if (yy === 0) {
+		this.map_y = Math.round(Math.random()*(WORLD_SIZE_Y-4))+2; 
+	} else { 
+		this.map_y = yy;
+	}
+	
 	this.next_x = this.map_x;
 	this.next_y = this.map_y;
-	this.level = level == MLEVEL_RANDOM ? level+=Math.round(Math.random()*2+1) : level;
+	this.level = level == MLEVEL_RANDOM ? 
+		level+=Math.round(Math.random()*2+1) : 
+		level;
 	
 	/* Set monster world color */
-	switch (this.level)
-	{
+	switch (this.level) {
 		case MLEVEL_EASY: this.color = COL_MOB_EASY; break;
 		case MLEVEL_MEDIUM: this.color = COL_MOB_MEDIUM; break;
 		case MLEVEL_HARD: this.color = COL_MOB_HARD; break;
@@ -48,24 +58,21 @@ function Monster(type, level, xx, yy)
 	this.xp_reward = 0;
 	this.gold_reward = 0;
 	this.status = 0; /* flags variable */
-	this.mode = 0
+	this.mode = 0;
 	
 	this.load_monster(this, type, level);
 	
 	/* Load actor in to the logic grid */
 	World.gridmob[this.map_y][this.map_x]=this;
-	
 }
 
 Monster.prototype = Object.create(Actor.prototype);
 Monster.prototype.constructor = Monster;
 
-Monster.prototype.ai_move = function() 
-{
+Monster.prototype.ai_move = function() {
 	if (!this.is_active()) { return false; }
 	
-	switch (Math.floor(Math.random()*4))
-	{
+	switch (Math.floor(Math.random()*4)) {
 		case 0: this.check_action(DIR_W); break;
 		case 1: this.check_action(DIR_N); break;
 		case 2: this.check_action(DIR_E); break;
@@ -73,12 +80,10 @@ Monster.prototype.ai_move = function()
 	} 
 	
 	this.execute_move();
-}
+};
 
-Monster.prototype.load_monster = function(m, type, level)
-{
-	switch (type)
-	{
+Monster.prototype.load_monster = function(m, type, level) {
+	switch (type) {
 		case MTYPE_GOBLIN:
 		{
 			switch(level)
@@ -112,40 +117,35 @@ Monster.prototype.load_monster = function(m, type, level)
 	}
 	
 	m.current_hp = m.max_hp;
-}
+};
 
-Monster.prototype.is_active = function()
-{
+Monster.prototype.is_active = function() {
 	if (this.status & STATUS_DEAD) { return false; }
 	
 	return true;
-}
+};
 
-Monster.prototype.monster_die = function()
-{
+Monster.prototype.monster_die = function() {
 	this.status |= STATUS_DEAD;
 	World.gridmob[this.map_y][this.map_x] = null;
 	Hud.message.add_message(this.name + " dies");
 	
-	if (this.last_hit == Player)
-	{
+	if (this.last_hit == Player) {
 		Party.add_xp(this.xp_reward);
 	}
-}
+};
 
-Monster.prototype.execute_melee_attack = function(target)
-{
+Monster.prototype.execute_melee_attack = function(target) {
 	/* Right now, monsters will only attack the player */
 	if (target != Player) { return false; }
 	
-	var i
+	var i;
 	var damage = 0;
 	for (i=0; i<this.die_num; i++)
 		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
 	
-	if (damage > 0)
-	{
+	if (damage > 0) {
 		target.last_hit = this;
 		Party.damage_party(this, damage, -1, DAM_PHYSICAL);
 	}
-}
+};

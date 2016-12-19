@@ -21,7 +21,7 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
- 
+/* Globals for mouse interface is just easy */
 mouse_x = 0;
 mouse_y = 0;
 mouse_gx = 0;
@@ -29,19 +29,17 @@ mouse_gy = 0;
 last_mouse_gx = 0;
 last_mouse_gy = 0;
 
-function doMouseMove(event)
-{
+function doMouseMove(event) {
 	mouse_x = event.clientX;
 	mouse_y = event.clientY;
 	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;
 	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y+1;
 	
 	/* Mouse hit a new grid position */
-	if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) 
-	{
+	if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) {
 		last_mouse_gx = mouse_gx;
 		last_mouse_gy = mouse_gy;
-		//Hud.hover.add_message("X:"+mouse_gx+", Y:"+mouse_gy);
+		
 		Hud.hover.add_message(Hud.hover.get_hover_message(mouse_gx,mouse_gy));
 		Hud.dirty = true;
 		Hud.render();

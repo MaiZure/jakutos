@@ -21,14 +21,12 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-function doKeyDown(event)
-{
+function doKeyDown(event) {
 	var i;
 	
 	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses */
 	
-	switch (event.keyCode)
-	{	
+	switch (event.keyCode) {	
 		case KB_LEFT: Player.check_action(DIR_W); break;
 		case KB_UP: Player.check_action(DIR_N); break;
 		case KB_RIGHT: Player.check_action(DIR_E); break;
@@ -46,7 +44,9 @@ function doKeyDown(event)
 
 	Player.execute_move();
 	
-	for (i=0; i<Monsters.length; i++) { Monsters[i].ai_move(); }
+	for (i=0; i<Monsters.length; i++) {
+		Monsters[i].ai_move(); 
+	}
 	
 	Player.update_tick();
 	
