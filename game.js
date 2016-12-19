@@ -75,7 +75,7 @@ Actor.prototype.check_action = function(direction)
 		case DIR_NW: xx = this.map_x - 1; yy = this.map_y - 1; break;
 	}
 	
-	move_check = this.can_move(xx,yy);
+	move_check = this.can_move(this.map_x, this.map_y, xx,yy);
 	
 	if (move_check)
 	{
@@ -86,10 +86,10 @@ Actor.prototype.check_action = function(direction)
 	}
 }
 
-Actor.prototype.move_left = function() { if (this.can_move(this.map_x-1,this.map_y)) { this.next_x-=1; this.animating = true; this.dirty = true; }}
-Actor.prototype.move_up = function() { if (this.can_move(this.map_x,this.map_y-1)) { this.next_y-=1; this.animating = true; this.dirty = true; }}
-Actor.prototype.move_right = function() { if (this.can_move(this.map_x+1,this.map_y)) { this.next_x+=1; this.animating = true; this.dirty = true; }} 
-Actor.prototype.move_down = function() { if (this.can_move(this.map_x,this.map_y+1)) { this.next_y+=1; this.animating = true; this.dirty = true; }}
+Actor.prototype.move_left = function() { if (this.can_move(this.map_x, this.map_y, this.map_x-1,this.map_y)) { this.next_x-=1; this.animating = true; this.dirty = true; }}
+Actor.prototype.move_up = function() { if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y-1)) { this.next_y-=1; this.animating = true; this.dirty = true; }}
+Actor.prototype.move_right = function() { if (this.can_move(this.map_x, this.map_y, this.map_x+1,this.map_y)) { this.next_x+=1; this.animating = true; this.dirty = true; }} 
+Actor.prototype.move_down = function() { if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y+1)) { this.next_y+=1; this.animating = true; this.dirty = true; }}
 
 Actor.prototype.is_visible = function()
 {
@@ -106,10 +106,11 @@ Actor.prototype.is_visible = function()
 	return true;
 }
 
-Actor.prototype.can_move = function(xx,yy)
+Actor.prototype.can_move = function(from_x,from_y,to_x,to_y)
 {
 	if (this.animating) {return false;}
-	return this.world.is_clear(xx,yy);
+	return (this.world.is_clear(to_x,to_y) && this.world.is_movable(from_x,from_y,to_x,to_y));
+	
 }
 
 Actor.prototype.moveAnimate = function()
@@ -133,9 +134,18 @@ Actor.prototype.execute_move = function()
 {
 	World.gridmob[this.map_y][this.map_x] = null;
 	World.gridmob[this.next_y][this.next_x] = this;
+	
+	/* Fall damage (refactor this to calc height difference only once per move */
+	if (this == Player)
+	{
+		var height_diff = World.gridheight[this.next_y][this.next_x] - World.gridheight[this.map_y][this.map_x];
+		if (height_diff < -2) { Party.fall_damage(height_diff); }
+	}
+	
 	this.map_x = this.next_x;
 	this.map_y = this.next_y;
 	this.animating = false;
+	
 }
 
 const COL_MAP_BUILDING = 'rgb(200,180,100)';
@@ -496,7 +506,6 @@ Partymember.prototype.get_hud_color = function(party, id)
 
 Partymember.prototype.health_bar_color = function(full_width, current_width)
 {
-	console.log(current_width + "/" + full_width)
 	if (current_width / full_width < 0.25) { return "rgb(240,0,0)"; }
 	if (current_width / full_width < 0.50) { return "rgb(240,240,0)"; }
 	return "rgb(0,240,0)";
@@ -808,7 +817,7 @@ Monster.prototype.execute_melee_attack = function(target)
 	if (damage > 0)
 	{
 		target.last_hit = this;
-		Party.damage_party(this, damage, DAM_PHYSICAL);
+		Party.damage_party(this, damage, -1, DAM_PHYSICAL);
 	}
 }
  
@@ -900,11 +909,18 @@ Party.prototype.die_side = [];
 Party.prototype.die_bonus = [];
 
 
-Party.prototype.is_incapacitated = function(party_number)
-	{ return (this.status[party_number] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); }
+Party.prototype.is_incapacitated = function(party_member)
+	{ return (this.status[party_member] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); }
 
-Party.prototype.is_ready = function(party_number)
-	{ return (this.current_delay[party_number] == 0 && !this.is_incapacitated(party_number)); }
+Party.prototype.is_ready = function(party_member)
+	{ return (this.current_delay[party_member] == 0 && !this.is_incapacitated(party_member)); }
+	
+Party.prototype.is_party_dead = function()
+{
+	if (this.is_incapacitated(0) && this.is_incapacitated(1) && this.is_incapacitated(2) && this.is_incapacitated(0))
+		{ return true; }
+	return false;
+}
 
 
 /* Interface to add experience to party members */
@@ -918,16 +934,21 @@ Party.prototype.add_xp = function(xp_amount)
 }
 	
 /* Interface to damage party members */
-Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
+Party.prototype.damage_party = function(attacker, damage_amount, target = -1, damage_type = DAM_PHYSICAL)
 {
-	var target = Math.floor(Math.random()*3.99);
+	if (this.is_party_dead()) { return false; }
 	
-	/* Definite bug here if everyone is dead/knocked out */
-	while (this.is_incapacitated(target))
-		{ target = Math.floor(Math.random()*3.99); }
+	if (target == -1)
+	{
+		var target = Math.floor(Math.random()*3.99);
+		
+		/* Definite bug here if everyone is dead/knocked out */
+		while (this.is_incapacitated(target))
+			{ target = Math.floor(Math.random()*3.99); }
+	}
 	
 	this.current_hp[target] -= damage_amount;
-	console.log(target+"/"+this.current_hp[target]);
+	
 	if (this.current_hp[target] <= 0)
 		{ this.status[target] |= STATUS_UNCONCIOUS; }
 		
@@ -938,7 +959,8 @@ Party.prototype.damage_party = function(attacker, damage_amount, damage_type = D
 		{ this.status[target] |= STATUS_ERADICATED; }
 	
 	Hud.partymember[target].dirty = true;
-	Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount);
+	
+	if (attacker != -1) { Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount); }
 }
 
 /* Tick the party delay counter */
@@ -999,10 +1021,23 @@ Party.prototype.change_active_party_member = function(next)
 	return last;
 }
 
-Party.prototype.xp_requirement = function (level)
+Party.prototype.get_xp_requirement = function (level)
 {
 	if (level == 1) { return 0; }
 	return 1000 * (level-1) + this.xp_requirement(level-1)
+}
+
+Party.prototype.fall_damage = function (height_difference)
+{
+	var i, damage;
+	for (i=0; i<4; i++)
+	{
+		damage = Math.round(-(height_difference+2)*Math.random()*0.25*Party.max_hp[i])+1;
+		console.log(height_difference+"/"+damage);
+		this.damage_party(-1, damage, i);
+	}
+	
+	Hud.message.add_message("Waaaa...!");
 }
  
 function Player()
@@ -1091,6 +1126,10 @@ const STATUS_STONED = 1 << 10;
 const STATUS_ZOMBIE = 1 << 11;
 const STATUS_DEAD = 1 << 12;
 const STATUS_ERADICATED = 1 << 13;
+
+/* Magical effects */
+const EFFECT_FLYING = 1 << 0;
+const EFFECT_WIZEYE = 1 << 1;
 
 /* Damage types */
 const DAM_PHYSICAL = 0;
@@ -1503,6 +1542,7 @@ function World()
 	
 	this.render = renderWorld;
 	this.is_clear = _is_clear;
+	this.is_movable = _is_movable;
 	this.grid = [[],[]]
 	this.gridcol = [[],[]];
 	this.gridheight = [[],[]];
@@ -1547,7 +1587,14 @@ function _is_clear(xx, yy)
 	if (yy < 0) { return false; }
 	if (xx >= WORLD_SIZE_X) { return false; }
 	if (yy >= WORLD_SIZE_Y) { return false; }
-	if (this.grid[yy][xx] != '^') { return true; } else { return false; }
+	if (this.grid[yy][xx] != '#') { return true; } else { return false; }
+}
+
+function _is_movable(from_x, from_y, to_x, to_y)
+{
+	var diff = this.gridheight[to_y][to_x] - this.gridheight[from_y][from_x];
+	if (diff < 3) { return true; }
+	return false;
 }
 
 function _build_map()

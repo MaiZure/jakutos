@@ -146,6 +146,6 @@ Monster.prototype.execute_melee_attack = function(target)
 	if (damage > 0)
 	{
 		target.last_hit = this;
-		Party.damage_party(this, damage, DAM_PHYSICAL);
+		Party.damage_party(this, damage, -1, DAM_PHYSICAL);
 	}
 }

@@ -99,7 +99,6 @@ Partymember.prototype.get_hud_color = function(party, id)
 
 Partymember.prototype.health_bar_color = function(full_width, current_width)
 {
-	console.log(current_width + "/" + full_width)
 	if (current_width / full_width < 0.25) { return "rgb(240,0,0)"; }
 	if (current_width / full_width < 0.50) { return "rgb(240,240,0)"; }
 	return "rgb(0,240,0)";

@@ -60,6 +60,10 @@ const STATUS_ZOMBIE = 1 << 11;
 const STATUS_DEAD = 1 << 12;
 const STATUS_ERADICATED = 1 << 13;
 
+/* Magical effects */
+const EFFECT_FLYING = 1 << 0;
+const EFFECT_WIZEYE = 1 << 1;
+
 /* Damage types */
 const DAM_PHYSICAL = 0;
 const DAM_MAGIC = 1;

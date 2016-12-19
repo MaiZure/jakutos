@@ -29,6 +29,7 @@ function World()
 	
 	this.render = renderWorld;
 	this.is_clear = _is_clear;
+	this.is_movable = _is_movable;
 	this.grid = [[],[]]
 	this.gridcol = [[],[]];
 	this.gridheight = [[],[]];
@@ -73,7 +74,14 @@ function _is_clear(xx, yy)
 	if (yy < 0) { return false; }
 	if (xx >= WORLD_SIZE_X) { return false; }
 	if (yy >= WORLD_SIZE_Y) { return false; }
-	if (this.grid[yy][xx] != '^') { return true; } else { return false; }
+	if (this.grid[yy][xx] != '#') { return true; } else { return false; }
+}
+
+function _is_movable(from_x, from_y, to_x, to_y)
+{
+	var diff = this.gridheight[to_y][to_x] - this.gridheight[from_y][from_x];
+	if (diff < 3) { return true; }
+	return false;
 }
 
 function _build_map()

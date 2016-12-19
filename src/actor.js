@@ -74,7 +74,7 @@ Actor.prototype.check_action = function(direction)
 		case DIR_NW: xx = this.map_x - 1; yy = this.map_y - 1; break;
 	}
 	
-	move_check = this.can_move(xx,yy);
+	move_check = this.can_move(this.map_x, this.map_y, xx,yy);
 	
 	if (move_check)
 	{
@@ -85,10 +85,10 @@ Actor.prototype.check_action = function(direction)
 	}
 }
 
-Actor.prototype.move_left = function() { if (this.can_move(this.map_x-1,this.map_y)) { this.next_x-=1; this.animating = true; this.dirty = true; }}
-Actor.prototype.move_up = function() { if (this.can_move(this.map_x,this.map_y-1)) { this.next_y-=1; this.animating = true; this.dirty = true; }}
-Actor.prototype.move_right = function() { if (this.can_move(this.map_x+1,this.map_y)) { this.next_x+=1; this.animating = true; this.dirty = true; }} 
-Actor.prototype.move_down = function() { if (this.can_move(this.map_x,this.map_y+1)) { this.next_y+=1; this.animating = true; this.dirty = true; }}
+Actor.prototype.move_left = function() { if (this.can_move(this.map_x, this.map_y, this.map_x-1,this.map_y)) { this.next_x-=1; this.animating = true; this.dirty = true; }}
+Actor.prototype.move_up = function() { if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y-1)) { this.next_y-=1; this.animating = true; this.dirty = true; }}
+Actor.prototype.move_right = function() { if (this.can_move(this.map_x, this.map_y, this.map_x+1,this.map_y)) { this.next_x+=1; this.animating = true; this.dirty = true; }} 
+Actor.prototype.move_down = function() { if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y+1)) { this.next_y+=1; this.animating = true; this.dirty = true; }}
 
 Actor.prototype.is_visible = function()
 {
@@ -105,10 +105,11 @@ Actor.prototype.is_visible = function()
 	return true;
 }
 
-Actor.prototype.can_move = function(xx,yy)
+Actor.prototype.can_move = function(from_x,from_y,to_x,to_y)
 {
 	if (this.animating) {return false;}
-	return this.world.is_clear(xx,yy);
+	return (this.world.is_clear(to_x,to_y) && this.world.is_movable(from_x,from_y,to_x,to_y));
+	
 }
 
 Actor.prototype.moveAnimate = function()
@@ -132,7 +133,16 @@ Actor.prototype.execute_move = function()
 {
 	World.gridmob[this.map_y][this.map_x] = null;
 	World.gridmob[this.next_y][this.next_x] = this;
+	
+	/* Fall damage (refactor this to calc height difference only once per move */
+	if (this == Player)
+	{
+		var height_diff = World.gridheight[this.next_y][this.next_x] - World.gridheight[this.map_y][this.map_x];
+		if (height_diff < -2) { Party.fall_damage(height_diff); }
+	}
+	
 	this.map_x = this.next_x;
 	this.map_y = this.next_y;
 	this.animating = false;
+	
 }

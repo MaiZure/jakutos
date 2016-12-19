@@ -77,11 +77,18 @@ Party.prototype.die_side = [];
 Party.prototype.die_bonus = [];
 
 
-Party.prototype.is_incapacitated = function(party_number)
-	{ return (this.status[party_number] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); }
+Party.prototype.is_incapacitated = function(party_member)
+	{ return (this.status[party_member] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); }
 
-Party.prototype.is_ready = function(party_number)
-	{ return (this.current_delay[party_number] == 0 && !this.is_incapacitated(party_number)); }
+Party.prototype.is_ready = function(party_member)
+	{ return (this.current_delay[party_member] == 0 && !this.is_incapacitated(party_member)); }
+	
+Party.prototype.is_party_dead = function()
+{
+	if (this.is_incapacitated(0) && this.is_incapacitated(1) && this.is_incapacitated(2) && this.is_incapacitated(0))
+		{ return true; }
+	return false;
+}
 
 
 /* Interface to add experience to party members */
@@ -95,16 +102,21 @@ Party.prototype.add_xp = function(xp_amount)
 }
 	
 /* Interface to damage party members */
-Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
+Party.prototype.damage_party = function(attacker, damage_amount, target = -1, damage_type = DAM_PHYSICAL)
 {
-	var target = Math.floor(Math.random()*3.99);
+	if (this.is_party_dead()) { return false; }
 	
-	/* Definite bug here if everyone is dead/knocked out */
-	while (this.is_incapacitated(target))
-		{ target = Math.floor(Math.random()*3.99); }
+	if (target == -1)
+	{
+		var target = Math.floor(Math.random()*3.99);
+		
+		/* Definite bug here if everyone is dead/knocked out */
+		while (this.is_incapacitated(target))
+			{ target = Math.floor(Math.random()*3.99); }
+	}
 	
 	this.current_hp[target] -= damage_amount;
-	console.log(target+"/"+this.current_hp[target]);
+	
 	if (this.current_hp[target] <= 0)
 		{ this.status[target] |= STATUS_UNCONCIOUS; }
 		
@@ -115,7 +127,8 @@ Party.prototype.damage_party = function(attacker, damage_amount, damage_type = D
 		{ this.status[target] |= STATUS_ERADICATED; }
 	
 	Hud.partymember[target].dirty = true;
-	Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount);
+	
+	if (attacker != -1) { Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount); }
 }
 
 /* Tick the party delay counter */
@@ -180,4 +193,17 @@ Party.prototype.get_xp_requirement = function (level)
 {
 	if (level == 1) { return 0; }
 	return 1000 * (level-1) + this.xp_requirement(level-1)
+}
+
+Party.prototype.fall_damage = function (height_difference)
+{
+	var i, damage;
+	for (i=0; i<4; i++)
+	{
+		damage = Math.round(-(height_difference+2)*Math.random()*0.25*Party.max_hp[i])+1;
+		console.log(height_difference+"/"+damage);
+		this.damage_party(-1, damage, i);
+	}
+	
+	Hud.message.add_message("Waaaa...!");
 }
