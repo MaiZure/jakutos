@@ -147,6 +147,7 @@ const KB_1 = 49;
 const KB_2 = 50;
 const KB_3 = 51;
 const KB_4 = 52;
+const KB_9 = 57;
 const KB_A = 65;
 const KB_C = 67;
 const KB_M = 77;

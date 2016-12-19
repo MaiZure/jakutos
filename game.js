@@ -250,7 +250,7 @@ Hud.prototype.partymember = [];
 
 Hud.prototype.render = function()
 {
-	if (this.dirty) { this.render_text(animation_context); }
+	if (this.dirty) { this.debug_render(animation_context); }
 	if (this.message_dirty) {this.message.render();}
 	for (i=0;i<4;i++) { if (this.partymember[i].dirty) {this.partymember[i].render();}}
 	if (this.hover.dirty) {this.hover.render();}
@@ -258,7 +258,7 @@ Hud.prototype.render = function()
 	this.dirty = false;
 }
 
-Hud.prototype.render_text = function(target_context)
+Hud.prototype.debug_render = function(target_context)
 {
 	//target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
 	//target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
@@ -448,13 +448,10 @@ Partymember.prototype.render = function()
 		var yy = this.hud.avatar_box_y + Math.round(this.hud.avatar_box_height*0.6);
 		var font_size = Math.round(this.hud.avatar_box_height*0.8)+"px Sans-Serif";
 		
-		var color = "rgb(224,224,224)";
-		if (this.party.current_delay[this.partymember_id] > 0) { color = "rgb(128,128,128)"; }
-		if (this.partymember_id == this.party.active_partymember) { color = "rgb(128,240,128)"; }
-		if (this.party.status[this.partymember_id] & STATUS_UNCONCIOUS) { color = "rgb(96,0,0)"; }
-		if (this.party.status[this.partymember_id] & STATUS_DEAD) { color = "rgb(0,0,0)"; }
+		var color = this.get_hud_color(this.party, this.partymember_id);
 		
 		var hp_bar_width = Math.round(this.party.current_hp[this.partymember_id]/this.party.max_hp[this.partymember_id]*this.hud.avatar_box_width);
+			hp_bar_width = Math.max(hp_bar_width,0);
 		var hp_bar_height = Math.round(this.hud.avatar_box_height*0.04);
 		var hp_bar_x = this.hud.avatar_box_x[this.partymember_id];
 		var hp_bar_y = Math.round(this.hud.avatar_box_y+this.hud.avatar_box_height*0.85);
@@ -473,14 +470,36 @@ Partymember.prototype.render = function()
 		animation_context.fillText("@", xx, yy);
 		this.dirty = false;
 		
-		/* Draw health */
-		animation_context.fillStyle = "rgb(0,240,0)";
+		/* Draw HP bar */
+		animation_context.fillStyle = this.health_bar_color(this.hud.avatar_box_width, hp_bar_width);
 		animation_context.fillRect(hp_bar_x,hp_bar_y,hp_bar_width,hp_bar_height);
 		
-		/* Draw magic */
+		/* Draw MP bar */
 		animation_context.fillStyle = "rgb(0,0,240)";
 		animation_context.fillRect(mp_bar_x,mp_bar_y,mp_bar_width,mp_bar_height);
 	}
+}
+
+Partymember.prototype.get_hud_color = function(party, id)
+{
+	/* Set default to normal and short circuit based on status priority */
+	var color = "rgb(224,224,224)";
+	
+	if (party.status[id] & STATUS_DEAD) { return "rgb(0,0,0)"; }
+	if (party.status[id] & STATUS_UNCONCIOUS) { return "rgb(96,0,0)"; }
+	if (party.status[id] & STATUS_POISONED) { return "rgb(160,160,92)"; }
+	if (party.current_delay[id] > 0) { return "rgb(160,160,160)"; }
+	if (id == party.active_partymember) { return "rgb(128,240,128)"; }
+	
+	return color;
+}
+
+Partymember.prototype.health_bar_color = function(full_width, current_width)
+{
+	console.log(current_width + "/" + full_width)
+	if (current_width / full_width < 0.25) { return "rgb(240,0,0)"; }
+	if (current_width / full_width < 0.50) { return "rgb(240,240,0)"; }
+	return "rgb(0,240,0)";
 }
 
 function gameInit()
@@ -532,8 +551,6 @@ function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0)
 function doKeyDown(event)
 {
 	var i;
-	
-	console.log(event.keyCode);
 	
 	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses */
 	
@@ -861,6 +878,7 @@ function Party()
 	{
 		this.status[i] = 0;
 		this.xp[i] = 0;
+		this.level[i] = 1;
 	}
 	
 	this.active_partymember = 0;
@@ -872,6 +890,7 @@ Party.prototype.max_mp = [];
 Party.prototype.current_hp = [];
 Party.prototype.current_mp = [];
 Party.prototype.status = [];
+Party.prototype.level = [];
 Party.prototype.xp = [];
 Party.prototype.name = [];
 Party.prototype.base_delay = [];
@@ -880,22 +899,23 @@ Party.prototype.die_num = [];
 Party.prototype.die_side = [];
 Party.prototype.die_bonus = [];
 
-/* Interface to add experience to party members */
-Party.prototype.add_xp = function(xp_amount)
-{
-	var i;
-	for (i=0;i<4;i++)
-	{
-		if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS))) { this.xp[i] += xp_amount; }
-	}
-}
-
 
 Party.prototype.is_incapacitated = function(party_number)
 	{ return (this.status[party_number] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); }
 
 Party.prototype.is_ready = function(party_number)
 	{ return (this.current_delay[party_number] == 0 && !this.is_incapacitated(party_number)); }
+
+
+/* Interface to add experience to party members */
+Party.prototype.add_xp = function(xp_amount)
+{
+	var i;
+	for (i=0;i<4;i++)
+	{
+		if (!this.is_incapacitated(i)) { this.xp[i] += xp_amount; }
+	}
+}
 	
 /* Interface to damage party members */
 Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
@@ -977,6 +997,12 @@ Party.prototype.change_active_party_member = function(next)
 		return next;
 	}
 	return last;
+}
+
+Party.prototype.xp_requirement = function (level)
+{
+	if (level == 1) { return 0; }
+	return 1000 * (level-1) + this.xp_requirement(level-1)
 }
  
 function Player()
@@ -1153,6 +1179,7 @@ const KB_1 = 49;
 const KB_2 = 50;
 const KB_3 = 51;
 const KB_4 = 52;
+const KB_9 = 57;
 const KB_A = 65;
 const KB_C = 67;
 const KB_M = 77;
@@ -1273,19 +1300,6 @@ View.prototype.render = function (world_context, actor_context)
 					}, 0)
 				}, 24);
 			}
-			/*
-			else
-			{
-				Player.map_x = Player.next_x;
-				Player.map_y = Player.next_y;
-				Player.animating = false;
-				for (i=0; i<Monsters.length; i++) 
-				{ 
-					Monsters[i].map_x = Monsters[i].next_x;
-					Monsters[i].map_y = Monsters[i].next_y;
-					Monsters[i].animating = false;
-				}
-			} */
 		}
 		
 		if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)

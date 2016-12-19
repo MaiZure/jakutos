@@ -79,19 +79,6 @@ View.prototype.render = function (world_context, actor_context)
 					}, 0)
 				}, 24);
 			}
-			/*
-			else
-			{
-				Player.map_x = Player.next_x;
-				Player.map_y = Player.next_y;
-				Player.animating = false;
-				for (i=0; i<Monsters.length; i++) 
-				{ 
-					Monsters[i].map_x = Monsters[i].next_x;
-					Monsters[i].map_y = Monsters[i].next_y;
-					Monsters[i].animating = false;
-				}
-			} */
 		}
 		
 		if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5)

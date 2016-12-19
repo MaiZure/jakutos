@@ -1,6 +1,4 @@
 Hover over avatar for name/class
-Number keys to change to another active party member
-Make party members die
 Make terrain climbing progressive
 Ranged attacks
 

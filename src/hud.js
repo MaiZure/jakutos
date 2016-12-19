@@ -65,7 +65,7 @@ Hud.prototype.partymember = [];
 
 Hud.prototype.render = function()
 {
-	if (this.dirty) { this.render_text(animation_context); }
+	if (this.dirty) { this.debug_render(animation_context); }
 	if (this.message_dirty) {this.message.render();}
 	for (i=0;i<4;i++) { if (this.partymember[i].dirty) {this.partymember[i].render();}}
 	if (this.hover.dirty) {this.hover.render();}
@@ -73,7 +73,7 @@ Hud.prototype.render = function()
 	this.dirty = false;
 }
 
-Hud.prototype.render_text = function(target_context)
+Hud.prototype.debug_render = function(target_context)
 {
 	//target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
 	//target_context.font = BASE_FONT_SIZE+"px Sans-Serif";

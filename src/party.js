@@ -55,6 +55,7 @@ function Party()
 	{
 		this.status[i] = 0;
 		this.xp[i] = 0;
+		this.level[i] = 1;
 	}
 	
 	this.active_partymember = 0;
@@ -66,6 +67,7 @@ Party.prototype.max_mp = [];
 Party.prototype.current_hp = [];
 Party.prototype.current_mp = [];
 Party.prototype.status = [];
+Party.prototype.level = [];
 Party.prototype.xp = [];
 Party.prototype.name = [];
 Party.prototype.base_delay = [];
@@ -74,22 +76,23 @@ Party.prototype.die_num = [];
 Party.prototype.die_side = [];
 Party.prototype.die_bonus = [];
 
-/* Interface to add experience to party members */
-Party.prototype.add_xp = function(xp_amount)
-{
-	var i;
-	for (i=0;i<4;i++)
-	{
-		if (!(Party.status[i] & (STATUS_DEAD | STATUS_UNCONCIOUS))) { this.xp[i] += xp_amount; }
-	}
-}
-
 
 Party.prototype.is_incapacitated = function(party_number)
 	{ return (this.status[party_number] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); }
 
 Party.prototype.is_ready = function(party_number)
 	{ return (this.current_delay[party_number] == 0 && !this.is_incapacitated(party_number)); }
+
+
+/* Interface to add experience to party members */
+Party.prototype.add_xp = function(xp_amount)
+{
+	var i;
+	for (i=0;i<4;i++)
+	{
+		if (!this.is_incapacitated(i)) { this.xp[i] += xp_amount; }
+	}
+}
 	
 /* Interface to damage party members */
 Party.prototype.damage_party = function(attacker, damage_amount, damage_type = DAM_PHYSICAL)
@@ -171,4 +174,10 @@ Party.prototype.change_active_party_member = function(next)
 		return next;
 	}
 	return last;
+}
+
+Party.prototype.get_xp_requirement = function (level)
+{
+	if (level == 1) { return 0; }
+	return 1000 * (level-1) + this.xp_requirement(level-1)
 }

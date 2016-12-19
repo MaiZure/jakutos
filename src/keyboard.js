@@ -25,8 +25,6 @@ function doKeyDown(event)
 {
 	var i;
 	
-	console.log(event.keyCode);
-	
 	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses */
 	
 	switch (event.keyCode)
