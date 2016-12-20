@@ -21,7 +21,8 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
-function Monster(type, level, xx, yy) {
+function Monster(type, level, xx, yy) 
+{
 	Actor.call(this);
 	
 	/* Set monster world location */
@@ -38,7 +39,10 @@ function Monster(type, level, xx, yy) {
 	}
 	
 	this.next_x = this.map_x;
-	this.next_y = this.map_y;
+	this.next_y = this.map_y;	
+	this.update_pxpy();
+	
+	
 	this.level = level == MLEVEL_RANDOM ? 
 		level+=Math.round(Math.random()*2+1) : 
 		level;
@@ -69,7 +73,8 @@ function Monster(type, level, xx, yy) {
 Monster.prototype = Object.create(Actor.prototype);
 Monster.prototype.constructor = Monster;
 
-Monster.prototype.ai_move = function() {
+Monster.prototype.ai_move = function() 
+{
 	if (!this.is_active()) { return false; }
 	
 	switch (Math.floor(Math.random()*4)) {
@@ -82,7 +87,8 @@ Monster.prototype.ai_move = function() {
 	this.execute_move();
 };
 
-Monster.prototype.load_monster = function(m, type, level) {
+Monster.prototype.load_monster = function(m, type, level) 
+{
 	switch (type) {
 		case MTYPE_GOBLIN:
 		{
@@ -119,13 +125,15 @@ Monster.prototype.load_monster = function(m, type, level) {
 	m.current_hp = m.max_hp;
 };
 
-Monster.prototype.is_active = function() {
+Monster.prototype.is_active = function() 
+{
 	if (this.status & STATUS_DEAD) { return false; }
 	
 	return true;
 };
 
-Monster.prototype.monster_die = function() {
+Monster.prototype.monster_die = function() 
+{
 	this.status |= STATUS_DEAD;
 	World.gridmob[this.map_y][this.map_x] = null;
 	Hud.message.add_message(this.name + " dies");
@@ -135,7 +143,8 @@ Monster.prototype.monster_die = function() {
 	}
 };
 
-Monster.prototype.execute_melee_attack = function(target) {
+Monster.prototype.execute_melee_attack = function(target) 
+{
 	/* Right now, monsters will only attack the player */
 	if (target != Player) { return false; }
 	

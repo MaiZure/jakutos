@@ -29,7 +29,8 @@ mouse_gy = 0;
 last_mouse_gx = 0;
 last_mouse_gy = 0;
 
-function doMouseMove(event) {
+function doMouseMove(event) 
+{
 	mouse_x = event.clientX;
 	mouse_y = event.clientY;
 	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;

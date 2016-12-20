@@ -21,7 +21,8 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
-function Party() {
+function Party() 
+{
 	var i;
 	
 	/* Temporary constructor for a default party */
@@ -75,15 +76,18 @@ Party.prototype.die_side = [];
 Party.prototype.die_bonus = [];
 
 
-Party.prototype.is_incapacitated = function(party_member) { 
+Party.prototype.is_incapacitated = function(party_member) 
+{ 
 	return (this.status[party_member] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); 
 };
 
-Party.prototype.is_ready = function(party_member) {
+Party.prototype.is_ready = function(party_member) 
+{
 	return (this.current_delay[party_member] === 0 && !this.is_incapacitated(party_member)); 
 };
 	
-Party.prototype.is_party_dead = function() {
+Party.prototype.is_party_dead = function() 
+{
 	if (this.is_incapacitated(0) && this.is_incapacitated(1) && this.is_incapacitated(2) && this.is_incapacitated(3)) {
 		return true; 
 	}
@@ -93,7 +97,8 @@ Party.prototype.is_party_dead = function() {
 
 
 /* Interface to add experience to party members */
-Party.prototype.add_xp = function(xp_amount) {
+Party.prototype.add_xp = function(xp_amount) 
+{
 	var i;
 	
 	for (i=0; i<4; i++) {
@@ -104,11 +109,11 @@ Party.prototype.add_xp = function(xp_amount) {
 };
 	
 /* Interface to damage party members */
-Party.prototype.damage_party = function(attacker, damage_amount, target = -1, damage_type = DAM_PHYSICAL) {
-	if (this.is_party_dead()) {
-		return false; 
-	}
+Party.prototype.damage_party = function(attacker, damage_amount, target = -1, damage_type = DAM_PHYSICAL) 
+{
+	if (this.is_party_dead()) { return false; }
 	
+	/* Pick a party member at random */
 	if (target == -1) {
 		target = Math.floor(Math.random()*3.99);
 		
@@ -154,22 +159,22 @@ Party.prototype.reduce_delay = function(amount = 1)
 };
 
 /* Find a ready party member */
-Party.prototype.find_ready_party_member = function() {
+Party.prototype.find_ready_party_member = function() 
+{
 	var i;
 	var current = Party.active_partymember;
 	
 	/* Check if active party member is legit */
-	if (current != -1 && !this.is_ready(current))
-		{ current = -1; }
+	if (current != -1 && !this.is_ready(current)) { 
+		current = -1; 
+	}
 	
 	/* If someone is already active, keep them active */
 	if (current != -1) { return current; }
 	
 	/* Find new party member */
-	for (i=0; i<4; i++)
-	{
-		if (this.is_ready(i) && !this.is_incapacitated(i))
-		{
+	for (i=0; i<4; i++) {
+		if (this.is_ready(i) && !this.is_incapacitated(i)) {
 			Hud.partymember[i].dirty = true;
 			return i;
 		}
@@ -196,14 +201,14 @@ Party.prototype.change_active_party_member = function(next)
 	return last;
 };
 
-Party.prototype.get_xp_requirement = function (level) {
-	if (level == 1) {
-		return 0; 
-	}
+Party.prototype.get_xp_requirement = function (level) 
+{
+	if (level == 1) { return 0; }
 	return 1000 * (level-1) + this.xp_requirement(level-1);
 };
 
-Party.prototype.fall_damage = function (height_difference) {
+Party.prototype.fall_damage = function (height_difference) 
+{
 	var i, damage;
 	for (i=0; i<4; i++) {
 		damage = Math.round(-(height_difference+2)*Math.random()*0.25*Party.max_hp[i])+1;

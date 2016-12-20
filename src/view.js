@@ -21,7 +21,8 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-function View() {
+function View() 
+{
 	this.dirty = false;
 	this.view_grid_x = 0;
 	this.view_grid_y = 0;
@@ -40,7 +41,8 @@ function View() {
 	this.animate_camera = _animate_camera;
 }
 
-View.prototype.calculate_view = function() {
+View.prototype.calculate_view = function() 
+{
 	this.view_px_width = Math.round(base_canvas.width*0.62); this.view_px_width+=this.view_px_width % this.grid_width;
 	this.view_px_height = Math.round(base_canvas.height*0.97); this.view_px_height+=this.view_px_height % this.grid_height;
 	this.font_size = (this.grid_height*2)+"px";
@@ -48,7 +50,12 @@ View.prototype.calculate_view = function() {
 	this.view_grid_height = Math.round(this.view_px_height/this.grid_height)+1;	
 };
 
-View.prototype.render = function (world_context, actor_context) {	
+/* Conversion helpers from exact screen position to grid square */
+View.prototype.get_grid_x = function(pixel_x) { return Math.floor(pixel_x/View.grid_width)+View.view_grid_x; };
+View.prototype.get_grid_y = function(pixel_y) { return Math.floor(pixel_y/View.grid_height)+View.view_grid_y; };
+
+View.prototype.render = function (world_context, actor_context) 
+{	
 	var i;
 	if (Minimap.active) {
 		Minimap.draw(overlay_context);
@@ -106,8 +113,30 @@ View.prototype.render = function (world_context, actor_context) {
 		}
 	}
 };
- 
-View.prototype.world_rescale_down = function() {
+
+
+View.prototype.render_animations = function()
+{
+	if (Animations.length === 0) { return; }
+	
+	var animation_index, obj, count, delay;
+	
+	count = 0;
+	
+	delay = setInterval(function() {
+		count++
+		for (animation_index=0; animation_index<Animations.length; animation_index++) {
+			obj = Animations[animation_index];
+			obj.animate_step();
+		}
+		
+		if (count > 8) { clearInterval(delay); }
+		
+		},24);
+};
+
+View.prototype.world_rescale_down = function() 
+{
 	if (this.grid_height > 8) {
 		World.dirty = true;
 		this.grid_width/=2;
@@ -117,7 +146,8 @@ View.prototype.world_rescale_down = function() {
 	}
 };
 
-View.prototype.world_rescale_up = function() {
+View.prototype.world_rescale_up = function() 
+{
 	if (this.grid_height < 128) {
 		World.dirty = true;
 		this.grid_width*=2;
@@ -127,13 +157,15 @@ View.prototype.world_rescale_up = function() {
 	}
 };
 
-View.prototype.recalculate_view_scale = function() {
+View.prototype.recalculate_view_scale = function() 
+{
 	this.font_size = (this.grid_height*2)+"px";
 	this.view_grid_width = Math.round(this.view_px_width/this.grid_width)+1;
 	this.view_grid_height = Math.round(this.view_px_height/this.grid_height)+1;
 };
 
-View.prototype.refocus = function(xx, yy, immediate = false) {
+View.prototype.refocus = function(xx, yy, immediate = false) 
+{
 	var i;
 	var old_x = this.view_grid_x;
 	var old_y = this.view_grid_y;
@@ -171,13 +203,15 @@ View.prototype.refocus = function(xx, yy, immediate = false) {
 	}
 };
 
-View.prototype.toggle_animate = function() {
+View.prototype.toggle_animate = function() 
+{
 	World.dirty = true;
 	Hud.dirty = true;
 	SETTING_ANIMATE = !SETTING_ANIMATE;
 };
 
-View.prototype.toggle_minimap = function() {
+View.prototype.toggle_minimap = function() 
+{
 	Minimap.active = !Minimap.active;
 	if (Minimap.active) {
 		Minimap.minimap_world_dirty = true;
@@ -189,7 +223,8 @@ View.prototype.toggle_minimap = function() {
 	World.dirty = true;
 };
 
-View.prototype.clear_world = function(target_context) {
+View.prototype.clear_world = function(target_context) 
+{
 	var xx = this.view_px_x;
 	var yy = this.view_px_y;
 	var ww = this.view_px_width + 16;
@@ -197,11 +232,13 @@ View.prototype.clear_world = function(target_context) {
 	target_context.clearRect(xx, yy, ww, hh);
 };
 
-View.prototype.clear_context = function(target_context) {
+View.prototype.clear_context = function(target_context) 
+{
 	target_context.clearRect(0,0,target_context.canvas.width,target_context.canvas.height);
 };
 	
-View.prototype.resizeWindow = function() {
+View.prototype.resizeWindow = function() 
+{
 	set_canvas_size();
 	View.calculate_view();
 	Hud.resize();
@@ -213,8 +250,8 @@ View.prototype.resizeWindow = function() {
 	View.render(base_context,animation_context);
 };
 
-function _animate_camera() {
-	
+function _animate_camera() 
+{	
 	if (this.view_grid_x == this.target_view_x && this.view_grid_y == this.target_view_y) {
 		this.dirty = false;
 		return;
@@ -248,7 +285,8 @@ function _animate_camera() {
 }
 
 /* Global function used during init and resize */
-function set_canvas_size() {
+function set_canvas_size() 
+{
 	/* Set the three canvas dimensions on load and divisible by 8 (may help future calcs)*/
 	base_canvas.width = Math.round(window.innerWidth*0.96); base_canvas.width -= base_canvas.width % 8;
 	base_canvas.height = Math.round(window.innerHeight*0.96); base_canvas.height -= base_canvas.height % 8;

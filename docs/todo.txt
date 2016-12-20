@@ -1,5 +1,4 @@
 Hover over avatar for name/class
-Make terrain climbing progressive
 Ranged attacks
 
 Make move turn PQ
@@ -8,6 +7,4 @@ Make some of the older objects more JS-like
 
 Fill out monsters
 
-
-
-
+BUG: Monsters that wander in to the view don't render until the screen is refocused/resized

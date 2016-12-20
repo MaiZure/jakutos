@@ -21,7 +21,8 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-function Hud() {
+function Hud() 
+{
 	/* These variables need to be deferred until instantiation */
 	var i;
 	this.view_px_x = View.view_px_width+16;
@@ -66,7 +67,8 @@ Hud.prototype.party_dirty = true;
 Hud.prototype.message_dirty = true;
 Hud.prototype.partymember = [];
 
-Hud.prototype.render = function() {
+Hud.prototype.render = function() 
+{
 	if (this.dirty) {
 		this.debug_render(animation_context); 
 	}
@@ -89,8 +91,8 @@ Hud.prototype.render = function() {
 	this.dirty = false;
 };
 
-Hud.prototype.debug_render = function(target_context) {
-	
+Hud.prototype.debug_render = function(target_context) 
+{	
 	/* This function is intentionally left blank 
 	//target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
 	//target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
@@ -101,7 +103,8 @@ Hud.prototype.debug_render = function(target_context) {
 	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	*/
 };
 
-Hud.prototype.debug = function() {
+Hud.prototype.debug = function() 
+{
 	var i;
 	base_context.fillStyle = "rgb(160,0,0)";
 	base_context.fillRect(this.view_px_x, this.view_px_y, this.view_px_width, this.view_px_height);
@@ -121,7 +124,8 @@ Hud.prototype.debug = function() {
 	}
 };
 
-Hud.prototype.resize = function() {
+Hud.prototype.resize = function() 
+{
 	this.dirty = true;
 	
 	var i;

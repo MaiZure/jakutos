@@ -21,7 +21,8 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-function doKeyDown(event) {
+function doKeyDown(event) 
+{
 	var i;
 	
 	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses */
@@ -35,7 +36,7 @@ function doKeyDown(event) {
 		case KB_2:
 		case KB_3:
 		case KB_4: Party.change_active_party_member(event.keyCode-KB_1); break;
-		case KB_A: toggle_animate(); break;
+		case KB_A: Player.execute_ranged_attack(); break;
 		case KB_C: View.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: View.toggle_minimap(); break;
 		case KB_MINUS: View.world_rescale_down(); break;
@@ -43,6 +44,9 @@ function doKeyDown(event) {
 	}
 
 	Player.execute_move();
+	
+	/* Animate stuff */
+	View.render_animations();
 	
 	for (i=0; i<Monsters.length; i++) {
 		Monsters[i].ai_move(); 

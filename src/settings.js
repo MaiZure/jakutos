@@ -73,7 +73,8 @@ const DAM_WATER = 4;
 const DAM_AIR = 5;
 const DAM_DARK = 6;
 const DAM_LIGHT = 7;
-const DAM_ANCIENT = 8;
+const DAM_RANGED = 8;
+const DAM_ANCIENT = 9;
 
 /* Monster Levels */
 const MLEVEL_RANDOM = 0;

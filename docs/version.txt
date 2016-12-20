@@ -1,3 +1,6 @@
+--*v0.3---In Development-----------------------------
+Progressing terrain climbing - falling hurts
+
 --*v0.2---Dec 18, 2016-------------------------------
 Added a 'real' map to test based on Might & Magic 6
 Decided to design this project as a roguelike based on MM6

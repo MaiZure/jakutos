@@ -22,7 +22,8 @@
  */
  
 /* This Object will almost always be inhereted by a more specific object (Player, Monster, NPC) */
-function Actor() { 
+function Actor() 
+{ 
 	this.world = World;
 	this.die_num = 1;
 	this.die_side = 1;
@@ -33,6 +34,8 @@ function Actor() {
 /* Properties */
 Actor.prototype.map_x = 1;
 Actor.prototype.map_y = 1;
+Actor.prototype.px = 1;
+Actor.prototype.py = 1;
 Actor.prototype.next_x = this.map_x;
 Actor.prototype.next_y = this.map_y;
 Actor.prototype.offset_x = 0;
@@ -48,16 +51,13 @@ Actor.prototype.animating = false;
 /* Default renderer for actors in the game 
    Actors include Player, Monsters, and NPCs *
    @target_context is the ContextFunction2D to draw to */
-Actor.prototype.render = function(target_context) {
-	
+Actor.prototype.render = function(target_context) 
+{	
 	/* Cull actors not visible on the screen */
 	if (!this.is_visible()) { this.dirty = false; return; }
 	
 	/* Set where we draw to */
-	var current_view_grid_x = this.map_x-View.view_grid_x;
-	var current_view_grid_y = this.map_y-View.view_grid_y;
-	var current_view_pixel_x = current_view_grid_x*View.grid_width+View.grid_width/2+this.offset_x;
-	var current_view_pixel_y = current_view_grid_y*View.grid_height+this.offset_y;
+	this.update_pxpy();
 	
 	/* Set drawing properties for the target context */
 	target_context.font = View.font_size+" Sans-Serif";
@@ -65,13 +65,14 @@ Actor.prototype.render = function(target_context) {
 	target_context.textAlign = "center";
 	
 	/* Draw it */
-	target_context.fillText(this.avatar,current_view_pixel_x,current_view_pixel_y);	
+	target_context.fillText(this.avatar,this.px,this.py);	
 };
 
-Actor.prototype.check_action = function(direction) {
+Actor.prototype.check_action = function(direction) 
+{
 	var xx, yy, move_check, mob_check, npc_check;
-	switch (direction)
-	{
+	
+	switch (direction) {
 		case DIR_N:  xx = this.map_x;     yy = this.map_y - 1; break;
 		case DIR_NE: xx = this.map_x + 1; yy = this.map_y - 1; break;
 		case DIR_E:  xx = this.map_x + 1; yy = this.map_y; break;
@@ -84,8 +85,7 @@ Actor.prototype.check_action = function(direction) {
 	
 	move_check = this.can_move(this.map_x, this.map_y, xx,yy);
 	
-	if (move_check)
-	{
+	if (move_check) {
 		mob_check = World.gridmob[yy][xx];	
 		if (mob_check) { this.execute_melee_attack(mob_check); }
 		else { 
@@ -93,27 +93,32 @@ Actor.prototype.check_action = function(direction) {
 	}
 };
 
-Actor.prototype.move_left = function() { 
+Actor.prototype.move_left = function() 
+{ 
 	if (this.can_move(this.map_x, this.map_y, this.map_x-1,this.map_y)) { 
 		this.next_x-=1; this.animating = true; this.dirty = true; }
 };
 
-Actor.prototype.move_up = function() { 
+Actor.prototype.move_up = function() 
+{ 
 	if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y-1)) { 
 		this.next_y-=1; this.animating = true; this.dirty = true; }
 };
 
-Actor.prototype.move_right = function() { 
+Actor.prototype.move_right = function() 
+{ 
 	if (this.can_move(this.map_x, this.map_y, this.map_x+1,this.map_y)) { 
 		this.next_x+=1; this.animating = true; this.dirty = true; }
 };
  
-Actor.prototype.move_down = function() { 
+Actor.prototype.move_down = function() 
+{ 
 	if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y+1)) { 
 		this.next_y+=1; this.animating = true; this.dirty = true; }
 };
 
-Actor.prototype.is_visible = function() {
+Actor.prototype.is_visible = function() 
+{
 	if (this.map_x < View.view_grid_x) {
 		return false; 
 	}
@@ -135,14 +140,15 @@ Actor.prototype.is_visible = function() {
 	return true;
 };
 
-Actor.prototype.can_move = function(from_x,from_y,to_x,to_y) {
+Actor.prototype.can_move = function(from_x,from_y,to_x,to_y) 
+{	
 	if (this.animating) {
 		return false; }
-	return (this.world.is_clear(to_x,to_y) && this.world.is_movable(from_x,from_y,to_x,to_y));
-	
+	return (this.world.is_clear(to_x,to_y) && this.world.is_movable(from_x,from_y,to_x,to_y));	
 };
 
-Actor.prototype.moveAnimate = function() {
+Actor.prototype.moveAnimate = function() 
+{	
 	if (this.next_x < this.map_x) { this.offset_x-=ANIMATION_STEPS;}
 	if (this.next_x > this.map_x) { this.offset_x+=ANIMATION_STEPS;}
 	if (this.next_y < this.map_y) { this.offset_y-=ANIMATION_STEPS;}
@@ -157,19 +163,47 @@ Actor.prototype.moveAnimate = function() {
 	}
 };
 
-Actor.prototype.execute_move = function() {
+Actor.prototype.execute_move = function() 
+{	
 	World.gridmob[this.map_y][this.map_x] = null;
 	World.gridmob[this.next_y][this.next_x] = this;
 	
-	/* Fall damage (refactor this to calc height difference only once per move */
-	if (this == Player)
-	{
+	/* Fall damage (refactor this to calc height difference only once per move) */
+	if (this == Player) {
 		var height_diff = World.gridheight[this.next_y][this.next_x] - World.gridheight[this.map_y][this.map_x];
+		
 		if (height_diff < -2) { Party.fall_damage(height_diff); }
 	}
 	
+	/* Move to new grid position */
 	this.map_x = this.next_x;
 	this.map_y = this.next_y;
+	
+	/* Calculate the screen position */
+	this.update_pxpy();
+	
 	this.animating = false;
 	
 };
+
+Actor.prototype.update_pxpy = function()
+{
+	var current_view_grid_x = this.map_x-View.view_grid_x;
+	var current_view_grid_y = this.map_y-View.view_grid_y;
+	this.px = current_view_grid_x*View.grid_width+View.grid_width/2;
+	this.py = current_view_grid_y*View.grid_height;
+};
+
+Actor.prototype.damage_actor = function(damage_amount, attacker = -1, damage_type = DAM_PHYSICAL)
+{
+	var attacker_name;
+	this.current_hp -= damage_amount;
+		
+	if (this.current_hp < 1) { this.monster_die(); }
+	
+	if (attacker != -1) { 
+		attacker_name = Party.name[attacker];
+		this.last_hit = attacker_name;
+		Hud.message.add_message(attacker_name + " hits "+ this.name + " for " + damage_amount); 
+	}
+}

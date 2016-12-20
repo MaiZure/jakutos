@@ -21,8 +21,12 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-function gameInit() {
+function gameInit() 
+{
 	var i;
+	
+	/* from Math.js source */
+	add_math_utilities();
 	
 	/* Capture key presses in the document and mouse movements on the highest canvas */
 	document.addEventListener("keydown", doKeyDown, false);
@@ -35,6 +39,8 @@ function gameInit() {
 	Party = new Party();
 	
 	Monsters = [];
+	Animations = [];
+	
 	for (i=0; i<NUMBER_OF_MONSTERS; i++) { Monsters[i] = create_monster(); }
 	
 	Hud = new Hud();
@@ -49,17 +55,25 @@ function gameInit() {
 	
 }
 
-function create_player() {
+function create_player() 
+{
 	var actor = new Player();
 	actor.is_player = true;
 	actor.map_x = 1096;
 	actor.map_y = 671;
 	actor.next_x = 1096;
 	actor.next_y = 671;
+	
+	var current_view_grid_x = actor.map_x-View.view_grid_x;
+	var current_view_grid_y = actor.map_y-View.view_grid_y;
+	actor.px = current_view_grid_x*View.grid_width+View.grid_width/2
+	actor.py = current_view_grid_y*View.grid_height
+	
 	return actor;
 }
 
-function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0) {
+function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0) 
+{
 	var monster = new Monster(type, level, xx, yy);
 	return monster;
 }
