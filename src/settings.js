@@ -142,6 +142,7 @@ const MTYPE_BAA = 53;
 const AISTATE_WAIT = 0;
 const AISTATE_CHASE = 1;
 const AISTATE_FLEE = 2;
+const AISTATE_WANDER = 3;
 
 /* Keyboard Codes */
 const KB_LEFT = 37;
@@ -160,6 +161,7 @@ const KB_MINUS = 189;
 const KB_PLUS = 187;
 
 /* Direction Enum */
+const DIR_NA = 0;
 const DIR_N = 1;
 const DIR_NE = 2;
 const DIR_E = 3;

@@ -43,6 +43,7 @@ Actor.prototype.offset_x = 0;
 Actor.prototype.offset_y = 0;
 Actor.prototype.color = "rgb(224,224,224)";
 Actor.prototype.is_player = false;
+Actor.prototype.player_distance = 1000;
 Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
@@ -64,9 +65,19 @@ Actor.prototype.render = function(target_context)
 	target_context.font = View.font_size+" Sans-Serif";
 	target_context.fillStyle = this.color;
 	target_context.textAlign = "center";
+	target_context.textBaseline = "alphabetic";
 	
-	/* Draw it */
-	target_context.fillText(this.avatar,this.px,this.py);	
+	/* Draw debug rectangle */
+	/*
+	var debug_x = View.get_px(this.map_x);
+	var debug_y = View.get_py(this.map_y);
+	var debug_w = View.grid_width;
+	var debug_h = View.grid_height;
+	
+	target_context.fillRect(debug_x, debug_y, debug_w, debug_h);*/
+	
+	/* Draw avatar*/
+	target_context.fillText(this.avatar,this.px,this.py+View.grid_height);	
 };
 
 Actor.prototype.check_action = function(direction) 
@@ -74,6 +85,7 @@ Actor.prototype.check_action = function(direction)
 	var xx, yy, move_check, mob_check, npc_check;
 	
 	switch (direction) {
+		case DIR_NA: xx = this.map_x;     yy = this.map_y; break;
 		case DIR_N:  xx = this.map_x;     yy = this.map_y - 1; break;
 		case DIR_NE: xx = this.map_x + 1; yy = this.map_y - 1; break;
 		case DIR_E:  xx = this.map_x + 1; yy = this.map_y; break;
@@ -195,34 +207,58 @@ Actor.prototype.update_pxpy = function()
 	this.py = current_view_grid_y*View.grid_height;
 };
 
-Actor.prototype.damage_actor = function(damage_amount, attacker = -1, damage_type = DAM_PHYSICAL)
+Actor.prototype.damage_actor = function(damage_amount, attacker = "", damage_type = DAM_PHYSICAL)
 {
-	var attacker_name;
 	this.current_hp -= damage_amount;
 		
 	if (this.current_hp < 1) { this.monster_die(); }
 	
 	if (attacker != -1) { 
-		attacker_name = Party.name[attacker];
-		this.last_hit = attacker_name;
-		Hud.message.add_message(attacker_name + " hits "+ this.name + " for " + damage_amount); 
+		this.last_hit = attacker;
+		Hud.message.add_message(attacker + this.get_damage_action(damage_type) + this.name + " for " + damage_amount); 
 	}
 }
+
+Actor.prototype.get_damage_action = function(damage_type)
+{
+	switch (damage_type) {
+		case DAM_PHYSICAL: return " hits "; break;
+		case DAM_MAGIC: return " blasts "; break;
+		case DAM_FIRE: return " burns "; break;
+		case DAM_EARTH: return " smashes "; break;
+		case DAM_WATER: return " chills "; break;
+		case DAM_AIR: return " slashes "; break;
+		case DAM_DARK: return " blasts "; break;
+		case DAM_LIGHT: return " blasts "; break;
+		case DAM_RANGED: return " shoots "; break;
+		case DAM_ANCIENT: return " blasts "; break;
+	}
+};
+
+Actor.prototype.get_player_distance = function() { return Math.abs(this.map_x-Player.map_x)+Math.abs(this.map_y-Player.map_y); };
+
+Actor.prototype.update_player_distance = function() 
+{ 
+	this.player_distance = this.get_player_distance();
+};
 
 function Animator()
 {
 	/* Animators are added to the Animations global array for processing */
 	Animations.push(this);
 	
-	this.ttl *= (Math.random()+1);
+	this.ttl = 30;
 	this.world = World;
+	this.damage = Math.round(Math.random()*3)+1;
+	this.shooter = null;
+	this.from_player = false;
 }
 
 /* All animators have world visibility */
 Animator.prototype.world = 0;
-Animator.prototype.ttl = 15;
+Animator.prototype.ttl = 30;
 Animator.prototype.direction = 0;
-Animator.prototype.speed = 8;
+Animator.prototype.speed = 10;
 Animator.prototype.px = 0;
 Animator.prototype.py = 0;
 Animator.prototype.grid_x = 0;
@@ -245,8 +281,8 @@ Animator.prototype.start = function()
 	/* determine the pixel value of the start location */
 	var current_view_grid_x = this.grid_x-View.view_grid_x;
 	var current_view_grid_y = this.grid_y-View.view_grid_y-1;
-	this.px = current_view_grid_x*View.grid_width+View.grid_width/2;
-	this.py = current_view_grid_y*View.grid_height+View.grid_height/2;
+	this.px = View.get_px(this.grid_x)+View.grid_width/2;
+	this.py = View.get_py(this.grid_y)+View.grid_height/2
 	
 	/* Determine the unit vector components */
 	this.unit_x = Math.cos(Math.deg_to_rad(this.direction));
@@ -255,7 +291,7 @@ Animator.prototype.start = function()
 
 Animator.prototype.clear = function()
 {
-	overlay_context.clearRect(this.px-2, this.py-2, 4, 4);
+	overlay_context.clearRect(this.px-3, this.py-3, 6, 6);
 };
 
 Animator.prototype.update = function()
@@ -264,12 +300,18 @@ Animator.prototype.update = function()
 	this.py -= Math.round(this.unit_y * this.speed);
 	this.grid_x = View.get_grid_x(this.px);
 	this.grid_y = View.get_grid_y(this.py);
-	
+
 	this.ttl--;
 	
 	/* Check hit */
 	if (this.world.gridmob[this.grid_y][this.grid_x]) {
-		console.log("hit");
+		var hit;
+		hit = this.world.gridmob[this.grid_y][this.grid_x];
+		
+		if (this.from_player && hit != Player) {
+			hit.damage_actor(this.damage, this.shooter, DAM_RANGED)
+			this.destroy();
+		}
 	}
 	
 	/* Check dead */
@@ -299,6 +341,7 @@ function Arrow(xx, yy, dir = 0)
 	this.grid_y = yy;
 	this.direction = dir;
 	this.color = COL_ARROW;
+	this.ttl = 30;
 	
 	/* This animation prep must happen after setting position and direction */
 	this.start();
@@ -307,12 +350,20 @@ function Arrow(xx, yy, dir = 0)
 Arrow.prototype = Object.create(Animator.prototype);
 Arrow.prototype.constructor = Animator;
 
-Arrow.prototype.render = function()
+Arrow.prototype.clear = function()
 {
-	overlay_context.fillStyle = this.color;
-	overlay_context.fillRect(this.px-2, this.py-2, 4, 4);
-	overlay_context.fillRect(this.px-2, this.py-2, 4, 4);
-}
+	overlay_context.clearRect(this.px-10,this.py-10,20,20);
+};
+
+Arrow.prototype.render = function()
+{	
+	overlay_context.strokeStyle = this.color;
+	overlay_context.beginPath();
+	overlay_context.lineWidth="2";
+	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
+	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
+	overlay_context.stroke();
+};
 
 const COL_MAP_BUILDING = 'rgb(200,180,100)';
 const COL_MAP_WATER = 'rgb(100,100,175)';
@@ -606,6 +657,7 @@ Message.prototype.add_message = function(msg) {
 	
 	this.message_log[this.message_index] = msg;
 	this.hud.message_dirty = true;
+	this.hud.dirty = true;
 };
  
 function Partymember(hud_id, new_id) 
@@ -775,7 +827,7 @@ function doKeyDown(event)
 	View.render_animations();
 	
 	for (i=0; i<Monsters.length; i++) {
-		Monsters[i].ai_move(); 
+		Monsters[i].ai_action(); 
 	}
 	
 	Player.update_tick();
@@ -973,7 +1025,7 @@ function Monster(type, level, xx, yy)
 	this.xp_reward = 0;
 	this.gold_reward = 0;
 	this.status = 0; /* flags variable */
-	this.mode = 0;
+	this.mode = AISTATE_WAIT;
 	
 	this.load_monster(this, type, level);
 	
@@ -983,20 +1035,6 @@ function Monster(type, level, xx, yy)
 
 Monster.prototype = Object.create(Actor.prototype);
 Monster.prototype.constructor = Monster;
-
-Monster.prototype.ai_move = function() 
-{
-	if (!this.is_active()) { return false; }
-	
-	switch (Math.floor(Math.random()*4)) {
-		case 0: this.check_action(DIR_W); break;
-		case 1: this.check_action(DIR_N); break;
-		case 2: this.check_action(DIR_E); break;
-		case 3: this.check_action(DIR_S); break;
-	} 
-	
-	this.execute_move();
-};
 
 Monster.prototype.load_monster = function(m, type, level) 
 {
@@ -1038,6 +1076,7 @@ Monster.prototype.load_monster = function(m, type, level)
 
 Monster.prototype.is_active = function() 
 {
+	if (this.mode & AISTATE_WAIT) { return false; }
 	if (this.status & STATUS_DEAD) { return false; }
 	
 	return true;
@@ -1068,6 +1107,65 @@ Monster.prototype.execute_melee_attack = function(target)
 		target.last_hit = this;
 		Party.damage_party(this, damage, -1, DAM_PHYSICAL);
 	}
+};
+
+Monster.prototype.ai_action = function() 
+{
+	this.update_player_distance();
+	
+	if (this.player_distance <= 20) { this.mode = AISTATE_CHASE; }
+	
+	if (!this.is_active()) { return false; }
+	
+	if (this.current_hp/this.max_hp < 0.25) { this.mode = AISTATE_FLEE; }
+	
+	switch (this.mode) {
+		case AISTATE_WANDER: this.ai_move_random(); break;
+		case AISTATE_CHASE: this.ai_move_approach(); break;
+		case AISTATE_FLEE: this.ai_move_run(); break;
+	} 
+	
+	this.execute_move();
+};
+
+Monster.prototype.ai_move_random = function() 
+{	
+	switch (Math.floor(Math.random()*4)) {
+		case 0: this.check_action(DIR_W); break;
+		case 1: this.check_action(DIR_N); break;
+		case 2: this.check_action(DIR_E); break;
+		case 3: this.check_action(DIR_S); break;
+	} 
+};
+
+Monster.prototype.ai_move_approach = function() 
+{	
+	var candidates = [DIR_NA];
+	
+	if (this.map_x < Player.map_x) { candidates.push(DIR_E, DIR_NE, DIR_SE); }
+	if (this.map_x > Player.map_x) { candidates.push(DIR_W, DIR_NW, DIR_SW); }	
+	if (this.map_y < Player.map_y) { candidates.push(DIR_S, DIR_SE, DIR_SW); }
+	if (this.map_y > Player.map_y) { candidates.push(DIR_N, DIR_NW, DIR_NE); }
+	
+	var action = Math.floor(Math.random()*candidates.length);
+	this.check_action(candidates[action]);
+	
+	candidates = null;
+};
+
+Monster.prototype.ai_move_run = function() 
+{	
+	var candidates = [];
+	
+	if (this.map_x < Player.map_x) { candidates.push(DIR_W, DIR_NW, DIR_SW); }
+	if (this.map_x > Player.map_x) { candidates.push(DIR_E, DIR_NE, DIR_SE); }	
+	if (this.map_y < Player.map_y) { candidates.push(DIR_N, DIR_NE, DIR_NW); }
+	if (this.map_y > Player.map_y) { candidates.push(DIR_S, DIR_SW, DIR_SE); }
+	
+	var action = Math.floor(Math.random()*candidates.length);
+	this.check_action(candidates[action]);
+	
+	candidates = null;
 };
  
 /* Globals for mouse interface is just easy */
@@ -1121,15 +1219,20 @@ function Party()
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
 	
-	this.base_delay[0] = 5; this.current_delay[0] = 0;
-	this.base_delay[1] = 6; this.current_delay[1] = 0;
-	this.base_delay[2] = 7; this.current_delay[2] = 0;
-	this.base_delay[3] = 8; this.current_delay[3] = 0;
+	this.base_delay[0] = 9; this.current_delay[0] = 0;
+	this.base_delay[1] = 10; this.current_delay[1] = 0;
+	this.base_delay[2] = 11; this.current_delay[2] = 0;
+	this.base_delay[3] = 12; this.current_delay[3] = 0;
 	
-	this.die_num[0] = 2; this.die_side[0] = 4; this.die_bonus[0] = 1;
-	this.die_num[1] = 2; this.die_side[1] = 3; this.die_bonus[1] = 1;
-	this.die_num[2] = 1; this.die_side[2] = 3; this.die_bonus[2] = 0;
-	this.die_num[3] = 1; this.die_side[3] = 2; this.die_bonus[3] = 0;
+	this.melee_die_num[0] = 2; this.melee_die_side[0] = 4; this.melee_die_bonus[0] = 1;
+	this.melee_die_num[1] = 2; this.melee_die_side[1] = 3; this.melee_die_bonus[1] = 1;
+	this.melee_die_num[2] = 1; this.melee_die_side[2] = 3; this.melee_die_bonus[2] = 0;
+	this.melee_die_num[3] = 1; this.melee_die_side[3] = 2; this.melee_die_bonus[3] = 0;
+	
+	this.ranged_die_num[0] = 1; this.ranged_die_side[0] = 3; this.ranged_die_bonus[0] = 1;
+	this.ranged_die_num[1] = 1; this.ranged_die_side[1] = 3; this.ranged_die_bonus[1] = 1;
+	this.ranged_die_num[2] = 1; this.ranged_die_side[2] = 3; this.ranged_die_bonus[2] = 1;
+	this.ranged_die_num[3] = 1; this.ranged_die_side[3] = 3; this.ranged_die_bonus[3] = 1;
 	
 	for (i=0; i<4; i++) {
 		this.status[i] = 0;
@@ -1151,10 +1254,12 @@ Party.prototype.xp = [];
 Party.prototype.name = [];
 Party.prototype.base_delay = [];
 Party.prototype.current_delay = [];
-Party.prototype.die_num = [];
-Party.prototype.die_side = [];
-Party.prototype.die_bonus = [];
-
+Party.prototype.melee_die_num = [];
+Party.prototype.melee_die_side = [];
+Party.prototype.melee_die_bonus = [];
+Party.prototype.ranged_die_num = [];
+Party.prototype.ranged_die_side = [];
+Party.prototype.ranged_die_bonus = [];
 
 Party.prototype.is_incapacitated = function(party_member) 
 { 
@@ -1319,9 +1424,9 @@ Player.prototype.execute_melee_attack = function(target)
 	var i;
 	var damage = 0;
 	var party_member = Party.active_partymember;
-	var die_num = Party.die_num[party_member];
-	var die_side = Party.die_side[party_member];
-	var die_bonus = Party.die_bonus[party_member];
+	var die_num = Party.melee_die_num[party_member];
+	var die_side = Party.melee_die_side[party_member];
+	var die_bonus = Party.melee_die_bonus[party_member];
 	var attacker = Party.name[party_member];
 	var attack_type = DAM_PHYSICAL;
 	
@@ -1329,7 +1434,7 @@ Player.prototype.execute_melee_attack = function(target)
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
 	
-	if (damage > 0) { target.damage_actor(damage, party_member); }
+	if (damage > 0) { target.damage_actor(damage, attacker); }
 	
 	Party.current_delay[party_member] = Party.base_delay[party_member];
 	Hud.partymember[party_member].dirty = true;
@@ -1343,9 +1448,9 @@ Player.prototype.execute_ranged_attack = function()
 	var i, shot;
 	var damage = 0;
 	var party_member = Party.active_partymember;
-	var die_num = 1;
-	var die_side = 3;
-	var die_bonus = 1;
+	var die_num = Party.ranged_die_num[party_member];
+	var die_side = Party.ranged_die_side[party_member];
+	var die_bonus = Party.ranged_die_bonus[party_member];
 	var attacker = Party.name[party_member];
 	var attack_type = DAM_PHYSICAL;
 	
@@ -1353,7 +1458,12 @@ Player.prototype.execute_ranged_attack = function()
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
 	
-	shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(Player.map_x, Player.map_y, mouse_gx, mouse_gy))
+	//overlay_context.fillRect(View.get_px(Player.map_x), View.get_py(Player.map_y), View.grid_width, View.grid_height);
+	//overlay_context.fillRect(View.get_px(mouse_gx), View.get_py(mouse_gy), View.grid_width, View.grid_height);
+	
+	shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(View.get_px(Player.map_x), View.get_py(Player.map_y), mouse_x, mouse_y))
+	shot.from_player = true;
+	shot.shooter = attacker;
 	
 	Party.current_delay[party_member] = Party.base_delay[party_member];
 	Hud.partymember[party_member].dirty = true;
@@ -1487,6 +1597,7 @@ const MTYPE_BAA = 53;
 const AISTATE_WAIT = 0;
 const AISTATE_CHASE = 1;
 const AISTATE_FLEE = 2;
+const AISTATE_WANDER = 3;
 
 /* Keyboard Codes */
 const KB_LEFT = 37;
@@ -1505,6 +1616,7 @@ const KB_MINUS = 189;
 const KB_PLUS = 187;
 
 /* Direction Enum */
+const DIR_NA = 0;
 const DIR_N = 1;
 const DIR_NE = 2;
 const DIR_E = 3;
@@ -1592,6 +1704,8 @@ View.prototype.calculate_view = function()
 /* Conversion helpers from exact screen position to grid square */
 View.prototype.get_grid_x = function(pixel_x) { return Math.floor(pixel_x/View.grid_width)+View.view_grid_x; };
 View.prototype.get_grid_y = function(pixel_y) { return Math.floor(pixel_y/View.grid_height)+View.view_grid_y; };
+View.prototype.get_px = function(grid_x) { return (grid_x-View.view_grid_x)*View.grid_width; };
+View.prototype.get_py = function(grid_y) { return (grid_y-View.view_grid_y)*View.grid_height; };
 
 View.prototype.render = function (world_context, actor_context) 
 {	
@@ -1866,7 +1980,7 @@ World.prototype.render = function(target_context)
 	for (j=start_grid_y; j<end_grid_y; j++) {
 		for (i=start_grid_x; i<end_grid_x; i++) {
 			px = (i-View.view_grid_x)*View.grid_width;
-			py = (j-View.view_grid_y)*View.grid_height;
+			py = (j-View.view_grid_y)*View.grid_height+View.grid_height;
 			target_context.fillStyle = this.gridcol[j][i];
 			target_context.fillText(this.grid[j][i],px,py);
 		}

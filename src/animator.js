@@ -26,15 +26,18 @@ function Animator()
 	/* Animators are added to the Animations global array for processing */
 	Animations.push(this);
 	
-	this.ttl *= (Math.random()+1);
+	this.ttl = 30;
 	this.world = World;
+	this.damage = Math.round(Math.random()*3)+1;
+	this.shooter = null;
+	this.from_player = false;
 }
 
 /* All animators have world visibility */
 Animator.prototype.world = 0;
-Animator.prototype.ttl = 15;
+Animator.prototype.ttl = 30;
 Animator.prototype.direction = 0;
-Animator.prototype.speed = 8;
+Animator.prototype.speed = 10;
 Animator.prototype.px = 0;
 Animator.prototype.py = 0;
 Animator.prototype.grid_x = 0;
@@ -57,8 +60,8 @@ Animator.prototype.start = function()
 	/* determine the pixel value of the start location */
 	var current_view_grid_x = this.grid_x-View.view_grid_x;
 	var current_view_grid_y = this.grid_y-View.view_grid_y-1;
-	this.px = current_view_grid_x*View.grid_width+View.grid_width/2;
-	this.py = current_view_grid_y*View.grid_height+View.grid_height/2;
+	this.px = View.get_px(this.grid_x)+View.grid_width/2;
+	this.py = View.get_py(this.grid_y)+View.grid_height/2
 	
 	/* Determine the unit vector components */
 	this.unit_x = Math.cos(Math.deg_to_rad(this.direction));
@@ -67,7 +70,7 @@ Animator.prototype.start = function()
 
 Animator.prototype.clear = function()
 {
-	overlay_context.clearRect(this.px-2, this.py-2, 4, 4);
+	overlay_context.clearRect(this.px-3, this.py-3, 6, 6);
 };
 
 Animator.prototype.update = function()
@@ -76,12 +79,18 @@ Animator.prototype.update = function()
 	this.py -= Math.round(this.unit_y * this.speed);
 	this.grid_x = View.get_grid_x(this.px);
 	this.grid_y = View.get_grid_y(this.py);
-	
+
 	this.ttl--;
 	
 	/* Check hit */
 	if (this.world.gridmob[this.grid_y][this.grid_x]) {
-		console.log("hit");
+		var hit;
+		hit = this.world.gridmob[this.grid_y][this.grid_x];
+		
+		if (this.from_player && hit != Player) {
+			hit.damage_actor(this.damage, this.shooter, DAM_RANGED)
+			this.destroy();
+		}
 	}
 	
 	/* Check dead */
@@ -111,6 +120,7 @@ function Arrow(xx, yy, dir = 0)
 	this.grid_y = yy;
 	this.direction = dir;
 	this.color = COL_ARROW;
+	this.ttl = 30;
 	
 	/* This animation prep must happen after setting position and direction */
 	this.start();
@@ -119,9 +129,17 @@ function Arrow(xx, yy, dir = 0)
 Arrow.prototype = Object.create(Animator.prototype);
 Arrow.prototype.constructor = Animator;
 
-Arrow.prototype.render = function()
+Arrow.prototype.clear = function()
 {
-	overlay_context.fillStyle = this.color;
-	overlay_context.fillRect(this.px-2, this.py-2, 4, 4);
-	overlay_context.fillRect(this.px-2, this.py-2, 4, 4);
-}
+	overlay_context.clearRect(this.px-10,this.py-10,20,20);
+};
+
+Arrow.prototype.render = function()
+{	
+	overlay_context.strokeStyle = this.color;
+	overlay_context.beginPath();
+	overlay_context.lineWidth="2";
+	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
+	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
+	overlay_context.stroke();
+};

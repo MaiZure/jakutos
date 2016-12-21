@@ -67,4 +67,5 @@ Message.prototype.add_message = function(msg) {
 	
 	this.message_log[this.message_index] = msg;
 	this.hud.message_dirty = true;
+	this.hud.dirty = true;
 };

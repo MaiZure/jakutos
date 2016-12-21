@@ -42,9 +42,9 @@ Player.prototype.execute_melee_attack = function(target)
 	var i;
 	var damage = 0;
 	var party_member = Party.active_partymember;
-	var die_num = Party.die_num[party_member];
-	var die_side = Party.die_side[party_member];
-	var die_bonus = Party.die_bonus[party_member];
+	var die_num = Party.melee_die_num[party_member];
+	var die_side = Party.melee_die_side[party_member];
+	var die_bonus = Party.melee_die_bonus[party_member];
 	var attacker = Party.name[party_member];
 	var attack_type = DAM_PHYSICAL;
 	
@@ -52,7 +52,7 @@ Player.prototype.execute_melee_attack = function(target)
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
 	
-	if (damage > 0) { target.damage_actor(damage, party_member); }
+	if (damage > 0) { target.damage_actor(damage, attacker); }
 	
 	Party.current_delay[party_member] = Party.base_delay[party_member];
 	Hud.partymember[party_member].dirty = true;
@@ -66,9 +66,9 @@ Player.prototype.execute_ranged_attack = function()
 	var i, shot;
 	var damage = 0;
 	var party_member = Party.active_partymember;
-	var die_num = 1;
-	var die_side = 3;
-	var die_bonus = 1;
+	var die_num = Party.ranged_die_num[party_member];
+	var die_side = Party.ranged_die_side[party_member];
+	var die_bonus = Party.ranged_die_bonus[party_member];
 	var attacker = Party.name[party_member];
 	var attack_type = DAM_PHYSICAL;
 	
@@ -76,7 +76,12 @@ Player.prototype.execute_ranged_attack = function()
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
 	
-	shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(Player.map_x, Player.map_y, mouse_gx, mouse_gy))
+	//overlay_context.fillRect(View.get_px(Player.map_x), View.get_py(Player.map_y), View.grid_width, View.grid_height);
+	//overlay_context.fillRect(View.get_px(mouse_gx), View.get_py(mouse_gy), View.grid_width, View.grid_height);
+	
+	shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(View.get_px(Player.map_x), View.get_py(Player.map_y), mouse_x, mouse_y))
+	shot.from_player = true;
+	shot.shooter = attacker;
 	
 	Party.current_delay[party_member] = Party.base_delay[party_member];
 	Hud.partymember[party_member].dirty = true;

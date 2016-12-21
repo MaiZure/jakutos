@@ -49,7 +49,7 @@ function doKeyDown(event)
 	View.render_animations();
 	
 	for (i=0; i<Monsters.length; i++) {
-		Monsters[i].ai_move(); 
+		Monsters[i].ai_action(); 
 	}
 	
 	Player.update_tick();

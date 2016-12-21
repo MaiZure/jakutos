@@ -4,7 +4,14 @@ Ranged attacks
 Make move turn PQ
 Make diagonal movement
 Make some of the older objects more JS-like
+Make interface for setting dirty (especially in HUD with heirarchy)
 
 Fill out monsters
 
-BUG: Monsters that wander in to the view don't render until the screen is refocused/resized
+BUG: Monsters that wander in to the view don't render until the screen is refocused/resized.
+
+BUG: Message window doesn't update immediately on ranged hit
+
+ISSUE: Need to normalize the passing of monsters and Party members to ranged weapons to properly organize hits
+
+PROJECT: Split the Party object in to party member objects

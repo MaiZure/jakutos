@@ -62,7 +62,7 @@ function Monster(type, level, xx, yy)
 	this.xp_reward = 0;
 	this.gold_reward = 0;
 	this.status = 0; /* flags variable */
-	this.mode = 0;
+	this.mode = AISTATE_WAIT;
 	
 	this.load_monster(this, type, level);
 	
@@ -72,20 +72,6 @@ function Monster(type, level, xx, yy)
 
 Monster.prototype = Object.create(Actor.prototype);
 Monster.prototype.constructor = Monster;
-
-Monster.prototype.ai_move = function() 
-{
-	if (!this.is_active()) { return false; }
-	
-	switch (Math.floor(Math.random()*4)) {
-		case 0: this.check_action(DIR_W); break;
-		case 1: this.check_action(DIR_N); break;
-		case 2: this.check_action(DIR_E); break;
-		case 3: this.check_action(DIR_S); break;
-	} 
-	
-	this.execute_move();
-};
 
 Monster.prototype.load_monster = function(m, type, level) 
 {
@@ -127,6 +113,7 @@ Monster.prototype.load_monster = function(m, type, level)
 
 Monster.prototype.is_active = function() 
 {
+	if (this.mode & AISTATE_WAIT) { return false; }
 	if (this.status & STATUS_DEAD) { return false; }
 	
 	return true;
@@ -157,4 +144,63 @@ Monster.prototype.execute_melee_attack = function(target)
 		target.last_hit = this;
 		Party.damage_party(this, damage, -1, DAM_PHYSICAL);
 	}
+};
+
+Monster.prototype.ai_action = function() 
+{
+	this.update_player_distance();
+	
+	if (this.player_distance <= 20) { this.mode = AISTATE_CHASE; }
+	
+	if (!this.is_active()) { return false; }
+	
+	if (this.current_hp/this.max_hp < 0.25) { this.mode = AISTATE_FLEE; }
+	
+	switch (this.mode) {
+		case AISTATE_WANDER: this.ai_move_random(); break;
+		case AISTATE_CHASE: this.ai_move_approach(); break;
+		case AISTATE_FLEE: this.ai_move_run(); break;
+	} 
+	
+	this.execute_move();
+};
+
+Monster.prototype.ai_move_random = function() 
+{	
+	switch (Math.floor(Math.random()*4)) {
+		case 0: this.check_action(DIR_W); break;
+		case 1: this.check_action(DIR_N); break;
+		case 2: this.check_action(DIR_E); break;
+		case 3: this.check_action(DIR_S); break;
+	} 
+};
+
+Monster.prototype.ai_move_approach = function() 
+{	
+	var candidates = [DIR_NA];
+	
+	if (this.map_x < Player.map_x) { candidates.push(DIR_E, DIR_NE, DIR_SE); }
+	if (this.map_x > Player.map_x) { candidates.push(DIR_W, DIR_NW, DIR_SW); }	
+	if (this.map_y < Player.map_y) { candidates.push(DIR_S, DIR_SE, DIR_SW); }
+	if (this.map_y > Player.map_y) { candidates.push(DIR_N, DIR_NW, DIR_NE); }
+	
+	var action = Math.floor(Math.random()*candidates.length);
+	this.check_action(candidates[action]);
+	
+	candidates = null;
+};
+
+Monster.prototype.ai_move_run = function() 
+{	
+	var candidates = [];
+	
+	if (this.map_x < Player.map_x) { candidates.push(DIR_W, DIR_NW, DIR_SW); }
+	if (this.map_x > Player.map_x) { candidates.push(DIR_E, DIR_NE, DIR_SE); }	
+	if (this.map_y < Player.map_y) { candidates.push(DIR_N, DIR_NE, DIR_NW); }
+	if (this.map_y > Player.map_y) { candidates.push(DIR_S, DIR_SW, DIR_SE); }
+	
+	var action = Math.floor(Math.random()*candidates.length);
+	this.check_action(candidates[action]);
+	
+	candidates = null;
 };

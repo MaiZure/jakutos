@@ -41,15 +41,20 @@ function Party()
 	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
 	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
 	
-	this.base_delay[0] = 5; this.current_delay[0] = 0;
-	this.base_delay[1] = 6; this.current_delay[1] = 0;
-	this.base_delay[2] = 7; this.current_delay[2] = 0;
-	this.base_delay[3] = 8; this.current_delay[3] = 0;
+	this.base_delay[0] = 9; this.current_delay[0] = 0;
+	this.base_delay[1] = 10; this.current_delay[1] = 0;
+	this.base_delay[2] = 11; this.current_delay[2] = 0;
+	this.base_delay[3] = 12; this.current_delay[3] = 0;
 	
-	this.die_num[0] = 2; this.die_side[0] = 4; this.die_bonus[0] = 1;
-	this.die_num[1] = 2; this.die_side[1] = 3; this.die_bonus[1] = 1;
-	this.die_num[2] = 1; this.die_side[2] = 3; this.die_bonus[2] = 0;
-	this.die_num[3] = 1; this.die_side[3] = 2; this.die_bonus[3] = 0;
+	this.melee_die_num[0] = 2; this.melee_die_side[0] = 4; this.melee_die_bonus[0] = 1;
+	this.melee_die_num[1] = 2; this.melee_die_side[1] = 3; this.melee_die_bonus[1] = 1;
+	this.melee_die_num[2] = 1; this.melee_die_side[2] = 3; this.melee_die_bonus[2] = 0;
+	this.melee_die_num[3] = 1; this.melee_die_side[3] = 2; this.melee_die_bonus[3] = 0;
+	
+	this.ranged_die_num[0] = 1; this.ranged_die_side[0] = 3; this.ranged_die_bonus[0] = 1;
+	this.ranged_die_num[1] = 1; this.ranged_die_side[1] = 3; this.ranged_die_bonus[1] = 1;
+	this.ranged_die_num[2] = 1; this.ranged_die_side[2] = 3; this.ranged_die_bonus[2] = 1;
+	this.ranged_die_num[3] = 1; this.ranged_die_side[3] = 3; this.ranged_die_bonus[3] = 1;
 	
 	for (i=0; i<4; i++) {
 		this.status[i] = 0;
@@ -71,10 +76,12 @@ Party.prototype.xp = [];
 Party.prototype.name = [];
 Party.prototype.base_delay = [];
 Party.prototype.current_delay = [];
-Party.prototype.die_num = [];
-Party.prototype.die_side = [];
-Party.prototype.die_bonus = [];
-
+Party.prototype.melee_die_num = [];
+Party.prototype.melee_die_side = [];
+Party.prototype.melee_die_bonus = [];
+Party.prototype.ranged_die_num = [];
+Party.prototype.ranged_die_side = [];
+Party.prototype.ranged_die_bonus = [];
 
 Party.prototype.is_incapacitated = function(party_member) 
 { 

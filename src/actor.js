@@ -42,6 +42,7 @@ Actor.prototype.offset_x = 0;
 Actor.prototype.offset_y = 0;
 Actor.prototype.color = "rgb(224,224,224)";
 Actor.prototype.is_player = false;
+Actor.prototype.player_distance = 1000;
 Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
@@ -63,9 +64,19 @@ Actor.prototype.render = function(target_context)
 	target_context.font = View.font_size+" Sans-Serif";
 	target_context.fillStyle = this.color;
 	target_context.textAlign = "center";
+	target_context.textBaseline = "alphabetic";
 	
-	/* Draw it */
-	target_context.fillText(this.avatar,this.px,this.py);	
+	/* Draw debug rectangle */
+	/*
+	var debug_x = View.get_px(this.map_x);
+	var debug_y = View.get_py(this.map_y);
+	var debug_w = View.grid_width;
+	var debug_h = View.grid_height;
+	
+	target_context.fillRect(debug_x, debug_y, debug_w, debug_h);*/
+	
+	/* Draw avatar*/
+	target_context.fillText(this.avatar,this.px,this.py+View.grid_height);	
 };
 
 Actor.prototype.check_action = function(direction) 
@@ -73,6 +84,7 @@ Actor.prototype.check_action = function(direction)
 	var xx, yy, move_check, mob_check, npc_check;
 	
 	switch (direction) {
+		case DIR_NA: xx = this.map_x;     yy = this.map_y; break;
 		case DIR_N:  xx = this.map_x;     yy = this.map_y - 1; break;
 		case DIR_NE: xx = this.map_x + 1; yy = this.map_y - 1; break;
 		case DIR_E:  xx = this.map_x + 1; yy = this.map_y; break;
@@ -194,16 +206,37 @@ Actor.prototype.update_pxpy = function()
 	this.py = current_view_grid_y*View.grid_height;
 };
 
-Actor.prototype.damage_actor = function(damage_amount, attacker = -1, damage_type = DAM_PHYSICAL)
+Actor.prototype.damage_actor = function(damage_amount, attacker = "", damage_type = DAM_PHYSICAL)
 {
-	var attacker_name;
 	this.current_hp -= damage_amount;
 		
 	if (this.current_hp < 1) { this.monster_die(); }
 	
 	if (attacker != -1) { 
-		attacker_name = Party.name[attacker];
-		this.last_hit = attacker_name;
-		Hud.message.add_message(attacker_name + " hits "+ this.name + " for " + damage_amount); 
+		this.last_hit = attacker;
+		Hud.message.add_message(attacker + this.get_damage_action(damage_type) + this.name + " for " + damage_amount); 
 	}
 }
+
+Actor.prototype.get_damage_action = function(damage_type)
+{
+	switch (damage_type) {
+		case DAM_PHYSICAL: return " hits "; break;
+		case DAM_MAGIC: return " blasts "; break;
+		case DAM_FIRE: return " burns "; break;
+		case DAM_EARTH: return " smashes "; break;
+		case DAM_WATER: return " chills "; break;
+		case DAM_AIR: return " slashes "; break;
+		case DAM_DARK: return " blasts "; break;
+		case DAM_LIGHT: return " blasts "; break;
+		case DAM_RANGED: return " shoots "; break;
+		case DAM_ANCIENT: return " blasts "; break;
+	}
+};
+
+Actor.prototype.get_player_distance = function() { return Math.abs(this.map_x-Player.map_x)+Math.abs(this.map_y-Player.map_y); };
+
+Actor.prototype.update_player_distance = function() 
+{ 
+	this.player_distance = this.get_player_distance();
+};

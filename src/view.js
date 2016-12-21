@@ -53,6 +53,8 @@ View.prototype.calculate_view = function()
 /* Conversion helpers from exact screen position to grid square */
 View.prototype.get_grid_x = function(pixel_x) { return Math.floor(pixel_x/View.grid_width)+View.view_grid_x; };
 View.prototype.get_grid_y = function(pixel_y) { return Math.floor(pixel_y/View.grid_height)+View.view_grid_y; };
+View.prototype.get_px = function(grid_x) { return (grid_x-View.view_grid_x)*View.grid_width; };
+View.prototype.get_py = function(grid_y) { return (grid_y-View.view_grid_y)*View.grid_height; };
 
 View.prototype.render = function (world_context, actor_context) 
 {	

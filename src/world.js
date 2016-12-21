@@ -52,7 +52,7 @@ World.prototype.render = function(target_context)
 	for (j=start_grid_y; j<end_grid_y; j++) {
 		for (i=start_grid_x; i<end_grid_x; i++) {
 			px = (i-View.view_grid_x)*View.grid_width;
-			py = (j-View.view_grid_y)*View.grid_height;
+			py = (j-View.view_grid_y)*View.grid_height+View.grid_height;
 			target_context.fillStyle = this.gridcol[j][i];
 			target_context.fillText(this.grid[j][i],px,py);
 		}
