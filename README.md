@@ -5,8 +5,11 @@ The current master branch is playable directly on [GitHub Pages][reference-id-fo
 [reference-id-for-github-pages]:http://maizure.github.io/jakutos/
 
 Implemented controls are as follows:
+
 Arrows for 4-direction movement
+
 M for the minimap (includes the whole MM6 main world)
+
 \+ and \- for zooming in and out
 
 All you can do right now is run in to monsters to fight.
