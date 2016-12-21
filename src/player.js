@@ -52,7 +52,7 @@ Player.prototype.execute_melee_attack = function(target)
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
 	
-	if (damage > 0) { target.damage_actor(damage, attacker); }
+	if (damage > 0) { target.damage_actor(damage, this, attacker); }
 	
 	Party.current_delay[party_member] = Party.base_delay[party_member];
 	Hud.partymember[party_member].dirty = true;
@@ -75,9 +75,6 @@ Player.prototype.execute_ranged_attack = function()
 	for (i=0; i<die_num; i++) {
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
-	
-	//overlay_context.fillRect(View.get_px(Player.map_x), View.get_py(Player.map_y), View.grid_width, View.grid_height);
-	//overlay_context.fillRect(View.get_px(mouse_gx), View.get_py(mouse_gy), View.grid_width, View.grid_height);
 	
 	shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(View.get_px(Player.map_x), View.get_py(Player.map_y), mouse_x, mouse_y))
 	shot.from_player = true;

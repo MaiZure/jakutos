@@ -88,7 +88,7 @@ Animator.prototype.update = function()
 		hit = this.world.gridmob[this.grid_y][this.grid_x];
 		
 		if (this.from_player && hit != Player) {
-			hit.damage_actor(this.damage, this.shooter, DAM_RANGED)
+			hit.damage_actor(this.damage, Player, this.shooter, DAM_RANGED)
 			this.destroy();
 		}
 	}
@@ -139,6 +139,39 @@ Arrow.prototype.render = function()
 	overlay_context.strokeStyle = this.color;
 	overlay_context.beginPath();
 	overlay_context.lineWidth="2";
+	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
+	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
+	overlay_context.stroke();
+};
+
+/* Firebolt Spell and mechanics */
+function Firebolt(xx, yy, dir = 0)
+{
+	Animator.call(this);
+	this.grid_x = xx;
+	this.grid_y = yy;
+	this.direction = dir;
+	this.color = COL_FIREBOLT;
+	this.speed = 12;
+	this.ttl = 30;
+	
+	/* This animation prep must happen after setting position and direction */
+	this.start();
+}
+
+Firebolt.prototype = Object.create(Animator.prototype);
+Firebolt.prototype.constructor = Animator;
+
+Firebolt.prototype.clear = function()
+{
+	overlay_context.clearRect(this.px-10,this.py-10,20,20);
+};
+
+Firebolt.prototype.render = function()
+{	
+	overlay_context.strokeStyle = this.color;
+	overlay_context.beginPath();
+	overlay_context.lineWidth="3";
 	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
 	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
 	overlay_context.stroke();

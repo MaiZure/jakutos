@@ -21,6 +21,9 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+
+/* Poor man's engine for now. Not really a good idea to build the game
+   Loop around the keyboard event */
 function doKeyDown(event) 
 {
 	var i;
@@ -42,17 +45,23 @@ function doKeyDown(event)
 		case KB_MINUS: View.world_rescale_down(); break;
 		case KB_PLUS: View.world_rescale_up(); break;
 	}
-
+	
+	/* perform the player action */
 	Player.execute_move();
 	
 	/* Animate stuff */
 	View.render_animations();
 	
+	/* Determine monster actions (When there's a lot of monsters, this should be
+		refactored to something better than O(n). Such as a PQ that looks just
+		beyond the interesting rate */
 	for (i=0; i<Monsters.length; i++) {
 		Monsters[i].ai_action(); 
 	}
 	
+	/* Do some more updates */
 	Player.update_tick();
 	
+	/* Render the world */
 	View.render(base_context,animation_context,overlay_context);
 }

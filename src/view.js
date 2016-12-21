@@ -56,6 +56,8 @@ View.prototype.get_grid_y = function(pixel_y) { return Math.floor(pixel_y/View.g
 View.prototype.get_px = function(grid_x) { return (grid_x-View.view_grid_x)*View.grid_width; };
 View.prototype.get_py = function(grid_y) { return (grid_y-View.view_grid_y)*View.grid_height; };
 
+/* This was function was written in the first few hours of the project and it needs
+   a lot more love. (It's a disaster)*/
 View.prototype.render = function (world_context, actor_context) 
 {	
 	var i;

@@ -66,19 +66,11 @@ Actor.prototype.render = function(target_context)
 	target_context.textAlign = "center";
 	target_context.textBaseline = "alphabetic";
 	
-	/* Draw debug rectangle */
-	/*
-	var debug_x = View.get_px(this.map_x);
-	var debug_y = View.get_py(this.map_y);
-	var debug_w = View.grid_width;
-	var debug_h = View.grid_height;
-	
-	target_context.fillRect(debug_x, debug_y, debug_w, debug_h);*/
-	
 	/* Draw avatar*/
 	target_context.fillText(this.avatar,this.px,this.py+View.grid_height);	
 };
 
+/* Check to see if a move is valid or if an attack initates */
 Actor.prototype.check_action = function(direction) 
 {
 	var xx, yy, move_check, mob_check, npc_check;
@@ -99,36 +91,17 @@ Actor.prototype.check_action = function(direction)
 	
 	if (move_check) {
 		mob_check = World.gridmob[yy][xx];	
-		if (mob_check) { this.execute_melee_attack(mob_check); }
-		else { 
-			this.next_x = xx; this.next_y = yy; }
+		if (mob_check) { 
+			this.execute_melee_attack(mob_check); 
+		} else { 
+			this.next_x = xx; 
+			this.next_y = yy; 
+			this.dirty = true;
+		}
 	}
 };
 
-Actor.prototype.move_left = function() 
-{ 
-	if (this.can_move(this.map_x, this.map_y, this.map_x-1,this.map_y)) { 
-		this.next_x-=1; this.animating = true; this.dirty = true; }
-};
-
-Actor.prototype.move_up = function() 
-{ 
-	if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y-1)) { 
-		this.next_y-=1; this.animating = true; this.dirty = true; }
-};
-
-Actor.prototype.move_right = function() 
-{ 
-	if (this.can_move(this.map_x, this.map_y, this.map_x+1,this.map_y)) { 
-		this.next_x+=1; this.animating = true; this.dirty = true; }
-};
- 
-Actor.prototype.move_down = function() 
-{ 
-	if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y+1)) { 
-		this.next_y+=1; this.animating = true; this.dirty = true; }
-};
-
+/* Visibility in the world view */
 Actor.prototype.is_visible = function() 
 {
 	if (this.map_x < View.view_grid_x) {
@@ -148,7 +121,7 @@ Actor.prototype.is_visible = function()
 			return false; 
 		}
 	}
-	
+
 	return true;
 };
 
@@ -175,6 +148,7 @@ Actor.prototype.moveAnimate = function()
 	}
 };
 
+/* Execute a move after checks have passed. */
 Actor.prototype.execute_move = function() 
 {	
 	World.gridmob[this.map_y][this.map_x] = null;
@@ -198,6 +172,7 @@ Actor.prototype.execute_move = function()
 	
 };
 
+/* Updates the actor's pixel position in the view */
 Actor.prototype.update_pxpy = function()
 {
 	var current_view_grid_x = this.map_x-View.view_grid_x;
@@ -206,7 +181,8 @@ Actor.prototype.update_pxpy = function()
 	this.py = current_view_grid_y*View.grid_height;
 };
 
-Actor.prototype.damage_actor = function(damage_amount, attacker = "", damage_type = DAM_PHYSICAL)
+/* General damage routine for the actor */
+Actor.prototype.damage_actor = function(damage_amount, attacker, attacker_name = "", damage_type = DAM_PHYSICAL)
 {
 	this.current_hp -= damage_amount;
 		
@@ -214,10 +190,12 @@ Actor.prototype.damage_actor = function(damage_amount, attacker = "", damage_typ
 	
 	if (attacker != -1) { 
 		this.last_hit = attacker;
-		Hud.message.add_message(attacker + this.get_damage_action(damage_type) + this.name + " for " + damage_amount); 
+		this.mode = AISTATE_CHASE;
+		Hud.message.add_message(attacker_name + this.get_damage_action(damage_type) + this.name + " for " + damage_amount); 
 	}
 }
 
+/* Converts an input damage type to a verb */
 Actor.prototype.get_damage_action = function(damage_type)
 {
 	switch (damage_type) {
@@ -234,9 +212,9 @@ Actor.prototype.get_damage_action = function(damage_type)
 	}
 };
 
+/* Function that returns the Manhattan distance between the actor and the Player.
+   This function relies on private properties and the global Player reference */
 Actor.prototype.get_player_distance = function() { return Math.abs(this.map_x-Player.map_x)+Math.abs(this.map_y-Player.map_y); };
 
-Actor.prototype.update_player_distance = function() 
-{ 
-	this.player_distance = this.get_player_distance();
-};
+/* Updated the private property for the action holding the player distance */
+Actor.prototype.update_player_distance = function() { this.player_distance = this.get_player_distance(); };

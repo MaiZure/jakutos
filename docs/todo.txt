@@ -1,5 +1,7 @@
 Hover over avatar for name/class
-Ranged attacks
+Ranged attacks for monsters
+Add stun effects to hopefully counter aggression
+Need to slow down monster attacks a bit (they attack every turn!)
 
 Make move turn PQ
 Make diagonal movement
@@ -8,10 +10,8 @@ Make interface for setting dirty (especially in HUD with heirarchy)
 
 Fill out monsters
 
-BUG: Monsters that wander in to the view don't render until the screen is refocused/resized.
-
 BUG: Message window doesn't update immediately on ranged hit
 
-ISSUE: Need to normalize the passing of monsters and Party members to ranged weapons to properly organize hits
+BUG: Ranged attack range doesn't scale with view...great bug!
 
-PROJECT: Split the Party object in to party member objects
+REFACTOR: Split the Party object in to party member objects

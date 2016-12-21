@@ -67,19 +67,11 @@ Actor.prototype.render = function(target_context)
 	target_context.textAlign = "center";
 	target_context.textBaseline = "alphabetic";
 	
-	/* Draw debug rectangle */
-	/*
-	var debug_x = View.get_px(this.map_x);
-	var debug_y = View.get_py(this.map_y);
-	var debug_w = View.grid_width;
-	var debug_h = View.grid_height;
-	
-	target_context.fillRect(debug_x, debug_y, debug_w, debug_h);*/
-	
 	/* Draw avatar*/
 	target_context.fillText(this.avatar,this.px,this.py+View.grid_height);	
 };
 
+/* Check to see if a move is valid or if an attack initates */
 Actor.prototype.check_action = function(direction) 
 {
 	var xx, yy, move_check, mob_check, npc_check;
@@ -100,36 +92,17 @@ Actor.prototype.check_action = function(direction)
 	
 	if (move_check) {
 		mob_check = World.gridmob[yy][xx];	
-		if (mob_check) { this.execute_melee_attack(mob_check); }
-		else { 
-			this.next_x = xx; this.next_y = yy; }
+		if (mob_check) { 
+			this.execute_melee_attack(mob_check); 
+		} else { 
+			this.next_x = xx; 
+			this.next_y = yy; 
+			this.dirty = true;
+		}
 	}
 };
 
-Actor.prototype.move_left = function() 
-{ 
-	if (this.can_move(this.map_x, this.map_y, this.map_x-1,this.map_y)) { 
-		this.next_x-=1; this.animating = true; this.dirty = true; }
-};
-
-Actor.prototype.move_up = function() 
-{ 
-	if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y-1)) { 
-		this.next_y-=1; this.animating = true; this.dirty = true; }
-};
-
-Actor.prototype.move_right = function() 
-{ 
-	if (this.can_move(this.map_x, this.map_y, this.map_x+1,this.map_y)) { 
-		this.next_x+=1; this.animating = true; this.dirty = true; }
-};
- 
-Actor.prototype.move_down = function() 
-{ 
-	if (this.can_move(this.map_x, this.map_y, this.map_x,this.map_y+1)) { 
-		this.next_y+=1; this.animating = true; this.dirty = true; }
-};
-
+/* Visibility in the world view */
 Actor.prototype.is_visible = function() 
 {
 	if (this.map_x < View.view_grid_x) {
@@ -149,7 +122,7 @@ Actor.prototype.is_visible = function()
 			return false; 
 		}
 	}
-	
+
 	return true;
 };
 
@@ -176,6 +149,7 @@ Actor.prototype.moveAnimate = function()
 	}
 };
 
+/* Execute a move after checks have passed. */
 Actor.prototype.execute_move = function() 
 {	
 	World.gridmob[this.map_y][this.map_x] = null;
@@ -199,6 +173,7 @@ Actor.prototype.execute_move = function()
 	
 };
 
+/* Updates the actor's pixel position in the view */
 Actor.prototype.update_pxpy = function()
 {
 	var current_view_grid_x = this.map_x-View.view_grid_x;
@@ -207,7 +182,8 @@ Actor.prototype.update_pxpy = function()
 	this.py = current_view_grid_y*View.grid_height;
 };
 
-Actor.prototype.damage_actor = function(damage_amount, attacker = "", damage_type = DAM_PHYSICAL)
+/* General damage routine for the actor */
+Actor.prototype.damage_actor = function(damage_amount, attacker, attacker_name = "", damage_type = DAM_PHYSICAL)
 {
 	this.current_hp -= damage_amount;
 		
@@ -215,10 +191,12 @@ Actor.prototype.damage_actor = function(damage_amount, attacker = "", damage_typ
 	
 	if (attacker != -1) { 
 		this.last_hit = attacker;
-		Hud.message.add_message(attacker + this.get_damage_action(damage_type) + this.name + " for " + damage_amount); 
+		this.mode = AISTATE_CHASE;
+		Hud.message.add_message(attacker_name + this.get_damage_action(damage_type) + this.name + " for " + damage_amount); 
 	}
 }
 
+/* Converts an input damage type to a verb */
 Actor.prototype.get_damage_action = function(damage_type)
 {
 	switch (damage_type) {
@@ -235,12 +213,12 @@ Actor.prototype.get_damage_action = function(damage_type)
 	}
 };
 
+/* Function that returns the Manhattan distance between the actor and the Player.
+   This function relies on private properties and the global Player reference */
 Actor.prototype.get_player_distance = function() { return Math.abs(this.map_x-Player.map_x)+Math.abs(this.map_y-Player.map_y); };
 
-Actor.prototype.update_player_distance = function() 
-{ 
-	this.player_distance = this.get_player_distance();
-};
+/* Updated the private property for the action holding the player distance */
+Actor.prototype.update_player_distance = function() { this.player_distance = this.get_player_distance(); };
 
 function Animator()
 {
@@ -309,7 +287,7 @@ Animator.prototype.update = function()
 		hit = this.world.gridmob[this.grid_y][this.grid_x];
 		
 		if (this.from_player && hit != Player) {
-			hit.damage_actor(this.damage, this.shooter, DAM_RANGED)
+			hit.damage_actor(this.damage, Player, this.shooter, DAM_RANGED)
 			this.destroy();
 		}
 	}
@@ -365,6 +343,39 @@ Arrow.prototype.render = function()
 	overlay_context.stroke();
 };
 
+/* Firebolt Spell and mechanics */
+function Firebolt(xx, yy, dir = 0)
+{
+	Animator.call(this);
+	this.grid_x = xx;
+	this.grid_y = yy;
+	this.direction = dir;
+	this.color = COL_FIREBOLT;
+	this.speed = 12;
+	this.ttl = 30;
+	
+	/* This animation prep must happen after setting position and direction */
+	this.start();
+}
+
+Firebolt.prototype = Object.create(Animator.prototype);
+Firebolt.prototype.constructor = Animator;
+
+Firebolt.prototype.clear = function()
+{
+	overlay_context.clearRect(this.px-10,this.py-10,20,20);
+};
+
+Firebolt.prototype.render = function()
+{	
+	overlay_context.strokeStyle = this.color;
+	overlay_context.beginPath();
+	overlay_context.lineWidth="3";
+	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
+	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
+	overlay_context.stroke();
+};
+
 const COL_MAP_BUILDING = 'rgb(200,180,100)';
 const COL_MAP_WATER = 'rgb(100,100,175)';
 const COL_MAP_DIRT = 'rgb(170,100,50)';
@@ -377,6 +388,7 @@ const COL_MOB_MEDIUM = "rgb(128,128,240)";
 const COL_MOB_HARD = "rgb(240,128,128)";
 const COL_MOB_UNIQUE = "rgb(240,240,128)";
 const COL_ARROW = "rgb(245,222,179)";
+const COL_FIREBOLT = "rgb(240,96,32)";
  
 function random_grass_color()
 {
@@ -766,7 +778,7 @@ function gameInit()
 	
 	Hud = new Hud();
 	
-	Minimap = new initMinimap();
+	Minimap = new Minimap();
 	
 	View.refocus(Player.map_x, Player.map_y, true);
 	View.render(base_context,animation_context);
@@ -785,10 +797,7 @@ function create_player()
 	actor.next_x = 1096;
 	actor.next_y = 671;
 	
-	var current_view_grid_x = actor.map_x-View.view_grid_x;
-	var current_view_grid_y = actor.map_y-View.view_grid_y;
-	actor.px = current_view_grid_x*View.grid_width+View.grid_width/2
-	actor.py = current_view_grid_y*View.grid_height
+	actor.update_pxpy();
 	
 	return actor;
 }
@@ -799,6 +808,9 @@ function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0)
 	return monster;
 }
 
+
+/* Poor man's engine for now. Not really a good idea to build the game
+   Loop around the keyboard event */
 function doKeyDown(event) 
 {
 	var i;
@@ -820,18 +832,24 @@ function doKeyDown(event)
 		case KB_MINUS: View.world_rescale_down(); break;
 		case KB_PLUS: View.world_rescale_up(); break;
 	}
-
+	
+	/* perform the player action */
 	Player.execute_move();
 	
 	/* Animate stuff */
 	View.render_animations();
 	
+	/* Determine monster actions (When there's a lot of monsters, this should be
+		refactored to something better than O(n). Such as a PQ that looks just
+		beyond the interesting rate */
 	for (i=0; i<Monsters.length; i++) {
 		Monsters[i].ai_action(); 
 	}
 	
+	/* Do some more updates */
 	Player.update_tick();
 	
+	/* Render the world */
 	View.render(base_context,animation_context,overlay_context);
 }
 
@@ -892,7 +910,7 @@ function add_math_utilities()
 }
 
 
-function initMinimap() 
+function Minimap() 
 {
 	this.active = false;
 	this.minimap_world_dirty = true;
@@ -1087,7 +1105,7 @@ Monster.prototype.monster_die = function()
 	this.status |= STATUS_DEAD;
 	World.gridmob[this.map_y][this.map_x] = null;
 	Hud.message.add_message(this.name + " dies");
-	
+	console.log(this.last_hit);
 	if (this.last_hit == Player) {
 		Party.add_xp(this.xp_reward);
 	}
@@ -1128,6 +1146,7 @@ Monster.prototype.ai_action = function()
 	this.execute_move();
 };
 
+/* Monsters move in random directions */
 Monster.prototype.ai_move_random = function() 
 {	
 	switch (Math.floor(Math.random()*4)) {
@@ -1138,6 +1157,7 @@ Monster.prototype.ai_move_random = function()
 	} 
 };
 
+/* Monsters generally move toward the player */
 Monster.prototype.ai_move_approach = function() 
 {	
 	var candidates = [DIR_NA];
@@ -1150,12 +1170,14 @@ Monster.prototype.ai_move_approach = function()
 	var action = Math.floor(Math.random()*candidates.length);
 	this.check_action(candidates[action]);
 	
+	/* Not sure if this helps the garbage collector in JavaScript or not */
 	candidates = null;
 };
 
+/* Monsters generally move away from the player */
 Monster.prototype.ai_move_run = function() 
 {	
-	var candidates = [];
+	var candidates = [DIR_NA];
 	
 	if (this.map_x < Player.map_x) { candidates.push(DIR_W, DIR_NW, DIR_SW); }
 	if (this.map_x > Player.map_x) { candidates.push(DIR_E, DIR_NE, DIR_SE); }	
@@ -1434,7 +1456,7 @@ Player.prototype.execute_melee_attack = function(target)
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
 	
-	if (damage > 0) { target.damage_actor(damage, attacker); }
+	if (damage > 0) { target.damage_actor(damage, this, attacker); }
 	
 	Party.current_delay[party_member] = Party.base_delay[party_member];
 	Hud.partymember[party_member].dirty = true;
@@ -1457,9 +1479,6 @@ Player.prototype.execute_ranged_attack = function()
 	for (i=0; i<die_num; i++) {
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
-	
-	//overlay_context.fillRect(View.get_px(Player.map_x), View.get_py(Player.map_y), View.grid_width, View.grid_height);
-	//overlay_context.fillRect(View.get_px(mouse_gx), View.get_py(mouse_gy), View.grid_width, View.grid_height);
 	
 	shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(View.get_px(Player.map_x), View.get_py(Player.map_y), mouse_x, mouse_y))
 	shot.from_player = true;
@@ -1707,6 +1726,8 @@ View.prototype.get_grid_y = function(pixel_y) { return Math.floor(pixel_y/View.g
 View.prototype.get_px = function(grid_x) { return (grid_x-View.view_grid_x)*View.grid_width; };
 View.prototype.get_py = function(grid_y) { return (grid_y-View.view_grid_y)*View.grid_height; };
 
+/* This was function was written in the first few hours of the project and it needs
+   a lot more love. (It's a disaster)*/
 View.prototype.render = function (world_context, actor_context) 
 {	
 	var i;

@@ -45,7 +45,7 @@ function gameInit()
 	
 	Hud = new Hud();
 	
-	Minimap = new initMinimap();
+	Minimap = new Minimap();
 	
 	View.refocus(Player.map_x, Player.map_y, true);
 	View.render(base_context,animation_context);
@@ -64,10 +64,7 @@ function create_player()
 	actor.next_x = 1096;
 	actor.next_y = 671;
 	
-	var current_view_grid_x = actor.map_x-View.view_grid_x;
-	var current_view_grid_y = actor.map_y-View.view_grid_y;
-	actor.px = current_view_grid_x*View.grid_width+View.grid_width/2
-	actor.py = current_view_grid_y*View.grid_height
+	actor.update_pxpy();
 	
 	return actor;
 }

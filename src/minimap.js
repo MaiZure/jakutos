@@ -22,7 +22,7 @@
  */
 
 
-function initMinimap() 
+function Minimap() 
 {
 	this.active = false;
 	this.minimap_world_dirty = true;

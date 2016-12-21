@@ -124,7 +124,7 @@ Monster.prototype.monster_die = function()
 	this.status |= STATUS_DEAD;
 	World.gridmob[this.map_y][this.map_x] = null;
 	Hud.message.add_message(this.name + " dies");
-	
+	console.log(this.last_hit);
 	if (this.last_hit == Player) {
 		Party.add_xp(this.xp_reward);
 	}
@@ -165,6 +165,7 @@ Monster.prototype.ai_action = function()
 	this.execute_move();
 };
 
+/* Monsters move in random directions */
 Monster.prototype.ai_move_random = function() 
 {	
 	switch (Math.floor(Math.random()*4)) {
@@ -175,6 +176,7 @@ Monster.prototype.ai_move_random = function()
 	} 
 };
 
+/* Monsters generally move toward the player */
 Monster.prototype.ai_move_approach = function() 
 {	
 	var candidates = [DIR_NA];
@@ -187,12 +189,14 @@ Monster.prototype.ai_move_approach = function()
 	var action = Math.floor(Math.random()*candidates.length);
 	this.check_action(candidates[action]);
 	
+	/* Not sure if this helps the garbage collector in JavaScript or not */
 	candidates = null;
 };
 
+/* Monsters generally move away from the player */
 Monster.prototype.ai_move_run = function() 
 {	
-	var candidates = [];
+	var candidates = [DIR_NA];
 	
 	if (this.map_x < Player.map_x) { candidates.push(DIR_W, DIR_NW, DIR_SW); }
 	if (this.map_x > Player.map_x) { candidates.push(DIR_E, DIR_NE, DIR_SE); }	
