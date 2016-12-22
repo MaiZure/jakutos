@@ -170,3 +170,10 @@ const DIR_S = 5;
 const DIR_SW = 6;
 const DIR_W = 7;
 const DIR_NW = 8;
+
+/* Spells */
+const SPELL_FLAME_ARROW = 1;
+const SPELL_MAGIC_ARROW = 2;
+const SPELL_MIND_BLAST = 3;
+const SPELL_STATIC_CHARGE = 4;
+const SPELL_COLD_BEAM = 5;

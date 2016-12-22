@@ -11,7 +11,7 @@ Make interface for setting dirty (especially in HUD with heirarchy)
 Fill out monsters
 
 BUG: Message window doesn't update immediately on ranged hit
-
 BUG: Ranged attack range doesn't scale with view...great bug!
+BUG: Chasing monsters shoot at player regardless of range
 
 REFACTOR: Split the Party object in to party member objects

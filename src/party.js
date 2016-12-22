@@ -56,10 +56,13 @@ function Party()
 	this.ranged_die_num[2] = 1; this.ranged_die_side[2] = 3; this.ranged_die_bonus[2] = 1;
 	this.ranged_die_num[3] = 1; this.ranged_die_side[3] = 3; this.ranged_die_bonus[3] = 1;
 	
+	this.spellbook=[];
+	
 	for (i=0; i<4; i++) {
 		this.status[i] = 0;
 		this.xp[i] = 0;
 		this.level[i] = 1;
+		this.spellbook[i] = [];
 	}
 	
 	this.active_partymember = 0;
@@ -146,7 +149,7 @@ Party.prototype.damage_party = function(attacker, damage_amount, target = -1, da
 	Hud.partymember[target].dirty = true;
 	
 	if (attacker != -1) { 
-		Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount); 
+		Hud.message.add_message(attacker.name + Player.get_damage_action(damage_type) + this.name[target] + " for " + damage_amount); 
 	}
 };
 

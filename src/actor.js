@@ -29,6 +29,7 @@ function Actor()
 	this.die_side = 1;
 	this.die_bonus = 1;
 	this.last_hit = 0;
+	this.spellbook = [];
 }
 
 /* Properties */
@@ -46,6 +47,18 @@ Actor.prototype.player_distance = 1000;
 Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
+Actor.prototype.skill_fire_magic = 0;
+Actor.prototype.skill_earth_magic = 0;
+Actor.prototype.skill_wind_magic = 0;
+Actor.prototype.skill_water_magic = 0;
+Actor.prototype.skill_light_magic = 0;
+Actor.prototype.skill_dark_magic = 0;
+Actor.prototype.resist_fire = 0;
+Actor.prototype.resist_electric = 0;
+Actor.prototype.resist_cold = 0;
+Actor.prototype.resist_poison = 0;
+Actor.prototype.resist_magic = 0;
+Actor.prototype.resist_physical = 0;
 
 /* Methods */
 
@@ -204,7 +217,7 @@ Actor.prototype.get_damage_action = function(damage_type)
 		case DAM_FIRE: return " burns "; break;
 		case DAM_EARTH: return " smashes "; break;
 		case DAM_WATER: return " chills "; break;
-		case DAM_AIR: return " slashes "; break;
+		case DAM_AIR: return " shocks "; break;
 		case DAM_DARK: return " blasts "; break;
 		case DAM_LIGHT: return " blasts "; break;
 		case DAM_RANGED: return " shoots "; break;

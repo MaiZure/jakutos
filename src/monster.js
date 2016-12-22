@@ -66,7 +66,7 @@ function Monster(type, level, xx, yy)
 	
 	this.load_monster(this, type, level);
 	
-	/* Load actor in to the logic grid */
+	/* Load actor in to the world grid */
 	World.gridmob[this.map_y][this.map_x]=this;
 }
 
@@ -85,7 +85,7 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.name = "Goblin";
 					m.max_hp = 13;
 					m.avatar = "g";
-					m.die_num = 1; m.die_side = 9; m.die_bonus = 0;
+					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 0;
 					m.xp_reward = 56;
 				} break;
 				case MLEVEL_MEDIUM: 
@@ -93,7 +93,9 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.name = "Goblin Shaman"; 
 					m.max_hp = 21; 
 					m.avatar = "g"; 
-					m.die_num = 1; m.die_side = 9; m.die_bonus = 2;
+					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 2;
+					m.skill_fire_magic = 1;
+					m.spellbook.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 96;
 				} break;
 				case MLEVEL_HARD: 
@@ -101,7 +103,9 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.name = "Goblin King"; 
 					m.max_hp = 40; 
 					m.avatar = "g"; 
-					m.die_num = 1; m.die_side = 9; m.die_bonus = 4;
+					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 4;
+					m.skill_fire_magic = 2;
+					m.spellbook.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 200;
 				} break;
 			}
@@ -137,13 +141,32 @@ Monster.prototype.execute_melee_attack = function(target)
 	
 	var i;
 	var damage = 0;
-	for (i=0; i<this.die_num; i++)
-		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
+	for (i=0; i<this.melee_die_num; i++)
+		damage+=Math.round(Math.random()*(this.melee_die_side-1)+1)+this.melee_die_bonus;
 	
 	if (damage > 0) {
 		target.last_hit = this;
 		Party.damage_party(this, damage, -1, DAM_PHYSICAL);
 	}
+};
+
+Monster.prototype.execute_cast_attack = function()
+{	
+	var spell, i, shot, damage;
+	
+	/* Pull a spell from the book */
+	spell = this.spellbook[Math.floor(Math.random()*this.spellbook.length)];
+	
+	/* If no spell, skip turn */
+	if (!spell) { return; }
+	
+	/* Get damage of spell from this caster */
+	damage = get_spell_damage(spell, this);
+	
+	/* Get spell projectile and apply stats */
+	shot = get_spell_shot(spell, this);
+	shot.shooter = this;
+	shot.damage = damage;
 };
 
 Monster.prototype.ai_action = function() 
@@ -188,6 +211,10 @@ Monster.prototype.ai_move_approach = function()
 	
 	var action = Math.floor(Math.random()*candidates.length);
 	this.check_action(candidates[action]);
+	
+	if (action === DIR_NA && Math.random() < 0.5) { 
+		this.execute_cast_attack(); 
+	}
 	
 	/* Not sure if this helps the garbage collector in JavaScript or not */
 	candidates = null;

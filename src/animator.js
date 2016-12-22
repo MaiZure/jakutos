@@ -31,6 +31,7 @@ function Animator()
 	this.damage = Math.round(Math.random()*3)+1;
 	this.shooter = null;
 	this.from_player = false;
+	this.damage_type = DAM_RANGED;
 }
 
 /* All animators have world visibility */
@@ -88,7 +89,12 @@ Animator.prototype.update = function()
 		hit = this.world.gridmob[this.grid_y][this.grid_x];
 		
 		if (this.from_player && hit != Player) {
-			hit.damage_actor(this.damage, Player, this.shooter, DAM_RANGED)
+			hit.damage_actor(this.damage, Player, this.shooter, this.damage_type)
+			this.destroy();
+		}
+			
+		if (!this.from_player && hit === Player) {
+			Party.damage_party(this.shooter, this.damage, -1, this.damage_type)
 			this.destroy();
 		}
 	}
@@ -145,13 +151,14 @@ Arrow.prototype.render = function()
 };
 
 /* Firebolt Spell and mechanics */
-function Firebolt(xx, yy, dir = 0)
+function Flamearrow(xx, yy, dir = 0)
 {
 	Animator.call(this);
 	this.grid_x = xx;
 	this.grid_y = yy;
 	this.direction = dir;
 	this.color = COL_FIREBOLT;
+	this.damage_type = DAM_FIRE;
 	this.speed = 12;
 	this.ttl = 30;
 	
@@ -159,15 +166,15 @@ function Firebolt(xx, yy, dir = 0)
 	this.start();
 }
 
-Firebolt.prototype = Object.create(Animator.prototype);
-Firebolt.prototype.constructor = Animator;
+Flamearrow.prototype = Object.create(Animator.prototype);
+Flamearrow.prototype.constructor = Animator;
 
-Firebolt.prototype.clear = function()
+Flamearrow.prototype.clear = function()
 {
 	overlay_context.clearRect(this.px-10,this.py-10,20,20);
 };
 
-Firebolt.prototype.render = function()
+Flamearrow.prototype.render = function()
 {	
 	overlay_context.strokeStyle = this.color;
 	overlay_context.beginPath();

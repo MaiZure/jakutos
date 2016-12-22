@@ -30,6 +30,7 @@ function Actor()
 	this.die_side = 1;
 	this.die_bonus = 1;
 	this.last_hit = 0;
+	this.spellbook = [];
 }
 
 /* Properties */
@@ -47,6 +48,18 @@ Actor.prototype.player_distance = 1000;
 Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
+Actor.prototype.skill_fire_magic = 0;
+Actor.prototype.skill_earth_magic = 0;
+Actor.prototype.skill_wind_magic = 0;
+Actor.prototype.skill_water_magic = 0;
+Actor.prototype.skill_light_magic = 0;
+Actor.prototype.skill_dark_magic = 0;
+Actor.prototype.resist_fire = 0;
+Actor.prototype.resist_electric = 0;
+Actor.prototype.resist_cold = 0;
+Actor.prototype.resist_poison = 0;
+Actor.prototype.resist_magic = 0;
+Actor.prototype.resist_physical = 0;
 
 /* Methods */
 
@@ -205,7 +218,7 @@ Actor.prototype.get_damage_action = function(damage_type)
 		case DAM_FIRE: return " burns "; break;
 		case DAM_EARTH: return " smashes "; break;
 		case DAM_WATER: return " chills "; break;
-		case DAM_AIR: return " slashes "; break;
+		case DAM_AIR: return " shocks "; break;
 		case DAM_DARK: return " blasts "; break;
 		case DAM_LIGHT: return " blasts "; break;
 		case DAM_RANGED: return " shoots "; break;
@@ -230,6 +243,7 @@ function Animator()
 	this.damage = Math.round(Math.random()*3)+1;
 	this.shooter = null;
 	this.from_player = false;
+	this.damage_type = DAM_RANGED;
 }
 
 /* All animators have world visibility */
@@ -287,7 +301,12 @@ Animator.prototype.update = function()
 		hit = this.world.gridmob[this.grid_y][this.grid_x];
 		
 		if (this.from_player && hit != Player) {
-			hit.damage_actor(this.damage, Player, this.shooter, DAM_RANGED)
+			hit.damage_actor(this.damage, Player, this.shooter, this.damage_type)
+			this.destroy();
+		}
+			
+		if (!this.from_player && hit === Player) {
+			Party.damage_party(this.shooter, this.damage, -1, this.damage_type)
 			this.destroy();
 		}
 	}
@@ -344,13 +363,14 @@ Arrow.prototype.render = function()
 };
 
 /* Firebolt Spell and mechanics */
-function Firebolt(xx, yy, dir = 0)
+function Flamearrow(xx, yy, dir = 0)
 {
 	Animator.call(this);
 	this.grid_x = xx;
 	this.grid_y = yy;
 	this.direction = dir;
 	this.color = COL_FIREBOLT;
+	this.damage_type = DAM_FIRE;
 	this.speed = 12;
 	this.ttl = 30;
 	
@@ -358,15 +378,15 @@ function Firebolt(xx, yy, dir = 0)
 	this.start();
 }
 
-Firebolt.prototype = Object.create(Animator.prototype);
-Firebolt.prototype.constructor = Animator;
+Flamearrow.prototype = Object.create(Animator.prototype);
+Flamearrow.prototype.constructor = Animator;
 
-Firebolt.prototype.clear = function()
+Flamearrow.prototype.clear = function()
 {
 	overlay_context.clearRect(this.px-10,this.py-10,20,20);
 };
 
-Firebolt.prototype.render = function()
+Flamearrow.prototype.render = function()
 {	
 	overlay_context.strokeStyle = this.color;
 	overlay_context.beginPath();
@@ -1047,7 +1067,7 @@ function Monster(type, level, xx, yy)
 	
 	this.load_monster(this, type, level);
 	
-	/* Load actor in to the logic grid */
+	/* Load actor in to the world grid */
 	World.gridmob[this.map_y][this.map_x]=this;
 }
 
@@ -1066,7 +1086,7 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.name = "Goblin";
 					m.max_hp = 13;
 					m.avatar = "g";
-					m.die_num = 1; m.die_side = 9; m.die_bonus = 0;
+					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 0;
 					m.xp_reward = 56;
 				} break;
 				case MLEVEL_MEDIUM: 
@@ -1074,7 +1094,9 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.name = "Goblin Shaman"; 
 					m.max_hp = 21; 
 					m.avatar = "g"; 
-					m.die_num = 1; m.die_side = 9; m.die_bonus = 2;
+					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 2;
+					m.skill_fire_magic = 1;
+					m.spellbook.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 96;
 				} break;
 				case MLEVEL_HARD: 
@@ -1082,7 +1104,9 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.name = "Goblin King"; 
 					m.max_hp = 40; 
 					m.avatar = "g"; 
-					m.die_num = 1; m.die_side = 9; m.die_bonus = 4;
+					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 4;
+					m.skill_fire_magic = 2;
+					m.spellbook.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 200;
 				} break;
 			}
@@ -1118,13 +1142,32 @@ Monster.prototype.execute_melee_attack = function(target)
 	
 	var i;
 	var damage = 0;
-	for (i=0; i<this.die_num; i++)
-		damage+=Math.round(Math.random()*(this.die_side-1)+1)+this.die_bonus;
+	for (i=0; i<this.melee_die_num; i++)
+		damage+=Math.round(Math.random()*(this.melee_die_side-1)+1)+this.melee_die_bonus;
 	
 	if (damage > 0) {
 		target.last_hit = this;
 		Party.damage_party(this, damage, -1, DAM_PHYSICAL);
 	}
+};
+
+Monster.prototype.execute_cast_attack = function()
+{	
+	var spell, i, shot, damage;
+	
+	/* Pull a spell from the book */
+	spell = this.spellbook[Math.floor(Math.random()*this.spellbook.length)];
+	
+	/* If no spell, skip turn */
+	if (!spell) { return; }
+	
+	/* Get damage of spell from this caster */
+	damage = get_spell_damage(spell, this);
+	
+	/* Get spell projectile and apply stats */
+	shot = get_spell_shot(spell, this);
+	shot.shooter = this;
+	shot.damage = damage;
 };
 
 Monster.prototype.ai_action = function() 
@@ -1170,6 +1213,10 @@ Monster.prototype.ai_move_approach = function()
 	var action = Math.floor(Math.random()*candidates.length);
 	this.check_action(candidates[action]);
 	
+	if (action === DIR_NA && Math.random() < 0.5) { 
+		this.execute_cast_attack(); 
+	}
+	
 	/* Not sure if this helps the garbage collector in JavaScript or not */
 	candidates = null;
 };
@@ -1203,7 +1250,7 @@ function doMouseMove(event)
 	mouse_x = event.clientX;
 	mouse_y = event.clientY;
 	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;
-	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y+1;
+	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y;
 	
 	/* Mouse hit a new grid position */
 	if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) {
@@ -1256,10 +1303,13 @@ function Party()
 	this.ranged_die_num[2] = 1; this.ranged_die_side[2] = 3; this.ranged_die_bonus[2] = 1;
 	this.ranged_die_num[3] = 1; this.ranged_die_side[3] = 3; this.ranged_die_bonus[3] = 1;
 	
+	this.spellbook=[];
+	
 	for (i=0; i<4; i++) {
 		this.status[i] = 0;
 		this.xp[i] = 0;
 		this.level[i] = 1;
+		this.spellbook[i] = [];
 	}
 	
 	this.active_partymember = 0;
@@ -1346,7 +1396,7 @@ Party.prototype.damage_party = function(attacker, damage_amount, target = -1, da
 	Hud.partymember[target].dirty = true;
 	
 	if (attacker != -1) { 
-		Hud.message.add_message(attacker.name + " hits "+ this.name[target] + " for " + damage_amount); 
+		Hud.message.add_message(attacker.name + Player.get_damage_action(damage_type) + this.name[target] + " for " + damage_amount); 
 	}
 };
 
@@ -1644,6 +1694,68 @@ const DIR_S = 5;
 const DIR_SW = 6;
 const DIR_W = 7;
 const DIR_NW = 8;
+
+/* Spells */
+const SPELL_FLAME_ARROW = 1;
+const SPELL_MAGIC_ARROW = 2;
+const SPELL_MIND_BLAST = 3;
+const SPELL_STATIC_CHARGE = 4;
+const SPELL_COLD_BEAM = 5;
+ 
+/* Takes a spell and actor (monster or player) and returns a damage */
+function get_spell_damage(spell, caster)
+{
+	var skill_level, damage;
+	
+	damage = 0;
+	
+	switch (spell) {
+		case SPELL_FLAME_ARROW: {
+			
+			skill_level = caster.skill_fire_magic;
+			
+			for (i=0; i<skill_level; i++) {
+				damage += Math.floor(Math.random()*8+1);
+			}
+			
+		}; break;
+		case SPELL_MAGIC_ARROW: {
+			
+		}; break;
+		case SPELL_MIND_BLAST: {
+			
+		}; break;
+		case SPELL_STATIC_CHARGE: {
+			
+		}; break;
+		case SPELL_COLD_BEAM: {
+			
+		}; break;
+	}
+	
+	return damage;
+}
+
+function get_spell_shot(spell, caster)
+{
+	switch (spell) {
+		case SPELL_FLAME_ARROW: {
+			return new Flamearrow(caster.map_x, caster.map_y, Math.point_direction(View.get_px(caster.map_x), View.get_py(caster.map_y), View.get_px(Player.map_x), View.get_py(Player.map_y)))
+		}; break;
+		case SPELL_MAGIC_ARROW: {
+			
+		}; break;
+		case SPELL_MIND_BLAST: {
+			
+		}; break;
+		case SPELL_STATIC_CHARGE: {
+			
+		}; break;
+		case SPELL_COLD_BEAM: {
+			
+		}; break;
+	}
+}
  
 /* Might & Magic 6 test maps */
 /* Sweet Water */
