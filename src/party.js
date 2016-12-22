@@ -58,6 +58,11 @@ function Party()
 	
 	this.spellbook=[];
 	
+	this.quick_spell[0]= SPELL_NONE;
+	this.quick_spell[1]= SPELL_SPIRIT_ARROW;
+	this.quick_spell[2]= SPELL_MIND_BLAST;
+	this.quick_spell[3]= SPELL_FLAME_ARROW;
+	
 	for (i=0; i<4; i++) {
 		this.status[i] = 0;
 		this.xp[i] = 0;
@@ -85,6 +90,8 @@ Party.prototype.melee_die_bonus = [];
 Party.prototype.ranged_die_num = [];
 Party.prototype.ranged_die_side = [];
 Party.prototype.ranged_die_bonus = [];
+Party.prototype.quick_spell = [];
+
 
 Party.prototype.is_incapacitated = function(party_member) 
 { 

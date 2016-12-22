@@ -1,5 +1,8 @@
 --*v0.3---In Development-----------------------------
 Progressing terrain climbing - falling hurts
+Attack spells - Player and monsters.
+Monsters now have an AI from inactive to attacking to fleeing
+
 
 --*v0.2---Dec 18, 2016-------------------------------
 Added a 'real' map to test based on Might & Magic 6

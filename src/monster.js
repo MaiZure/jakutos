@@ -163,8 +163,8 @@ Monster.prototype.execute_cast_attack = function()
 	/* Get damage of spell from this caster */
 	damage = get_spell_damage(spell, this);
 	
-	/* Get spell projectile and apply stats */
-	shot = get_spell_shot(spell, this);
+	/* Make spell projectile and apply stats */
+	shot = get_spell_shot(spell, this, Player);
 	shot.shooter = this;
 	shot.damage = damage;
 };

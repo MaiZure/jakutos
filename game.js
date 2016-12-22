@@ -369,7 +369,7 @@ function Flamearrow(xx, yy, dir = 0)
 	this.grid_x = xx;
 	this.grid_y = yy;
 	this.direction = dir;
-	this.color = COL_FIREBOLT;
+	this.color = COL_FLAME_ARROW;
 	this.damage_type = DAM_FIRE;
 	this.speed = 12;
 	this.ttl = 30;
@@ -408,7 +408,7 @@ const COL_MOB_MEDIUM = "rgb(128,128,240)";
 const COL_MOB_HARD = "rgb(240,128,128)";
 const COL_MOB_UNIQUE = "rgb(240,240,128)";
 const COL_ARROW = "rgb(245,222,179)";
-const COL_FIREBOLT = "rgb(240,96,32)";
+const COL_FLAME_ARROW = "rgb(240,96,32)";
  
 function random_grass_color()
 {
@@ -690,6 +690,7 @@ Message.prototype.add_message = function(msg) {
 	this.message_log[this.message_index] = msg;
 	this.hud.message_dirty = true;
 	this.hud.dirty = true;
+	Hud.render();
 };
  
 function Partymember(hud_id, new_id) 
@@ -847,7 +848,8 @@ function doKeyDown(event)
 		case KB_3:
 		case KB_4: Party.change_active_party_member(event.keyCode-KB_1); break;
 		case KB_A: Player.execute_ranged_attack(); break;
-		case KB_C: View.refocus(Player.map_x, Player.map_y); break;
+		case KB_C: Player.execute_cast_attack(); break;
+		case KB_X: View.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: View.toggle_minimap(); break;
 		case KB_MINUS: View.world_rescale_down(); break;
 		case KB_PLUS: View.world_rescale_up(); break;
@@ -1164,8 +1166,8 @@ Monster.prototype.execute_cast_attack = function()
 	/* Get damage of spell from this caster */
 	damage = get_spell_damage(spell, this);
 	
-	/* Get spell projectile and apply stats */
-	shot = get_spell_shot(spell, this);
+	/* Make spell projectile and apply stats */
+	shot = get_spell_shot(spell, this, Player);
 	shot.shooter = this;
 	shot.damage = damage;
 };
@@ -1305,6 +1307,11 @@ function Party()
 	
 	this.spellbook=[];
 	
+	this.quick_spell[0]= SPELL_NONE;
+	this.quick_spell[1]= SPELL_SPIRIT_ARROW;
+	this.quick_spell[2]= SPELL_MIND_BLAST;
+	this.quick_spell[3]= SPELL_FLAME_ARROW;
+	
 	for (i=0; i<4; i++) {
 		this.status[i] = 0;
 		this.xp[i] = 0;
@@ -1332,6 +1339,8 @@ Party.prototype.melee_die_bonus = [];
 Party.prototype.ranged_die_num = [];
 Party.prototype.ranged_die_side = [];
 Party.prototype.ranged_die_bonus = [];
+Party.prototype.quick_spell = [];
+
 
 Party.prototype.is_incapacitated = function(party_member) 
 { 
@@ -1539,6 +1548,48 @@ Player.prototype.execute_ranged_attack = function()
 	Party.active_partymember = -1;
 };
 
+Player.prototype.execute_cast_attack = function()
+{
+	if (Party.active_partymember === -1) { return false; }
+	
+	var i, cost;
+	var shot = 0;
+	var damage = 0;
+	
+	var party_member = Party.active_partymember;
+	var attacker = Party.name[party_member];
+	
+	var spell, i, shot, damage;
+	
+	/* Pull readied spell*/
+	spell = Party.quick_spell[party_member];
+	
+	/* If no spell, skip turn */
+	if (!spell) { return; }
+	
+	/* Check MP cost */
+	cost = get_spell_cost(spell, this);
+	
+	if (Party.current_mp[party_member] >= cost) {
+		
+		/* Get damage of spell from this caster */
+		damage = get_spell_damage(spell, this);
+		
+		/* Make spell projectile and apply stats */
+		shot = get_spell_shot(spell, this);
+		
+		if (shot) {
+			shot.shooter = this;
+			shot.damage = damage;
+			
+			Party.current_mp[party_member] -= cost;
+			Party.current_delay[party_member] = Party.base_delay[party_member];
+			Hud.partymember[party_member].dirty = true;
+			Party.active_partymember = -1;
+		}
+	}
+};
+
 Player.prototype.update_tick = function() 
 {	
 	Party.reduce_delay();
@@ -1681,6 +1732,7 @@ const KB_9 = 57;
 const KB_A = 65;
 const KB_C = 67;
 const KB_M = 77;
+const KB_X = 88;
 const KB_MINUS = 189;
 const KB_PLUS = 187;
 
@@ -1696,11 +1748,13 @@ const DIR_W = 7;
 const DIR_NW = 8;
 
 /* Spells */
+const SPELL_NONE = 0;
 const SPELL_FLAME_ARROW = 1;
 const SPELL_MAGIC_ARROW = 2;
 const SPELL_MIND_BLAST = 3;
 const SPELL_STATIC_CHARGE = 4;
 const SPELL_COLD_BEAM = 5;
+const SPELL_SPIRIT_ARROW = 6;
  
 /* Takes a spell and actor (monster or player) and returns a damage */
 function get_spell_damage(spell, caster)
@@ -1731,16 +1785,73 @@ function get_spell_damage(spell, caster)
 		case SPELL_COLD_BEAM: {
 			
 		}; break;
+		case SPELL_SPIRIT_ARROW: {
+			
+		}; break;
 	}
 	
 	return damage;
 }
 
-function get_spell_shot(spell, caster)
+function get_spell_cost(spell, caster)
 {
+{
+	var skill_level, cost;
+	
+	cost = 0;
+	
 	switch (spell) {
 		case SPELL_FLAME_ARROW: {
-			return new Flamearrow(caster.map_x, caster.map_y, Math.point_direction(View.get_px(caster.map_x), View.get_py(caster.map_y), View.get_px(Player.map_x), View.get_py(Player.map_y)))
+			cost = 2;
+		}; break;
+		case SPELL_MAGIC_ARROW: {
+			cost = 2;
+		}; break;
+		case SPELL_MIND_BLAST: {
+			cost = 3;
+		}; break;
+		case SPELL_STATIC_CHARGE: {
+			cost = 2;
+		}; break;
+		case SPELL_COLD_BEAM: {
+			cost = 2;
+		}; break;
+		case SPELL_SPIRIT_ARROW: {
+			cost = 1;
+		}; break;
+	}
+	
+	return cost;
+}	
+}
+
+function get_spell_shot(spell, caster, target = 0)
+{
+	var source_gx, source_gy;
+	var source_px, source_py;
+	var target_px, target_py;
+	var target_direction;
+	
+	source_gx = caster.map_x;
+	source_gy = caster.map_y;
+	source_px = View.get_px(caster.map_x);
+	source_py = View.get_py(caster.map_y);
+	
+	if (target === Player) {
+		target_px = View.get_px(target.map_x);
+		target_py = View.get_py(target.map_y);
+	}
+	
+	if (!target) {
+		target_px = mouse_x;
+		target_py = mouse_y;
+	}
+	
+	target_direction = Math.point_direction(source_px, source_py, target_px, target_py);
+	
+	switch (spell) {
+		case SPELL_FLAME_ARROW: {
+			return new Flamearrow(source_gx, source_gy, target_direction);
 		}; break;
 		case SPELL_MAGIC_ARROW: {
 			
@@ -1752,6 +1863,9 @@ function get_spell_shot(spell, caster)
 			
 		}; break;
 		case SPELL_COLD_BEAM: {
+			
+		}; break;
+		case SPELL_SPIRIT_ARROW: {
 			
 		}; break;
 	}

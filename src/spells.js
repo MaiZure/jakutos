@@ -50,16 +50,73 @@ function get_spell_damage(spell, caster)
 		case SPELL_COLD_BEAM: {
 			
 		}; break;
+		case SPELL_SPIRIT_ARROW: {
+			
+		}; break;
 	}
 	
 	return damage;
 }
 
-function get_spell_shot(spell, caster)
+function get_spell_cost(spell, caster)
 {
+{
+	var skill_level, cost;
+	
+	cost = 0;
+	
 	switch (spell) {
 		case SPELL_FLAME_ARROW: {
-			return new Flamearrow(caster.map_x, caster.map_y, Math.point_direction(View.get_px(caster.map_x), View.get_py(caster.map_y), View.get_px(Player.map_x), View.get_py(Player.map_y)))
+			cost = 2;
+		}; break;
+		case SPELL_MAGIC_ARROW: {
+			cost = 2;
+		}; break;
+		case SPELL_MIND_BLAST: {
+			cost = 3;
+		}; break;
+		case SPELL_STATIC_CHARGE: {
+			cost = 2;
+		}; break;
+		case SPELL_COLD_BEAM: {
+			cost = 2;
+		}; break;
+		case SPELL_SPIRIT_ARROW: {
+			cost = 1;
+		}; break;
+	}
+	
+	return cost;
+}	
+}
+
+function get_spell_shot(spell, caster, target = 0)
+{
+	var source_gx, source_gy;
+	var source_px, source_py;
+	var target_px, target_py;
+	var target_direction;
+	
+	source_gx = caster.map_x;
+	source_gy = caster.map_y;
+	source_px = View.get_px(caster.map_x);
+	source_py = View.get_py(caster.map_y);
+	
+	if (target === Player) {
+		target_px = View.get_px(target.map_x);
+		target_py = View.get_py(target.map_y);
+	}
+	
+	if (!target) {
+		target_px = mouse_x;
+		target_py = mouse_y;
+	}
+	
+	target_direction = Math.point_direction(source_px, source_py, target_px, target_py);
+	
+	switch (spell) {
+		case SPELL_FLAME_ARROW: {
+			return new Flamearrow(source_gx, source_gy, target_direction);
 		}; break;
 		case SPELL_MAGIC_ARROW: {
 			
@@ -71,6 +128,9 @@ function get_spell_shot(spell, caster)
 			
 		}; break;
 		case SPELL_COLD_BEAM: {
+			
+		}; break;
+		case SPELL_SPIRIT_ARROW: {
 			
 		}; break;
 	}

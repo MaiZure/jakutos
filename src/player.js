@@ -85,6 +85,48 @@ Player.prototype.execute_ranged_attack = function()
 	Party.active_partymember = -1;
 };
 
+Player.prototype.execute_cast_attack = function()
+{
+	if (Party.active_partymember === -1) { return false; }
+	
+	var i, cost;
+	var shot = 0;
+	var damage = 0;
+	
+	var party_member = Party.active_partymember;
+	var attacker = Party.name[party_member];
+	
+	var spell, i, shot, damage;
+	
+	/* Pull readied spell*/
+	spell = Party.quick_spell[party_member];
+	
+	/* If no spell, skip turn */
+	if (!spell) { return; }
+	
+	/* Check MP cost */
+	cost = get_spell_cost(spell, this);
+	
+	if (Party.current_mp[party_member] >= cost) {
+		
+		/* Get damage of spell from this caster */
+		damage = get_spell_damage(spell, this);
+		
+		/* Make spell projectile and apply stats */
+		shot = get_spell_shot(spell, this);
+		
+		if (shot) {
+			shot.shooter = this;
+			shot.damage = damage;
+			
+			Party.current_mp[party_member] -= cost;
+			Party.current_delay[party_member] = Party.base_delay[party_member];
+			Hud.partymember[party_member].dirty = true;
+			Party.active_partymember = -1;
+		}
+	}
+};
+
 Player.prototype.update_tick = function() 
 {	
 	Party.reduce_delay();

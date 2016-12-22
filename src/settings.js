@@ -157,6 +157,7 @@ const KB_9 = 57;
 const KB_A = 65;
 const KB_C = 67;
 const KB_M = 77;
+const KB_X = 88;
 const KB_MINUS = 189;
 const KB_PLUS = 187;
 
@@ -172,8 +173,10 @@ const DIR_W = 7;
 const DIR_NW = 8;
 
 /* Spells */
+const SPELL_NONE = 0;
 const SPELL_FLAME_ARROW = 1;
 const SPELL_MAGIC_ARROW = 2;
 const SPELL_MIND_BLAST = 3;
 const SPELL_STATIC_CHARGE = 4;
 const SPELL_COLD_BEAM = 5;
+const SPELL_SPIRIT_ARROW = 6;
