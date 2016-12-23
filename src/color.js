@@ -34,6 +34,8 @@ const COL_MOB_HARD = "rgb(240,128,128)";
 const COL_MOB_UNIQUE = "rgb(240,240,128)";
 const COL_ARROW = "rgb(245,222,179)";
 const COL_FLAME_ARROW = "rgb(240,96,32)";
+const COL_SPIRIT_ARROW = "rgb(32,240,32)";
+const COL_MIND_BLAST = "rgb(240,160,32)";
  
 function random_grass_color()
 {

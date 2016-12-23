@@ -29,7 +29,7 @@ function Actor()
 	this.die_side = 1;
 	this.die_bonus = 1;
 	this.last_hit = 0;
-	this.spellbook = [];
+	this.spell_book = [];
 }
 
 /* Properties */
@@ -179,7 +179,13 @@ Actor.prototype.execute_move = function()
 	this.map_y = this.next_y;
 	
 	/* Calculate the screen position */
-	this.update_pxpy();
+	if (this.is_visible) { this.update_pxpy(); }
+	
+	/* 2nd Update of player distance (post move) */
+	this.update_player_distance();
+	
+	/* Add nearby monsters to player threat list */
+	if (this.player_distance < 20) { Player.threats.push(this); }
 	
 	this.animating = false;
 	

@@ -1,7 +1,9 @@
 --*v0.3---In Development-----------------------------
-Progressing terrain climbing - falling hurts
-Attack spells - Player and monsters.
-Monsters now have an AI from inactive to attacking to fleeing
+Progressive terrain climbing - falling hurts
+Player and monsters now cast attack spells.
+Monsters now have an AI (inactive, attacking and fleeing)
+Basic attack spells now in. Each default player has a different one
+Hitting 'A' now auto-attacks closest enemy
 
 
 --*v0.2---Dec 18, 2016-------------------------------

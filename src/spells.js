@@ -33,15 +33,20 @@ function get_spell_damage(spell, caster)
 			
 			skill_level = caster.skill_fire_magic;
 			
-			for (i=0; i<skill_level; i++) {
-				damage += Math.floor(Math.random()*8+1);
-			}
+			damage += Math.floor(Math.random()*8+1);
 			
 		}; break;
 		case SPELL_MAGIC_ARROW: {
 			
 		}; break;
 		case SPELL_MIND_BLAST: {
+			
+			skill_level = caster.skill_mind_magic;
+			damage = 5;
+			
+			for (i=0; i<skill_level; i++) {
+				damage += Math.floor(Math.random()*2+1);
+			}
 			
 		}; break;
 		case SPELL_STATIC_CHARGE: {
@@ -51,6 +56,10 @@ function get_spell_damage(spell, caster)
 			
 		}; break;
 		case SPELL_SPIRIT_ARROW: {
+			
+			skill_level = caster.skill_spirit_magic;
+			
+			damage += Math.floor(Math.random()*6+1);
 			
 		}; break;
 	}
@@ -99,12 +108,12 @@ function get_spell_shot(spell, caster, target = 0)
 	
 	source_gx = caster.map_x;
 	source_gy = caster.map_y;
-	source_px = View.get_px(caster.map_x);
-	source_py = View.get_py(caster.map_y);
+	source_px = View.get_pxc(caster.map_x);
+	source_py = View.get_pyc(caster.map_y);
 	
-	if (target === Player) {
-		target_px = View.get_px(target.map_x);
-		target_py = View.get_py(target.map_y);
+	if (target) {
+		target_px = View.get_pxc(target.map_x);
+		target_py = View.get_pyc(target.map_y);
 	}
 	
 	if (!target) {
@@ -122,7 +131,7 @@ function get_spell_shot(spell, caster, target = 0)
 			
 		}; break;
 		case SPELL_MIND_BLAST: {
-			
+			return new Mindblast(source_gx, source_gy, target_direction);
 		}; break;
 		case SPELL_STATIC_CHARGE: {
 			
@@ -131,7 +140,7 @@ function get_spell_shot(spell, caster, target = 0)
 			
 		}; break;
 		case SPELL_SPIRIT_ARROW: {
-			
+			return new Spiritarrow(source_gx, source_gy, target_direction);
 		}; break;
 	}
 }

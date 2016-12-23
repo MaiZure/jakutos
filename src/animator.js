@@ -71,7 +71,7 @@ Animator.prototype.start = function()
 
 Animator.prototype.clear = function()
 {
-	overlay_context.clearRect(this.px-3, this.py-3, 6, 6);
+	overlay_context.clearRect(this.px-10, this.py-10, 20, 20);
 };
 
 Animator.prototype.update = function()
@@ -134,12 +134,6 @@ function Arrow(xx, yy, dir = 0)
 
 Arrow.prototype = Object.create(Animator.prototype);
 Arrow.prototype.constructor = Animator;
-
-Arrow.prototype.clear = function()
-{
-	overlay_context.clearRect(this.px-10,this.py-10,20,20);
-};
-
 Arrow.prototype.render = function()
 {	
 	overlay_context.strokeStyle = this.color;
@@ -150,7 +144,7 @@ Arrow.prototype.render = function()
 	overlay_context.stroke();
 };
 
-/* Firebolt Spell and mechanics */
+/* Flame Arrow Spell and mechanics */
 function Flamearrow(xx, yy, dir = 0)
 {
 	Animator.call(this);
@@ -168,12 +162,6 @@ function Flamearrow(xx, yy, dir = 0)
 
 Flamearrow.prototype = Object.create(Animator.prototype);
 Flamearrow.prototype.constructor = Animator;
-
-Flamearrow.prototype.clear = function()
-{
-	overlay_context.clearRect(this.px-10,this.py-10,20,20);
-};
-
 Flamearrow.prototype.render = function()
 {	
 	overlay_context.strokeStyle = this.color;
@@ -182,4 +170,61 @@ Flamearrow.prototype.render = function()
 	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
 	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
 	overlay_context.stroke();
+};
+
+/* Spirit Arrow Spell and mechanics */
+function Spiritarrow(xx, yy, dir = 0)
+{
+	Animator.call(this);
+	this.grid_x = xx;
+	this.grid_y = yy;
+	this.direction = dir;
+	this.color = COL_SPIRIT_ARROW;
+	this.damage_type = DAM_MAGIC;
+	this.speed = 12;
+	this.ttl = 30;
+	
+	/* This animation prep must happen after setting position and direction */
+	this.start();
+}
+
+Spiritarrow.prototype = Object.create(Animator.prototype);
+Spiritarrow.prototype.constructor = Animator;
+Spiritarrow.prototype.render = function()
+{	
+	overlay_context.strokeStyle = this.color;
+	overlay_context.beginPath();
+	overlay_context.lineWidth="3";
+	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
+	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
+	overlay_context.stroke();
+};
+
+/* Mind blast Spell and mechanics */
+function Mindblast(xx, yy, dir = 0)
+{
+	Animator.call(this);
+	this.grid_x = xx;
+	this.grid_y = yy;
+	this.direction = dir;
+	this.color = COL_MIND_BLAST;
+	this.damage_type = DAM_MAGIC;
+	this.speed = 12;
+	this.ttl = 30;
+	
+	/* This animation prep must happen after setting position and direction */
+	this.start();
+}
+
+Mindblast.prototype = Object.create(Animator.prototype);
+Mindblast.prototype.constructor = Animator;
+Mindblast.prototype.render = function()
+{
+	overlay_context.beginPath();
+    overlay_context.fillStyle = "rgb(240,240,0)";
+	overlay_context.strokeStyle = this.color;
+    overlay_context.lineWidth = 2;
+	overlay_context.arc(this.px, this.py, 4, 0, 2*Math.PI, false);
+	overlay_context.fill();
+    overlay_context.stroke();
 };

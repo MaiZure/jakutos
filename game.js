@@ -30,7 +30,7 @@ function Actor()
 	this.die_side = 1;
 	this.die_bonus = 1;
 	this.last_hit = 0;
-	this.spellbook = [];
+	this.spell_book = [];
 }
 
 /* Properties */
@@ -180,7 +180,13 @@ Actor.prototype.execute_move = function()
 	this.map_y = this.next_y;
 	
 	/* Calculate the screen position */
-	this.update_pxpy();
+	if (this.is_visible) { this.update_pxpy(); }
+	
+	/* 2nd Update of player distance (post move) */
+	this.update_player_distance();
+	
+	/* Add nearby monsters to player threat list */
+	if (this.player_distance < 20) { Player.threats.push(this); }
 	
 	this.animating = false;
 	
@@ -283,7 +289,7 @@ Animator.prototype.start = function()
 
 Animator.prototype.clear = function()
 {
-	overlay_context.clearRect(this.px-3, this.py-3, 6, 6);
+	overlay_context.clearRect(this.px-10, this.py-10, 20, 20);
 };
 
 Animator.prototype.update = function()
@@ -346,12 +352,6 @@ function Arrow(xx, yy, dir = 0)
 
 Arrow.prototype = Object.create(Animator.prototype);
 Arrow.prototype.constructor = Animator;
-
-Arrow.prototype.clear = function()
-{
-	overlay_context.clearRect(this.px-10,this.py-10,20,20);
-};
-
 Arrow.prototype.render = function()
 {	
 	overlay_context.strokeStyle = this.color;
@@ -362,7 +362,7 @@ Arrow.prototype.render = function()
 	overlay_context.stroke();
 };
 
-/* Firebolt Spell and mechanics */
+/* Flame Arrow Spell and mechanics */
 function Flamearrow(xx, yy, dir = 0)
 {
 	Animator.call(this);
@@ -380,12 +380,6 @@ function Flamearrow(xx, yy, dir = 0)
 
 Flamearrow.prototype = Object.create(Animator.prototype);
 Flamearrow.prototype.constructor = Animator;
-
-Flamearrow.prototype.clear = function()
-{
-	overlay_context.clearRect(this.px-10,this.py-10,20,20);
-};
-
 Flamearrow.prototype.render = function()
 {	
 	overlay_context.strokeStyle = this.color;
@@ -394,6 +388,63 @@ Flamearrow.prototype.render = function()
 	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
 	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
 	overlay_context.stroke();
+};
+
+/* Spirit Arrow Spell and mechanics */
+function Spiritarrow(xx, yy, dir = 0)
+{
+	Animator.call(this);
+	this.grid_x = xx;
+	this.grid_y = yy;
+	this.direction = dir;
+	this.color = COL_SPIRIT_ARROW;
+	this.damage_type = DAM_MAGIC;
+	this.speed = 12;
+	this.ttl = 30;
+	
+	/* This animation prep must happen after setting position and direction */
+	this.start();
+}
+
+Spiritarrow.prototype = Object.create(Animator.prototype);
+Spiritarrow.prototype.constructor = Animator;
+Spiritarrow.prototype.render = function()
+{	
+	overlay_context.strokeStyle = this.color;
+	overlay_context.beginPath();
+	overlay_context.lineWidth="3";
+	overlay_context.moveTo(this.px-this.unit_x*5,this.py+this.unit_y*5);
+	overlay_context.lineTo(this.px+this.unit_x*5,this.py-this.unit_y*5);
+	overlay_context.stroke();
+};
+
+/* Mind blast Spell and mechanics */
+function Mindblast(xx, yy, dir = 0)
+{
+	Animator.call(this);
+	this.grid_x = xx;
+	this.grid_y = yy;
+	this.direction = dir;
+	this.color = COL_MIND_BLAST;
+	this.damage_type = DAM_MAGIC;
+	this.speed = 12;
+	this.ttl = 30;
+	
+	/* This animation prep must happen after setting position and direction */
+	this.start();
+}
+
+Mindblast.prototype = Object.create(Animator.prototype);
+Mindblast.prototype.constructor = Animator;
+Mindblast.prototype.render = function()
+{
+	overlay_context.beginPath();
+    overlay_context.fillStyle = "rgb(240,240,0)";
+	overlay_context.strokeStyle = this.color;
+    overlay_context.lineWidth = 2;
+	overlay_context.arc(this.px, this.py, 4, 0, 2*Math.PI, false);
+	overlay_context.fill();
+    overlay_context.stroke();
 };
 
 const COL_MAP_BUILDING = 'rgb(200,180,100)';
@@ -409,6 +460,8 @@ const COL_MOB_HARD = "rgb(240,128,128)";
 const COL_MOB_UNIQUE = "rgb(240,240,128)";
 const COL_ARROW = "rgb(245,222,179)";
 const COL_FLAME_ARROW = "rgb(240,96,32)";
+const COL_SPIRIT_ARROW = "rgb(32,240,32)";
+const COL_MIND_BLAST = "rgb(240,160,32)";
  
 function random_grass_color()
 {
@@ -847,7 +900,7 @@ function doKeyDown(event)
 		case KB_2:
 		case KB_3:
 		case KB_4: Party.change_active_party_member(event.keyCode-KB_1); break;
-		case KB_A: Player.execute_ranged_attack(); break;
+		case KB_A: Player.execute_auto_attack(); /*Player.execute_ranged_attack()*/; break;
 		case KB_C: Player.execute_cast_attack(); break;
 		case KB_X: View.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: View.toggle_minimap(); break;
@@ -861,15 +914,15 @@ function doKeyDown(event)
 	/* Animate stuff */
 	View.render_animations();
 	
+	/* Do some more updates */
+	Player.update_tick();
+	
 	/* Determine monster actions (When there's a lot of monsters, this should be
 		refactored to something better than O(n). Such as a PQ that looks just
 		beyond the interesting rate */
 	for (i=0; i<Monsters.length; i++) {
 		Monsters[i].ai_action(); 
 	}
-	
-	/* Do some more updates */
-	Player.update_tick();
 	
 	/* Render the world */
 	View.render(base_context,animation_context,overlay_context);
@@ -1098,7 +1151,7 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.avatar = "g"; 
 					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 2;
 					m.skill_fire_magic = 1;
-					m.spellbook.push(SPELL_FLAME_ARROW);
+					m.spell_book.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 96;
 				} break;
 				case MLEVEL_HARD: 
@@ -1108,7 +1161,7 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.avatar = "g"; 
 					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 4;
 					m.skill_fire_magic = 2;
-					m.spellbook.push(SPELL_FLAME_ARROW);
+					m.spell_book.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 200;
 				} break;
 			}
@@ -1158,7 +1211,7 @@ Monster.prototype.execute_cast_attack = function()
 	var spell, i, shot, damage;
 	
 	/* Pull a spell from the book */
-	spell = this.spellbook[Math.floor(Math.random()*this.spellbook.length)];
+	spell = this.spell_book[Math.floor(Math.random()*this.spell_book.length)];
 	
 	/* If no spell, skip turn */
 	if (!spell) { return; }
@@ -1274,6 +1327,30 @@ function Party()
 {
 	var i;
 	
+	/* Set basic party stats */
+	for (i=0; i<4; i++) {
+		this.status[i] = 0;
+		this.xp[i] = 0;
+		this.level[i] = 1;
+		this.spell_book[i] = [];
+		
+		this.skill_fire_magic[i] = 0;
+		this.skill_earth_magic[i] = 0;
+		this.skill_wind_magic[i] = 0;
+		this.skill_water_magic[i] = 0;
+		this.skill_mind_magic[i] = 0;
+		this.skill_body_magic[i] = 0;
+		this.skill_spirit_magic[i] = 0;
+		this.skill_light_magic[i] = 0;
+		this.skill_dark_magic[i] = 0;
+		this.resist_fire[i] = 0;
+		this.resist_electric[i] = 0;
+		this.resist_cold[i] = 0;
+		this.resist_poison[i] = 0;
+		this.resist_magic[i] = 0;
+		this.resist_physical[i] = 0;
+	}
+	
 	/* Temporary constructor for a default party */
 	this.job[0] = CLASS_KNIGHT; this.name[0] = "Cyan";
 	this.job[1] = CLASS_PALADIN; this.name[1] = "Cecil";
@@ -1305,19 +1382,10 @@ function Party()
 	this.ranged_die_num[2] = 1; this.ranged_die_side[2] = 3; this.ranged_die_bonus[2] = 1;
 	this.ranged_die_num[3] = 1; this.ranged_die_side[3] = 3; this.ranged_die_bonus[3] = 1;
 	
-	this.spellbook=[];
-	
 	this.quick_spell[0]= SPELL_NONE;
 	this.quick_spell[1]= SPELL_SPIRIT_ARROW;
 	this.quick_spell[2]= SPELL_MIND_BLAST;
 	this.quick_spell[3]= SPELL_FLAME_ARROW;
-	
-	for (i=0; i<4; i++) {
-		this.status[i] = 0;
-		this.xp[i] = 0;
-		this.level[i] = 1;
-		this.spellbook[i] = [];
-	}
 	
 	this.active_partymember = 0;
 }
@@ -1339,7 +1407,24 @@ Party.prototype.melee_die_bonus = [];
 Party.prototype.ranged_die_num = [];
 Party.prototype.ranged_die_side = [];
 Party.prototype.ranged_die_bonus = [];
+Party.prototype.spell_book = [];
 Party.prototype.quick_spell = [];
+Party.prototype.skill_fire_magic = [];
+Party.prototype.skill_earth_magic = [];
+Party.prototype.skill_wind_magic = [];
+Party.prototype.skill_water_magic = [];
+Party.prototype.skill_mind_magic = [];
+Party.prototype.skill_body_magic = [];
+Party.prototype.skill_spirit_magic = [];
+Party.prototype.skill_light_magic = [];
+Party.prototype.skill_dark_magic = [];
+Party.prototype.resist_fire = [];
+Party.prototype.resist_electric = [];
+Party.prototype.resist_cold = [];
+Party.prototype.resist_poison = [];
+Party.prototype.resist_magic = [];
+Party.prototype.resist_physical = [];
+
 
 
 Party.prototype.is_incapacitated = function(party_member) 
@@ -1497,6 +1582,7 @@ function Player()
 
 Player.prototype = Object.create(Actor.prototype);
 Player.prototype.constructor = Player;
+Player.prototype.threats = [];
 
 Player.prototype.execute_melee_attack = function(target) 
 {
@@ -1522,7 +1608,7 @@ Player.prototype.execute_melee_attack = function(target)
 	Party.active_partymember = -1;
 };
 
-Player.prototype.execute_ranged_attack = function()
+Player.prototype.execute_ranged_attack = function(target = 0)
 {
 	if (Party.active_partymember === -1) { return false; }
 	
@@ -1539,7 +1625,11 @@ Player.prototype.execute_ranged_attack = function()
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
 	
-	shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(View.get_px(Player.map_x), View.get_py(Player.map_y), mouse_x, mouse_y))
+	if (target) {
+		shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(View.get_pxc(Player.map_x), View.get_pyc(Player.map_y), View.get_pxc(target.map_x), View.get_pyc(target.map_y)));
+	} else {
+		shot = new Arrow(Player.map_x, Player.map_y, Math.point_direction(View.get_pxc(Player.map_x), View.get_pyc(Player.map_y), mouse_x, mouse_y));
+	}
 	shot.from_player = true;
 	shot.shooter = attacker;
 	
@@ -1548,8 +1638,9 @@ Player.prototype.execute_ranged_attack = function()
 	Party.active_partymember = -1;
 };
 
-Player.prototype.execute_cast_attack = function()
+Player.prototype.execute_cast_attack = function(target = 0)
 {
+
 	if (Party.active_partymember === -1) { return false; }
 	
 	var i, cost;
@@ -1576,10 +1667,11 @@ Player.prototype.execute_cast_attack = function()
 		damage = get_spell_damage(spell, this);
 		
 		/* Make spell projectile and apply stats */
-		shot = get_spell_shot(spell, this);
+		shot = get_spell_shot(spell, this, target);
 		
 		if (shot) {
-			shot.shooter = this;
+			shot.from_player = true;
+			shot.shooter = attacker;
 			shot.damage = damage;
 			
 			Party.current_mp[party_member] -= cost;
@@ -1590,10 +1682,43 @@ Player.prototype.execute_cast_attack = function()
 	}
 };
 
+/* Auto-attack decision maker (A-key)*/
+Player.prototype.execute_auto_attack = function()
+{
+	if (!Player.threats.length) { return; }
+	var i;
+	var closest_enemy;
+	var closest_distance = 20;
+	
+	for (i=0; i<this.threats.length; i++){
+		if (this.threats[i].player_distance <= closest_distance) {
+			closest_enemy = this.threats[i];
+			closest_distance = closest_enemy.player_distance;
+		}
+	}
+	
+	if (closest_distance < 2) {
+		this.execute_melee_attack(closest_enemy);
+	} else {
+		if (Party.quick_spell[Party.active_partymember]) {
+			this.execute_cast_attack(closest_enemy);
+		} else {
+			this.execute_ranged_attack(closest_enemy);
+		}
+	}
+		
+}
+
 Player.prototype.update_tick = function() 
 {	
+	/* Update delay values */
 	Party.reduce_delay();
+	
+	/* Update active partymember */
 	Party.active_partymember = Party.find_ready_party_member();
+	
+	/* Clear threat board */
+	Player.threats = [];
 };
  
  /* Game Constants */
@@ -1768,15 +1893,20 @@ function get_spell_damage(spell, caster)
 			
 			skill_level = caster.skill_fire_magic;
 			
-			for (i=0; i<skill_level; i++) {
-				damage += Math.floor(Math.random()*8+1);
-			}
+			damage += Math.floor(Math.random()*8+1);
 			
 		}; break;
 		case SPELL_MAGIC_ARROW: {
 			
 		}; break;
 		case SPELL_MIND_BLAST: {
+			
+			skill_level = caster.skill_mind_magic;
+			damage = 5;
+			
+			for (i=0; i<skill_level; i++) {
+				damage += Math.floor(Math.random()*2+1);
+			}
 			
 		}; break;
 		case SPELL_STATIC_CHARGE: {
@@ -1786,6 +1916,10 @@ function get_spell_damage(spell, caster)
 			
 		}; break;
 		case SPELL_SPIRIT_ARROW: {
+			
+			skill_level = caster.skill_spirit_magic;
+			
+			damage += Math.floor(Math.random()*6+1);
 			
 		}; break;
 	}
@@ -1834,12 +1968,12 @@ function get_spell_shot(spell, caster, target = 0)
 	
 	source_gx = caster.map_x;
 	source_gy = caster.map_y;
-	source_px = View.get_px(caster.map_x);
-	source_py = View.get_py(caster.map_y);
+	source_px = View.get_pxc(caster.map_x);
+	source_py = View.get_pyc(caster.map_y);
 	
-	if (target === Player) {
-		target_px = View.get_px(target.map_x);
-		target_py = View.get_py(target.map_y);
+	if (target) {
+		target_px = View.get_pxc(target.map_x);
+		target_py = View.get_pyc(target.map_y);
 	}
 	
 	if (!target) {
@@ -1857,7 +1991,7 @@ function get_spell_shot(spell, caster, target = 0)
 			
 		}; break;
 		case SPELL_MIND_BLAST: {
-			
+			return new Mindblast(source_gx, source_gy, target_direction);
 		}; break;
 		case SPELL_STATIC_CHARGE: {
 			
@@ -1866,7 +2000,7 @@ function get_spell_shot(spell, caster, target = 0)
 			
 		}; break;
 		case SPELL_SPIRIT_ARROW: {
-			
+			return new Spiritarrow(source_gx, source_gy, target_direction);
 		}; break;
 	}
 }
@@ -1951,9 +2085,11 @@ View.prototype.get_grid_x = function(pixel_x) { return Math.floor(pixel_x/View.g
 View.prototype.get_grid_y = function(pixel_y) { return Math.floor(pixel_y/View.grid_height)+View.view_grid_y; };
 View.prototype.get_px = function(grid_x) { return (grid_x-View.view_grid_x)*View.grid_width; };
 View.prototype.get_py = function(grid_y) { return (grid_y-View.view_grid_y)*View.grid_height; };
+View.prototype.get_pxc = function(grid_x) { return (grid_x-View.view_grid_x)*View.grid_width+View.grid_width/2; };
+View.prototype.get_pyc = function(grid_y) { return (grid_y-View.view_grid_y)*View.grid_height+View.grid_height/2; };
 
 /* This was function was written in the first few hours of the project and it needs
-   a lot more love. (It's a disaster)*/
+   a lot more love. (It's a disaster) */
 View.prototype.render = function (world_context, actor_context) 
 {	
 	var i;

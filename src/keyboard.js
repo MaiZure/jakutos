@@ -39,7 +39,7 @@ function doKeyDown(event)
 		case KB_2:
 		case KB_3:
 		case KB_4: Party.change_active_party_member(event.keyCode-KB_1); break;
-		case KB_A: Player.execute_ranged_attack(); break;
+		case KB_A: Player.execute_auto_attack(); /*Player.execute_ranged_attack()*/; break;
 		case KB_C: Player.execute_cast_attack(); break;
 		case KB_X: View.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: View.toggle_minimap(); break;
@@ -53,15 +53,15 @@ function doKeyDown(event)
 	/* Animate stuff */
 	View.render_animations();
 	
+	/* Do some more updates */
+	Player.update_tick();
+	
 	/* Determine monster actions (When there's a lot of monsters, this should be
 		refactored to something better than O(n). Such as a PQ that looks just
 		beyond the interesting rate */
 	for (i=0; i<Monsters.length; i++) {
 		Monsters[i].ai_action(); 
 	}
-	
-	/* Do some more updates */
-	Player.update_tick();
 	
 	/* Render the world */
 	View.render(base_context,animation_context,overlay_context);

@@ -25,6 +25,30 @@ function Party()
 {
 	var i;
 	
+	/* Set basic party stats */
+	for (i=0; i<4; i++) {
+		this.status[i] = 0;
+		this.xp[i] = 0;
+		this.level[i] = 1;
+		this.spell_book[i] = [];
+		
+		this.skill_fire_magic[i] = 0;
+		this.skill_earth_magic[i] = 0;
+		this.skill_wind_magic[i] = 0;
+		this.skill_water_magic[i] = 0;
+		this.skill_mind_magic[i] = 0;
+		this.skill_body_magic[i] = 0;
+		this.skill_spirit_magic[i] = 0;
+		this.skill_light_magic[i] = 0;
+		this.skill_dark_magic[i] = 0;
+		this.resist_fire[i] = 0;
+		this.resist_electric[i] = 0;
+		this.resist_cold[i] = 0;
+		this.resist_poison[i] = 0;
+		this.resist_magic[i] = 0;
+		this.resist_physical[i] = 0;
+	}
+	
 	/* Temporary constructor for a default party */
 	this.job[0] = CLASS_KNIGHT; this.name[0] = "Cyan";
 	this.job[1] = CLASS_PALADIN; this.name[1] = "Cecil";
@@ -56,19 +80,10 @@ function Party()
 	this.ranged_die_num[2] = 1; this.ranged_die_side[2] = 3; this.ranged_die_bonus[2] = 1;
 	this.ranged_die_num[3] = 1; this.ranged_die_side[3] = 3; this.ranged_die_bonus[3] = 1;
 	
-	this.spellbook=[];
-	
 	this.quick_spell[0]= SPELL_NONE;
 	this.quick_spell[1]= SPELL_SPIRIT_ARROW;
 	this.quick_spell[2]= SPELL_MIND_BLAST;
 	this.quick_spell[3]= SPELL_FLAME_ARROW;
-	
-	for (i=0; i<4; i++) {
-		this.status[i] = 0;
-		this.xp[i] = 0;
-		this.level[i] = 1;
-		this.spellbook[i] = [];
-	}
 	
 	this.active_partymember = 0;
 }
@@ -90,7 +105,24 @@ Party.prototype.melee_die_bonus = [];
 Party.prototype.ranged_die_num = [];
 Party.prototype.ranged_die_side = [];
 Party.prototype.ranged_die_bonus = [];
+Party.prototype.spell_book = [];
 Party.prototype.quick_spell = [];
+Party.prototype.skill_fire_magic = [];
+Party.prototype.skill_earth_magic = [];
+Party.prototype.skill_wind_magic = [];
+Party.prototype.skill_water_magic = [];
+Party.prototype.skill_mind_magic = [];
+Party.prototype.skill_body_magic = [];
+Party.prototype.skill_spirit_magic = [];
+Party.prototype.skill_light_magic = [];
+Party.prototype.skill_dark_magic = [];
+Party.prototype.resist_fire = [];
+Party.prototype.resist_electric = [];
+Party.prototype.resist_cold = [];
+Party.prototype.resist_poison = [];
+Party.prototype.resist_magic = [];
+Party.prototype.resist_physical = [];
+
 
 
 Party.prototype.is_incapacitated = function(party_member) 

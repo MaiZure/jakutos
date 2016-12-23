@@ -95,7 +95,7 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.avatar = "g"; 
 					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 2;
 					m.skill_fire_magic = 1;
-					m.spellbook.push(SPELL_FLAME_ARROW);
+					m.spell_book.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 96;
 				} break;
 				case MLEVEL_HARD: 
@@ -105,7 +105,7 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.avatar = "g"; 
 					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 4;
 					m.skill_fire_magic = 2;
-					m.spellbook.push(SPELL_FLAME_ARROW);
+					m.spell_book.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 200;
 				} break;
 			}
@@ -155,7 +155,7 @@ Monster.prototype.execute_cast_attack = function()
 	var spell, i, shot, damage;
 	
 	/* Pull a spell from the book */
-	spell = this.spellbook[Math.floor(Math.random()*this.spellbook.length)];
+	spell = this.spell_book[Math.floor(Math.random()*this.spell_book.length)];
 	
 	/* If no spell, skip turn */
 	if (!spell) { return; }
