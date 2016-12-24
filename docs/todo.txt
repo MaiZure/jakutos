@@ -1,4 +1,3 @@
-Hover over avatar for name/class
 Need to slow down monster attacks a bit (they attack every turn!)
 
 Make move turn PQ

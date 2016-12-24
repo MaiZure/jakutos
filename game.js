@@ -169,12 +169,16 @@ Actor.prototype.execute_move = function()
 	World.gridmob[this.map_y][this.map_x] = null;
 	World.gridmob[this.next_y][this.next_x] = this;
 	
-	/* Fall damage (refactor this to calc height difference only once per move) */
 	if (this == Player) {
-		var height_diff = World.gridheight[this.next_y][this.next_x] - World.gridheight[this.map_y][this.map_x];
 		
+		/* Fall damage (refactor this to calc height difference only once per move) */
+		var height_diff = World.gridheight[this.next_y][this.next_x] - World.gridheight[this.map_y][this.map_x];		
 		if (height_diff < -2) { Party.fall_damage(height_diff); }
+		
+		/* Update clock , change to manage height changes later*/
+		Hud.status.add_time(5);
 	}
+	
 	
 	/* Move to new grid position */
 	this.map_x = this.next_x;
@@ -309,7 +313,7 @@ Animator.prototype.update = function()
 		
 		if (this.from_player && hit != Player) {
 			hit.damage_actor(this.damage, Player, this.shooter, this.damage_type)
-			hit.stunned = 1;
+			hit.stunned += 1;
 			this.destroy();
 		}
 			
@@ -549,6 +553,7 @@ function Hud()
 	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(base_canvas.height*0.01);
 	
 	/* The hud should create its widgets */
+	this.status = new Status(this);
 	this.message = new Message(this);
 	this.hover = new Hover(this);
 	for (i=0; i<4; i++) {
@@ -579,6 +584,10 @@ Hud.prototype.render = function()
 	
 	if (this.hover.dirty) {
 		this.hover.render();
+	}
+	
+	if (this.status.dirty) {
+		this.status.render();
 	}
 	
 	this.debug();
@@ -654,6 +663,7 @@ Hud.prototype.resize = function()
 	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(base_canvas.height*0.01);
 	
 	this.message_dirty = true;
+	this.status.dirty = true;
 	this.partymember[0].dirty = true;
 	this.partymember[1].dirty = true;
 	this.partymember[2].dirty = true;
@@ -686,16 +696,20 @@ Hover.prototype.add_message = function(msg) {
 	if (msg != this.message) { 
 		this.message = msg;	
 		this.dirty = true;
+		this.hud.dirty = true;
+		Hud.render();
 	}
 };
 
-Hover.prototype.get_hover_message = function(xx, yy) {
+Hover.prototype.get_hover_mob = function(xx, yy) {
 	var pos = World.gridmob[yy][xx];
-	if (pos) {
-		return pos.name;
-	}
+	if (pos) { return pos.name; }
 	
 	return "";
+};
+
+Hover.prototype.get_hover_avatar = function(party_member) {
+	return Party.name[party_member] + " the " + Party.get_class(Party.job[party_member]);
 };
  
 function Message(hud_instance) {
@@ -829,6 +843,127 @@ Partymember.prototype.health_bar_color = function(full_width, current_width)
 	if (current_width / full_width < 0.50) { return "rgb(240,240,0)"; }
 	return "rgb(0,240,0)";
 };
+ 
+function Status(hud_instance) {
+	this.hud = hud_instance;
+	this.dirty = true;
+	this.status = "";
+	this.year = 1165;
+	this.month = 1;
+	this.day = 1;
+	this.hour = 9;
+	this.minute = 0;
+	this.second = 0;
+}
+
+Status.prototype.render = function() {
+	if (this.dirty) {
+		var font_size = Math.round(this.hud.status_bar_height*0.80);
+		this.clear_status_bar();
+		this.status = this.update_status();
+		animation_context.font = font_size+"px Sans-Serif";
+		animation_context.fillStyle = "rgb(240,240,240)";
+		animation_context.textAlign = "center";
+		animation_context.fillText(this.status,this.hud.status_bar_x+this.hud.view_px_width/2,this.hud.status_bar_y+font_size);
+		
+		this.dirty = false;
+	}
+};
+
+Status.prototype.clear_status_bar = function() {
+	animation_context.clearRect(this.hud.view_px_x,this.hud.status_bar_y,this.hud.view_px_width,this.hud.status_bar_height);
+};
+
+Status.prototype.get_day_name = function(day_number)
+{
+	switch (day_number) {
+		case 1: return "Monday"; break;
+		case 2: return "Tuesday"; break;
+		case 3: return "Wednesday"; break;
+		case 4: return "Thursday"; break;
+		case 5: return "Friday"; break;
+		case 6: return "Saturday"; break;
+		case 7: return "Sunday"; break;
+	}
+};
+
+Status.prototype.get_month_name = function(month_number)
+{
+	switch (month_number) {
+		case 1: return "January"; break;
+		case 2: return "February"; break;
+		case 3: return "March"; break;
+		case 4: return "April"; break;
+		case 5: return "May"; break;
+		case 6: return "June"; break;
+		case 7: return "July"; break;
+		case 8: return "August"; break;
+		case 9: return "September"; break;
+		case 10: return "October"; break;
+		case 11: return "November"; break;
+		case 12: return "December"; break;
+	}
+};
+
+Status.prototype.get_month_name_short = function(month_number)
+{
+	switch (month_number) {
+		case 1: return "Jan"; break;
+		case 2: return "Feb"; break;
+		case 3: return "Mar"; break;
+		case 4: return "Apr"; break;
+		case 5: return "May"; break;
+		case 6: return "Jun"; break;
+		case 7: return "Jul"; break;
+		case 8: return "Aug"; break;
+		case 9: return "Sep"; break;
+		case 10: return "Oct"; break;
+		case 11: return "Nov"; break;
+		case 12: return "Dec"; break;
+	}
+};
+
+Status.prototype.add_time = function(new_seconds, new_minutes = 0, new_hours = 0, new_days = 0, new_months = 0, new_years = 0)
+{
+	this.second += new_seconds;
+	new_minutes += Math.floor(this.second/60);
+	this.second = this.second % 60;
+	
+	this.minute += new_minutes;
+	new_hours += Math.floor(this.minute/60);
+	this.minute = this.minute % 60;
+	
+	this.hour += new_hours;
+	new_days += Math.floor(this.hour/24);
+	this.hour = this.hour % 24;
+	
+	this.day += new_days;
+	new_months += Math.floor(this.day/30);
+	this.day = this.day % 30;
+	
+	this.month += new_months;
+	new_years += Math.floor(this.month/12);
+	this.month = this.month % 12;
+	
+	this.year += new_years;
+	
+	if (this.day === 0) { this.day = 1; }
+	if (this.month === 0) { this.month = 1; }
+	
+	if (new_minutes + new_hours + new_days + new_months + new_years) { 
+		this.hud.dirty = true;
+		this.dirty = true; 
+	}
+	
+}
+
+Status.prototype.update_status = function()
+{
+	var meridian = (this.hour < 12) ? "am": "pm";
+	var extra_zero = this.minute < 10 ? "0" : "";
+	var clock = this.hour % 12 + ":" + extra_zero + this.minute + meridian;
+	return (this.get_day_name(this.day) + " " + clock + ". " + this.get_month_name_short(this.month) + " " + this.day + ", " + this.year);
+}
 
 function gameInit() 
 {
@@ -891,7 +1026,9 @@ function doKeyDown(event)
 {
 	var i;
 	
-	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses */
+	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses
+	   This should eventually be abstracted by an 'Engine' object that separates listening and execution of all world objects
+	   I'll deal with this when I've made enough '2% rules' that justify separate execution order buckets */
 	
 	switch (event.keyCode) {	
 		case KB_LEFT: Player.check_action(DIR_W); break;
@@ -908,6 +1045,7 @@ function doKeyDown(event)
 		case KB_M: View.toggle_minimap(); break;
 		case KB_MINUS: View.world_rescale_down(); break;
 		case KB_PLUS: View.world_rescale_up(); break;
+		case KB_9: World.save_map(); break;
 	}
 	
 	/* perform the player action */
@@ -920,8 +1058,8 @@ function doKeyDown(event)
 	Player.update_tick();
 	
 	/* Determine monster actions (When there's a lot of monsters, this should be
-		refactored to something better than O(n). Such as a PQ that looks just
-		beyond the interesting rate */
+		refactored to something better than O(n). Such as a PQ that segments time
+		slots. */
 	for (i=0; i<Monsters.length; i++) {
 		Monsters[i].ai_action(); 
 	}
@@ -1186,7 +1324,7 @@ Monster.prototype.monster_die = function()
 	this.status |= STATUS_DEAD;
 	World.gridmob[this.map_y][this.map_x] = null;
 	Hud.message.add_message(this.name + " dies");
-	console.log(this.last_hit);
+	
 	if (this.last_hit == Player) {
 		Party.add_xp(this.xp_reward);
 	}
@@ -1310,14 +1448,29 @@ function doMouseMove(event)
 	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;
 	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y;
 	
-	/* Mouse hit a new grid position */
-	if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) {
-		last_mouse_gx = mouse_gx;
-		last_mouse_gy = mouse_gy;
-		
-		Hud.hover.add_message(Hud.hover.get_hover_message(mouse_gx,mouse_gy));
-		Hud.dirty = true;
-		Hud.render();
+	/* Handle mouse movement in the world */
+	if (mouse_in_world()) {
+		/* Mouse hit a new grid position */
+		if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) {
+			last_mouse_gx = mouse_gx;
+			last_mouse_gy = mouse_gy;
+			
+			Hud.hover.add_message(Hud.hover.get_hover_mob(mouse_gx,mouse_gy));
+		}
+	} else { /* Handle mouse movement in the HUD */
+	
+		/* Avatar box hovers (refactor this to the basic 4-corners check after HUD is finalized) */
+		if ( mouse_y > Hud.avatar_box_y ) {
+			if ( mouse_x < Hud.avatar_box_x[1] ) { 
+				Hud.hover.add_message(Hud.hover.get_hover_avatar(0));
+			} else if ( mouse_x < Hud.avatar_box_x[2] ) { 
+				Hud.hover.add_message(Hud.hover.get_hover_avatar(1));
+			} else if ( mouse_x < Hud.avatar_box_x[3] ) { 
+				Hud.hover.add_message(Hud.hover.get_hover_avatar(2));
+			} else { 
+				Hud.hover.add_message(Hud.hover.get_hover_avatar(3));
+			}
+		}
 	}
 }
 
@@ -1325,6 +1478,9 @@ function doMouseClick(event)
 {
 	
 }
+
+/* Returns true if te mouse is currently in the game world area */
+function mouse_in_world() { return (mouse_x < View.view_px_width); }
  
 function Party() 
 {
@@ -1571,6 +1727,18 @@ Party.prototype.fall_damage = function (height_difference)
 	
 	Hud.message.add_message("Waaaa...!");
 };
+
+Party.prototype.get_class = function(party_class)
+{
+	switch (party_class) {
+		case CLASS_KNIGHT: return "Knight"; return;
+		case CLASS_PALADIN:  return "Paladin"; return;
+		case CLASS_ARCHERER: return "Archerer"; return;
+		case CLASS_DRUID: return "Druid"; return;
+		case CLASS_CLERIC: return "Cleric"; return;
+		case CLASS_SORCERER: return "Sorcerer"; return;
+	}
+}
  
 function Player() 
 {
@@ -1707,7 +1875,7 @@ Player.prototype.execute_auto_attack = function()
 		var current_spell = Party.quick_spell[Party.active_partymember];
 		var current_cost = get_spell_cost(current_spell, this)
 		var current_mp = Party.current_mp[Party.active_partymember];
-		console.log(current_spell, current_cost, current_mp);
+		
 		
 		if (current_spell && current_cost <= current_mp) {
 			this.execute_cast_attack(closest_enemy);
@@ -1748,7 +1916,7 @@ const GRASSLAND = Math.round(Math.random());
 /* classes */ 
 const CLASS_KNIGHT = 1 << 0;
 const CLASS_PALADIN = 1 << 1;
-const CLASS_ARCHER = 1 << 2;
+const CLASS_ARCHERER = 1 << 2;
 const CLASS_DRUID = 1 << 3;
 const CLASS_CLERIC = 1 << 4;
 const CLASS_SORCERER = 1 << 5;
@@ -2428,11 +2596,12 @@ World.prototype.build_map = function()
 World.prototype.load_map = function load_map()
 {
 	
-	var ch, i ,j, k;
+	var ch, i ,j, k, line;
 	var source_map = [];
 	var target_base_x = [];
 	var target_base_y = [];
 	var region_size = 252;
+	save_data = localStorage;
 	
 	source_map[0] = WORLD_MAP_1; target_base_x[0] = 0; target_base_y[0]  = 0;
 	source_map[1] = WORLD_MAP_2; target_base_x[1] = region_size; target_base_y[1]  = 0;

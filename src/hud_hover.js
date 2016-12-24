@@ -47,14 +47,18 @@ Hover.prototype.add_message = function(msg) {
 	if (msg != this.message) { 
 		this.message = msg;	
 		this.dirty = true;
+		this.hud.dirty = true;
+		Hud.render();
 	}
 };
 
-Hover.prototype.get_hover_message = function(xx, yy) {
+Hover.prototype.get_hover_mob = function(xx, yy) {
 	var pos = World.gridmob[yy][xx];
-	if (pos) {
-		return pos.name;
-	}
+	if (pos) { return pos.name; }
 	
 	return "";
+};
+
+Hover.prototype.get_hover_avatar = function(party_member) {
+	return Party.name[party_member] + " the " + Party.get_class(Party.job[party_member]);
 };

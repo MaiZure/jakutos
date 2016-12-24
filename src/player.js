@@ -156,7 +156,7 @@ Player.prototype.execute_auto_attack = function()
 		var current_spell = Party.quick_spell[Party.active_partymember];
 		var current_cost = get_spell_cost(current_spell, this)
 		var current_mp = Party.current_mp[Party.active_partymember];
-		console.log(current_spell, current_cost, current_mp);
+		
 		
 		if (current_spell && current_cost <= current_mp) {
 			this.execute_cast_attack(closest_enemy);

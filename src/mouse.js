@@ -36,14 +36,29 @@ function doMouseMove(event)
 	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;
 	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y;
 	
-	/* Mouse hit a new grid position */
-	if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) {
-		last_mouse_gx = mouse_gx;
-		last_mouse_gy = mouse_gy;
-		
-		Hud.hover.add_message(Hud.hover.get_hover_message(mouse_gx,mouse_gy));
-		Hud.dirty = true;
-		Hud.render();
+	/* Handle mouse movement in the world */
+	if (mouse_in_world()) {
+		/* Mouse hit a new grid position */
+		if (last_mouse_gx != mouse_gx || last_mouse_gy != mouse_gy ) {
+			last_mouse_gx = mouse_gx;
+			last_mouse_gy = mouse_gy;
+			
+			Hud.hover.add_message(Hud.hover.get_hover_mob(mouse_gx,mouse_gy));
+		}
+	} else { /* Handle mouse movement in the HUD */
+	
+		/* Avatar box hovers (refactor this to the basic 4-corners check after HUD is finalized) */
+		if ( mouse_y > Hud.avatar_box_y ) {
+			if ( mouse_x < Hud.avatar_box_x[1] ) { 
+				Hud.hover.add_message(Hud.hover.get_hover_avatar(0));
+			} else if ( mouse_x < Hud.avatar_box_x[2] ) { 
+				Hud.hover.add_message(Hud.hover.get_hover_avatar(1));
+			} else if ( mouse_x < Hud.avatar_box_x[3] ) { 
+				Hud.hover.add_message(Hud.hover.get_hover_avatar(2));
+			} else { 
+				Hud.hover.add_message(Hud.hover.get_hover_avatar(3));
+			}
+		}
 	}
 }
 
@@ -51,3 +66,6 @@ function doMouseClick(event)
 {
 	
 }
+
+/* Returns true if te mouse is currently in the game world area */
+function mouse_in_world() { return (mouse_x < View.view_px_width); }

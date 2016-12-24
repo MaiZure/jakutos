@@ -128,7 +128,7 @@ Monster.prototype.monster_die = function()
 	this.status |= STATUS_DEAD;
 	World.gridmob[this.map_y][this.map_x] = null;
 	Hud.message.add_message(this.name + " dies");
-	console.log(this.last_hit);
+	
 	if (this.last_hit == Player) {
 		Party.add_xp(this.xp_reward);
 	}

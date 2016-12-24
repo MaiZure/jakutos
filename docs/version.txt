@@ -2,8 +2,9 @@
 Progressive terrain climbing - falling hurts
 Player and monsters now cast attack spells.
 Monsters now have an AI (inactive, attacking and fleeing)
-Basic attack spells now in. Each default player has a different one
+Basic attack spells now in. Each default pary member has a different one
 Hitting 'A' now auto-attacks closest enemy
+Date and time tracked based on MM6 timeline
 
 
 --*v0.2---Dec 18, 2016-------------------------------

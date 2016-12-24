@@ -266,3 +266,15 @@ Party.prototype.fall_damage = function (height_difference)
 	
 	Hud.message.add_message("Waaaa...!");
 };
+
+Party.prototype.get_class = function(party_class)
+{
+	switch (party_class) {
+		case CLASS_KNIGHT: return "Knight"; return;
+		case CLASS_PALADIN:  return "Paladin"; return;
+		case CLASS_ARCHERER: return "Archerer"; return;
+		case CLASS_DRUID: return "Druid"; return;
+		case CLASS_CLERIC: return "Cleric"; return;
+		case CLASS_SORCERER: return "Sorcerer"; return;
+	}
+}

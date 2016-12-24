@@ -28,7 +28,9 @@ function doKeyDown(event)
 {
 	var i;
 	
-	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses */
+	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses
+	   This should eventually be abstracted by an 'Engine' object that separates listening and execution of all world objects
+	   I'll deal with this when I've made enough '2% rules' that justify separate execution order buckets */
 	
 	switch (event.keyCode) {	
 		case KB_LEFT: Player.check_action(DIR_W); break;
@@ -45,6 +47,7 @@ function doKeyDown(event)
 		case KB_M: View.toggle_minimap(); break;
 		case KB_MINUS: View.world_rescale_down(); break;
 		case KB_PLUS: View.world_rescale_up(); break;
+		case KB_9: World.save_map(); break;
 	}
 	
 	/* perform the player action */
@@ -57,8 +60,8 @@ function doKeyDown(event)
 	Player.update_tick();
 	
 	/* Determine monster actions (When there's a lot of monsters, this should be
-		refactored to something better than O(n). Such as a PQ that looks just
-		beyond the interesting rate */
+		refactored to something better than O(n). Such as a PQ that segments time
+		slots. */
 	for (i=0; i<Monsters.length; i++) {
 		Monsters[i].ai_action(); 
 	}

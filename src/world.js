@@ -108,11 +108,12 @@ World.prototype.build_map = function()
 World.prototype.load_map = function load_map()
 {
 	
-	var ch, i ,j, k;
+	var ch, i ,j, k, line;
 	var source_map = [];
 	var target_base_x = [];
 	var target_base_y = [];
 	var region_size = 252;
+	save_data = localStorage;
 	
 	source_map[0] = WORLD_MAP_1; target_base_x[0] = 0; target_base_y[0]  = 0;
 	source_map[1] = WORLD_MAP_2; target_base_x[1] = region_size; target_base_y[1]  = 0;

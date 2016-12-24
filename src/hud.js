@@ -55,6 +55,7 @@ function Hud()
 	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(base_canvas.height*0.01);
 	
 	/* The hud should create its widgets */
+	this.status = new Status(this);
 	this.message = new Message(this);
 	this.hover = new Hover(this);
 	for (i=0; i<4; i++) {
@@ -85,6 +86,10 @@ Hud.prototype.render = function()
 	
 	if (this.hover.dirty) {
 		this.hover.render();
+	}
+	
+	if (this.status.dirty) {
+		this.status.render();
 	}
 	
 	this.debug();
@@ -160,6 +165,7 @@ Hud.prototype.resize = function()
 	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(base_canvas.height*0.01);
 	
 	this.message_dirty = true;
+	this.status.dirty = true;
 	this.partymember[0].dirty = true;
 	this.partymember[1].dirty = true;
 	this.partymember[2].dirty = true;

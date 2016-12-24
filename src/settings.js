@@ -39,7 +39,7 @@ const GRASSLAND = Math.round(Math.random());
 /* classes */ 
 const CLASS_KNIGHT = 1 << 0;
 const CLASS_PALADIN = 1 << 1;
-const CLASS_ARCHER = 1 << 2;
+const CLASS_ARCHERER = 1 << 2;
 const CLASS_DRUID = 1 << 3;
 const CLASS_CLERIC = 1 << 4;
 const CLASS_SORCERER = 1 << 5;

@@ -168,12 +168,16 @@ Actor.prototype.execute_move = function()
 	World.gridmob[this.map_y][this.map_x] = null;
 	World.gridmob[this.next_y][this.next_x] = this;
 	
-	/* Fall damage (refactor this to calc height difference only once per move) */
 	if (this == Player) {
-		var height_diff = World.gridheight[this.next_y][this.next_x] - World.gridheight[this.map_y][this.map_x];
 		
+		/* Fall damage (refactor this to calc height difference only once per move) */
+		var height_diff = World.gridheight[this.next_y][this.next_x] - World.gridheight[this.map_y][this.map_x];		
 		if (height_diff < -2) { Party.fall_damage(height_diff); }
+		
+		/* Update clock , change to manage height changes later*/
+		Hud.status.add_time(5);
 	}
+	
 	
 	/* Move to new grid position */
 	this.map_x = this.next_x;
