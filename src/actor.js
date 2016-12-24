@@ -47,6 +47,7 @@ Actor.prototype.player_distance = 1000;
 Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
+Actor.prototype.stunned = 0;
 Actor.prototype.skill_fire_magic = 0;
 Actor.prototype.skill_earth_magic = 0;
 Actor.prototype.skill_wind_magic = 0;

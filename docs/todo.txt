@@ -1,12 +1,10 @@
 Hover over avatar for name/class
-Add stun effects to hopefully counter aggression
 Need to slow down monster attacks a bit (they attack every turn!)
-Need auto-attack of closest in-range monster
 
 Make move turn PQ
 Make diagonal movement
 Make some of the older objects more JS-like
-Make interface for setting dirty (especially in HUD with heirarchy)
+Make interface for setting variables/dirty (especially HUD with heirarchy)
 
 Fill out monsters
 

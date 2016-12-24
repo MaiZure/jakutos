@@ -176,6 +176,7 @@ Monster.prototype.ai_action = function()
 	if (this.player_distance <= 20) { this.mode = AISTATE_CHASE; }
 	
 	if (!this.is_active()) { return false; }
+	if (this.stunned) { this.stunned--; return false; }
 	
 	if (this.current_hp/this.max_hp < 0.25) { this.mode = AISTATE_FLEE; }
 	

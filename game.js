@@ -48,6 +48,7 @@ Actor.prototype.player_distance = 1000;
 Actor.prototype.dirty = true;
 Actor.prototype.avatar = "%";
 Actor.prototype.animating = false;
+Actor.prototype.stunned = 0;
 Actor.prototype.skill_fire_magic = 0;
 Actor.prototype.skill_earth_magic = 0;
 Actor.prototype.skill_wind_magic = 0;
@@ -308,6 +309,7 @@ Animator.prototype.update = function()
 		
 		if (this.from_player && hit != Player) {
 			hit.damage_actor(this.damage, Player, this.shooter, this.damage_type)
+			hit.stunned = 1;
 			this.destroy();
 		}
 			
@@ -1232,6 +1234,7 @@ Monster.prototype.ai_action = function()
 	if (this.player_distance <= 20) { this.mode = AISTATE_CHASE; }
 	
 	if (!this.is_active()) { return false; }
+	if (this.stunned) { this.stunned--; return false; }
 	
 	if (this.current_hp/this.max_hp < 0.25) { this.mode = AISTATE_FLEE; }
 	
@@ -1700,7 +1703,13 @@ Player.prototype.execute_auto_attack = function()
 	if (closest_distance < 2) {
 		this.execute_melee_attack(closest_enemy);
 	} else {
-		if (Party.quick_spell[Party.active_partymember]) {
+		
+		var current_spell = Party.quick_spell[Party.active_partymember];
+		var current_cost = get_spell_cost(current_spell, this)
+		var current_mp = Party.current_mp[Party.active_partymember];
+		console.log(current_spell, current_cost, current_mp);
+		
+		if (current_spell && current_cost <= current_mp) {
 			this.execute_cast_attack(closest_enemy);
 		} else {
 			this.execute_ranged_attack(closest_enemy);

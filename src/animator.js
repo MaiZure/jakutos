@@ -90,6 +90,7 @@ Animator.prototype.update = function()
 		
 		if (this.from_player && hit != Player) {
 			hit.damage_actor(this.damage, Player, this.shooter, this.damage_type)
+			hit.stunned += 1;
 			this.destroy();
 		}
 			
