@@ -1,4 +1,6 @@
 Need to slow down monster attacks a bit (they attack every turn!)
+Need to rework the die_roll function across all attacks
+Need to streamline the monster/player skill references for damage
 
 Make move turn PQ
 Make diagonal movement
@@ -10,6 +12,7 @@ Fill out monsters
 BUG: Message window doesn't update immediately on ranged hit
 BUG: Ranged attack range doesn't scale with view...great bug!
 BUG: Chasing monsters shoot at player regardless of range
+BUG: Monster threats are loaded at step 1 (of course player should never have threats in their face on step 1 so...not exactly a bug)
 
 REFACTOR: Split the Party object in to party member objects
 REFACTOR: Streamline object heirarchy and interfaces (less coupling)

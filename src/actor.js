@@ -139,10 +139,12 @@ Actor.prototype.is_visible = function()
 	return true;
 };
 
+/* Checks several conditions to see if an actor can move to a target tile */
 Actor.prototype.can_move = function(from_x,from_y,to_x,to_y) 
 {	
-	if (this.animating) {
-		return false; }
+	if (this.animating) { return false; }
+	if (SETTING_EDIT_MODE) { return true; }
+	/* Is the target tile actually open space, and is it aligned with the current space */
 	return (this.world.is_clear(to_x,to_y) && this.world.is_movable(from_x,from_y,to_x,to_y));	
 };
 

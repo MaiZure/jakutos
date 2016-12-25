@@ -21,6 +21,8 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
+/* Contains Player specific properties and methods. Derived from the ACTOR prototype
+   Check ACTOR for most of the movement-related interactions */
 function Player() 
 {
 	Actor.call(this);
@@ -36,6 +38,7 @@ Player.prototype = Object.create(Actor.prototype);
 Player.prototype.constructor = Player;
 Player.prototype.threats = [];
 
+/* Melee attack */
 Player.prototype.execute_melee_attack = function(target) 
 {
 	if (Party.active_partymember === -1) { return false; }
@@ -60,10 +63,13 @@ Player.prototype.execute_melee_attack = function(target)
 	Party.active_partymember = -1;
 };
 
+/* Ranged attack (bows) */
 Player.prototype.execute_ranged_attack = function(target = 0)
 {
+	/* If nobody in the party is active, there is no attack */
 	if (Party.active_partymember === -1) { return false; }
 	
+	/* Shortened property references from the Party objects */
 	var i, shot;
 	var damage = 0;
 	var party_member = Party.active_partymember;
@@ -73,6 +79,7 @@ Player.prototype.execute_ranged_attack = function(target = 0)
 	var attacker = Party.name[party_member];
 	var attack_type = DAM_PHYSICAL;
 	
+	/* Makes the die calculation */
 	for (i=0; i<die_num; i++) {
 		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
 	}
@@ -90,6 +97,7 @@ Player.prototype.execute_ranged_attack = function(target = 0)
 	Party.active_partymember = -1;
 };
 
+/* Cast attack spells */
 Player.prototype.execute_cast_attack = function(target = 0)
 {
 
@@ -137,11 +145,15 @@ Player.prototype.execute_cast_attack = function(target = 0)
 /* Auto-attack decision maker (A-key)*/
 Player.prototype.execute_auto_attack = function()
 {
+	/* If there's no threats nearby then there is no auto attack */
 	if (!Player.threats.length) { return; }
+	
 	var i;
 	var closest_enemy;
 	var closest_distance = 20;
 	
+	/* Cycle through threat list and find the closest */
+	/* This list is populated when monsters move every turn in the ACTOR object */
 	for (i=0; i<this.threats.length; i++){
 		if (this.threats[i].player_distance <= closest_distance) {
 			closest_enemy = this.threats[i];
@@ -149,15 +161,16 @@ Player.prototype.execute_auto_attack = function()
 		}
 	}
 	
+	/* Monsters adjacent to the player get a Melee attack */
 	if (closest_distance < 2) {
 		this.execute_melee_attack(closest_enemy);
-	} else {
-		
+	} else { 
+		/* Check the current spell */
 		var current_spell = Party.quick_spell[Party.active_partymember];
 		var current_cost = get_spell_cost(current_spell, this)
 		var current_mp = Party.current_mp[Party.active_partymember];
 		
-		
+		/* If there is a ready and castable spell - use it, otherwise bow */
 		if (current_spell && current_cost <= current_mp) {
 			this.execute_cast_attack(closest_enemy);
 		} else {
@@ -167,6 +180,8 @@ Player.prototype.execute_auto_attack = function()
 		
 }
 
+/* Run a few fixed turn checks
+   This happens after the player turn, but before monster turn */
 Player.prototype.update_tick = function() 
 {	
 	/* Update delay values */
@@ -175,6 +190,6 @@ Player.prototype.update_tick = function()
 	/* Update active partymember */
 	Party.active_partymember = Party.find_ready_party_member();
 	
-	/* Clear threat board */
+	/* Clear current threats */
 	Player.threats = [];
 };

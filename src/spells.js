@@ -26,6 +26,9 @@ function get_spell_damage(spell, caster)
 {
 	var skill_level, damage;
 	
+	/* Fix the reference between monster and player
+	if (caster === Player)
+	*/
 	damage = 0;
 	
 	switch (spell) {
@@ -33,7 +36,7 @@ function get_spell_damage(spell, caster)
 			
 			skill_level = caster.skill_fire_magic;
 			
-			damage += Math.floor(Math.random()*8+1);
+			damage += Math.roll_die(1,8,0);
 			
 		}; break;
 		case SPELL_MAGIC_ARROW: {
@@ -42,11 +45,7 @@ function get_spell_damage(spell, caster)
 		case SPELL_MIND_BLAST: {
 			
 			skill_level = caster.skill_mind_magic;
-			damage = 5;
-			
-			for (i=0; i<skill_level; i++) {
-				damage += Math.floor(Math.random()*2+1);
-			}
+			damage = Math.roll_die(1,2,0);
 			
 		}; break;
 		case SPELL_STATIC_CHARGE: {
@@ -59,7 +58,7 @@ function get_spell_damage(spell, caster)
 			
 			skill_level = caster.skill_spirit_magic;
 			
-			damage += Math.floor(Math.random()*6+1);
+			damage += Math.roll_die(1,6,0);
 			
 		}; break;
 	}

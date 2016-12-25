@@ -47,7 +47,14 @@ function doKeyDown(event)
 		case KB_M: View.toggle_minimap(); break;
 		case KB_MINUS: View.world_rescale_down(); break;
 		case KB_PLUS: View.world_rescale_up(); break;
+		
 		case KB_9: World.save_map(); break;
+		case KB_W: World.set_wall(); break;
+		case KB_D: World.set_door(); break;
+		case KB_E: World.set_stairs(); break;
+		case KB_TILDE: SETTING_EDIT_MODE = !SETTING_EDIT_MODE; break;
+		case KB_LBRACKET: World.lower_terrain(Player.map_x, Player.map_y); break;
+		case KB_RBRACKET: World.raise_terrain(Player.map_x, Player.map_y); break;
 	}
 	
 	/* perform the player action */

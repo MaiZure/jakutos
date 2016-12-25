@@ -29,7 +29,8 @@ const VERSION_MAJOR = 0;
 const VERSION_MINOR = 2;
 
 /* Game Settings */
-const SETTING_ANIMATE = false;
+SETTING_ANIMATE = false;
+SETTING_EDIT_MODE = false;
 const NUMBER_OF_MONSTERS = 500;
 const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
 const FG_COLOR = "rgb(170,170,170)";
@@ -156,10 +157,16 @@ const KB_4 = 52;
 const KB_9 = 57;
 const KB_A = 65;
 const KB_C = 67;
+const KB_D = 68;
+const KB_E = 69;
 const KB_M = 77;
+const KB_W = 87;
 const KB_X = 88;
 const KB_MINUS = 189;
 const KB_PLUS = 187;
+const KB_TILDE = 192;
+const KB_LBRACKET = 219;
+const KB_RBRACKET = 221;
 
 /* Direction Enum */
 const DIR_NA = 0;

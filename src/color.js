@@ -21,7 +21,9 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-const COL_MAP_BUILDING = 'rgb(200,180,100)';
+const COL_MAP_BUILDING = 'rgb(170,150,70)';
+const COL_MAP_DOOR = 'rgb(220,220,120)';
+const COL_MAP_STAIRS = 'rgb(60,220,220)';
 const COL_MAP_WATER = 'rgb(100,100,175)';
 const COL_MAP_DIRT = 'rgb(170,100,50)';
 const COL_MAP_GRASS = 'rgb(20,150,50)';

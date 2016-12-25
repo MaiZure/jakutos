@@ -36,7 +36,7 @@ function Party()
 		this.skill_earth_magic[i] = 0;
 		this.skill_wind_magic[i] = 0;
 		this.skill_water_magic[i] = 0;
-		this.skill_mind_magic[i] = 0;
+		this.skill_mind_magic[i] = 10;
 		this.skill_body_magic[i] = 0;
 		this.skill_spirit_magic[i] = 0;
 		this.skill_light_magic[i] = 0;

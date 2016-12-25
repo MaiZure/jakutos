@@ -57,4 +57,12 @@ function add_math_utilities()
 		return Math.rad_to_deg(-arctan);
 	};
 	
+	/* Rolls a die taking the two classic die values plus a fixed bonus */
+	Math.roll_die = function(number, side, bonus) {
+		var i;
+		var damage = 0;
+		for (i=0; i<number; i++) { damage += Math.round(Math.random()*(side-1)+1); }
+		damage += bonus;
+		return damage;
+	}
 }

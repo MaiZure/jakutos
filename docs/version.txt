@@ -5,6 +5,8 @@ Monsters now have an AI (inactive, attacking and fleeing)
 Basic attack spells now in. Each default pary member has a different one
 Hitting 'A' now auto-attacks closest enemy
 Date and time tracked based on MM6 timeline
+New Sporogal now looks much more like the original.
+Added a dev feature to edit maps in place
 
 
 --*v0.2---Dec 18, 2016-------------------------------

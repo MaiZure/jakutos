@@ -21,6 +21,7 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
+/* Status HUD widget that maintains and displays time at the top */
 function Status(hud_instance) {
 	this.hud = hud_instance;
 	this.dirty = true;
@@ -33,6 +34,7 @@ function Status(hud_instance) {
 	this.second = 0;
 }
 
+/* Redraws the status bar, if needed */
 Status.prototype.render = function() {
 	if (this.dirty) {
 		var font_size = Math.round(this.hud.status_bar_height*0.80);
@@ -47,10 +49,12 @@ Status.prototype.render = function() {
 	}
 };
 
+/* Clears the status bar - always before a redraw */
 Status.prototype.clear_status_bar = function() {
 	animation_context.clearRect(this.hud.view_px_x,this.hud.status_bar_y,this.hud.view_px_width,this.hud.status_bar_height);
 };
 
+/* Converts the day number to a text name */
 Status.prototype.get_day_name = function(day_number)
 {
 	switch (day_number) {
@@ -64,6 +68,7 @@ Status.prototype.get_day_name = function(day_number)
 	}
 };
 
+/* Converts the month number to a long form text name */
 Status.prototype.get_month_name = function(month_number)
 {
 	switch (month_number) {
@@ -82,6 +87,7 @@ Status.prototype.get_month_name = function(month_number)
 	}
 };
 
+/* Converts the month number to a short form text name */
 Status.prototype.get_month_name_short = function(month_number)
 {
 	switch (month_number) {
@@ -100,6 +106,8 @@ Status.prototype.get_month_name_short = function(month_number)
 	}
 };
 
+/* Adds a given amount to the current time
+   Seconds are mandatory */
 Status.prototype.add_time = function(new_seconds, new_minutes = 0, new_hours = 0, new_days = 0, new_months = 0, new_years = 0)
 {
 	this.second += new_seconds;
@@ -134,6 +142,7 @@ Status.prototype.add_time = function(new_seconds, new_minutes = 0, new_hours = 0
 	
 }
 
+/* Computes the status line text from the time properties */
 Status.prototype.update_status = function()
 {
 	var meridian = (this.hour < 12) ? "am": "pm";

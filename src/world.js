@@ -34,6 +34,7 @@ function World()
 	this.load_map();
 }
 
+/* Renders the visible portion of the world */
 World.prototype.render = function(target_context)
 {
 	var i,j, ch, col;
@@ -61,15 +62,19 @@ World.prototype.render = function(target_context)
 	this.dirty = false;
 };
 
+/* Checks if the target tile is movable
+   returns true or false */
 World.prototype.is_clear = function(xx, yy)
 {
 	if (xx < 0) { return false; }
 	if (yy < 0) { return false; }
 	if (xx >= WORLD_SIZE_X) { return false; }
 	if (yy >= WORLD_SIZE_Y) { return false; }
-	if (this.grid[yy][xx] != '#') { return true; } else { return false; }
+	if (this.gridheight[yy][xx] >= 0) { return true; } else { return false; }
 };
 
+/* Tests it's possible to move to the target based on height different
+   returns true or false */
 World.prototype.is_movable = function(from_x, from_y, to_x, to_y)
 {
 	var diff = this.gridheight[to_y][to_x] - this.gridheight[from_y][from_x];
@@ -79,6 +84,7 @@ World.prototype.is_movable = function(from_x, from_y, to_x, to_y)
 	return false;
 };
 
+/* Randomly generates a map - unused for now */
 World.prototype.build_map = function()
 {
 	for (i=0; i<WORLD_SIZE_X; i++) {
@@ -105,6 +111,7 @@ World.prototype.build_map = function()
 	}
 };
 
+/* Loads the map based on the const strings WORLD_MAP_* */
 World.prototype.load_map = function load_map()
 {
 	
@@ -141,30 +148,198 @@ World.prototype.load_map = function load_map()
 	for (k=0; k<15; k++) {
 		for (j=0; j<region_size; j++) {
 			for (i=0; i<region_size; i++) {
+				
 				this.gridmob[j][i] = null;
+				var new_height;
+				
+				/* Get heightmap */
 				ch = source_map[k].charAt(j*region_size+i);
 				
-				/* Set heightmap */
 				switch (ch.charCodeAt(0)) {
-					case 126: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=0; break;
-					case 35: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=-1; break;
-					default: this.gridheight[target_base_y[k]+j][target_base_x[k]+i]=ch.charCodeAt(0)-64; break;
+					case 126: new_height = 0; break;
+					case 35: new_height = -1; break;
+					case 42: new_height = -2; break;
+					case 60: new_height = -3; break;
+					default: new_height = ch.charCodeAt(0)-64; break;
 				}
 				
-				/* Set character and color base on height. -1 means building wall or some other obstruction*/
-				switch (this.gridheight[target_base_y[k]+j][target_base_x[k]+i]) {
-					case -1: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '#'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_BUILDING; break;
-					case 0: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '='; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_WATER; break;
-					case 1: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '~'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_DIRT; break;
-					case 2: 
-					case 3: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '~'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_GRASS; break;
-					case 4: 
-					case 5: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '^'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_HILL; break;
-					case 6: 
-					case 7: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '{'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_LOW_MOUNTAIN; break;
-					default: this.grid[target_base_y[k]+j][target_base_x[k]+i] = '}'; this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = COL_MAP_HIGH_MOUNTAIN; break;
-				}
-			}
+				/* Set new height */
+				this.gridheight[target_base_y[k]+j][target_base_x[k]+i] = new_height;
+				
+				/* Set character based on height */
+				this.grid[target_base_y[k]+j][target_base_x[k]+i] = this.get_map_char(new_height);
+				
+				/* Set color based on height */
+				this.gridcol[target_base_y[k]+j][target_base_x[k]+i] = this.get_map_color(new_height);
+			}	
 		}
 	}
 };
+
+/* Gets the character of the current tile based on height */
+World.prototype.get_map_char = function(height)
+{
+	switch (height) {
+		case -3: return "<"; break;
+		case -2: return "*"; break;
+		case -1: return "#"; break;
+		case 0: return "="; break;
+		case 1: return "~"; break; /* This is actually mapped to center-dot with our font */
+		case 2: return "~"; break;
+		case 3: return "~"; break;
+		case 4: return "^"; break;
+		case 5: return "^"; break;
+		case 6: return "{"; break; /* Mapped to custom low-mountain font */
+		case 7: return "{"; break;
+		default: return "}"; break; /* Mapped to high-mountain font */
+	}
+}
+
+/* Gets the color of the current tile based on height */
+World.prototype.get_map_color = function(height)
+{
+	switch (height) {
+		case -3: return COL_MAP_STAIRS; break;
+		case -2: return COL_MAP_DOOR; break;
+		case -1: return COL_MAP_BUILDING; break;
+		case 0: return COL_MAP_WATER; break;
+		case 1: return COL_MAP_DIRT; break;
+		case 2: return COL_MAP_GRASS; break;
+		case 3: return COL_MAP_GRASS; break;
+		case 4: return COL_MAP_HILL; break;
+		case 5: return COL_MAP_HILL; break;
+		case 6: return COL_MAP_LOW_MOUNTAIN; break;
+		case 7: return COL_MAP_LOW_MOUNTAIN; break;
+		default: return COL_MAP_HIGH_MOUNTAIN; break;
+	}
+}
+
+/* In-game World editing methods below */
+/* Export map as string */
+World.prototype.save_map = function()
+{
+	/* Need to be in edit mode */
+	if (!SETTING_EDIT_MODE) { return; }
+	
+	var target_base_x = [];
+	var target_base_y = [];
+	var region_size = 252;
+	var line = ""
+	var ch;
+	
+	target_base_x[14] = region_size*4; target_base_y[14]  = region_size*2;
+	
+	for (j=0; j<region_size; j++) {
+		for (i=0; i<region_size; i++) {
+			ch = this.gridheight[target_base_y[14]+j][target_base_x[14]+i];
+			
+			switch (ch) {
+				case -3: ch = String.fromCharCode(60); break;
+				case -2: ch = String.fromCharCode(42); break;
+				case -1: ch = String.fromCharCode(35); break;
+				case -0: ch = String.fromCharCode(126); break;
+				default: ch = String.fromCharCode(ch+64); break;
+			}
+
+			line += ch
+		}
+	}
+	console.log(line);
+}
+
+/* Adds a wall to the current location */
+World.prototype.set_wall = function()
+{
+	/* Need to be in edit mode */
+	if (!SETTING_EDIT_MODE) { return; }
+	
+	var xx = Player.map_x;
+	var yy = Player.map_y;
+	
+	/* Make a wall if none exists */
+	if (this.gridheight[yy][xx] != -1) {
+		this.gridheight[yy][xx] = -1;
+		this.grid[yy][xx] = "#";
+		this.gridcol[yy][xx] = COL_MAP_BUILDING;
+	} else { /* Remove a wall since one exists */
+		this.gridheight[yy][xx] = 0;
+		this.grid[yy][xx] = "=";
+		this.gridcol[yy][xx] = COL_MAP_WATER;
+	}
+	
+	this.dirty = true
+}
+
+/* Adds a door to the current location */
+World.prototype.set_door = function()
+{
+	/* Need to be in edit mode */
+	if (!SETTING_EDIT_MODE) { return; }
+	
+	var xx = Player.map_x;
+	var yy = Player.map_y;
+	
+	/* Make a wall if none exists */
+	if (this.grid[yy][xx] != "*") {
+		this.gridheight[yy][xx] = -2;
+		this.grid[yy][xx] = "*";
+		this.gridcol[yy][xx] = COL_MAP_DOOR;
+	} else { /* Remove a wall since one exists */
+		this.gridheight[yy][xx] = -1;
+		this.grid[yy][xx] = "#";
+		this.gridcol[yy][xx] = COL_MAP_BUILDING;
+	}
+	
+	this.dirty = true
+}
+
+/* Adds stairs to the current location */
+World.prototype.set_stairs = function()
+{
+	/* Need to be in edit mode */
+	if (!SETTING_EDIT_MODE) { return; }
+	
+	var xx = Player.map_x;
+	var yy = Player.map_y;
+	
+	/* Make stairs */
+	this.gridheight[yy][xx] = -3;
+	this.grid[yy][xx] = "<";
+	this.gridcol[yy][xx] = COL_MAP_STAIRS;
+	
+	this.dirty = true
+}
+
+/* Lowers the current terrain to as low as water level */
+World.prototype.lower_terrain = function(xx, yy) {
+	
+	/* Need to be in edit mode */
+	if (!SETTING_EDIT_MODE) { return; }
+	
+	var new_height = this.gridheight[yy][xx]-1;
+	
+	if (new_height < 0) { return false; }
+	
+	this.gridheight[yy][xx] = new_height;
+	this.grid[yy][xx] = this.get_map_char(new_height);
+	this.gridcol[yy][xx] = this.get_map_color(new_height);
+	
+	World.dirty = true;
+}
+
+/* Raises the current terrain to a maximum of 25 */
+World.prototype.raise_terrain = function(xx, yy) {
+	
+	/* Need to be in edit mode */
+	if (!SETTING_EDIT_MODE) { return; }
+	
+	var new_height = this.gridheight[yy][xx]+1;
+
+	if (new_height > 25) { return false; }
+	
+	this.gridheight[yy][xx] = new_height;
+	this.grid[yy][xx] = this.get_map_char(new_height);
+	this.gridcol[yy][xx] = this.get_map_color(new_height);
+	
+	World.dirty = true;
+}
