@@ -23,116 +23,66 @@
  
 function Party() 
 {
+	this.active_partymember = 0;
+	
 	var i;
 	
-	/* Set basic party stats */
-	for (i=0; i<4; i++) {
-		this.status[i] = 0;
-		this.xp[i] = 0;
-		this.level[i] = 1;
-		this.spell_book[i] = [];
-		
-		this.skill_fire_magic[i] = 0;
-		this.skill_earth_magic[i] = 0;
-		this.skill_wind_magic[i] = 0;
-		this.skill_water_magic[i] = 0;
-		this.skill_mind_magic[i] = 10;
-		this.skill_body_magic[i] = 0;
-		this.skill_spirit_magic[i] = 0;
-		this.skill_light_magic[i] = 0;
-		this.skill_dark_magic[i] = 0;
-		this.resist_fire[i] = 0;
-		this.resist_electric[i] = 0;
-		this.resist_cold[i] = 0;
-		this.resist_poison[i] = 0;
-		this.resist_magic[i] = 0;
-		this.resist_physical[i] = 0;
+	for (i=0;i<4;i++) {
+		this.member[i] = new Partymember(this,i);
 	}
 	
 	/* Temporary constructor for a default party */
-	this.job[0] = CLASS_KNIGHT; this.name[0] = "Cyan";
-	this.job[1] = CLASS_PALADIN; this.name[1] = "Cecil";
-	this.job[2] = CLASS_CLERIC; this.name[2] = "Celes";
-	this.job[3] = CLASS_SORCERER; this.name[3] = "Rydia";
+	this.member[0].name = "Cyan";
+	this.member[1].name = "Cecil";
+	this.member[2].name = "Celes";
+	this.member[3].name = "Rydia";
 	
-	this.max_hp[0] = 30; this.current_hp[0]=this.max_hp[0];
-	this.max_hp[1] = 25; this.current_hp[1]=this.max_hp[1];
-	this.max_hp[2] = 15; this.current_hp[2]=this.max_hp[2];
-	this.max_hp[3] = 12; this.current_hp[3]=this.max_hp[3];
+	this.member[0].job = CLASS_KNIGHT; 
+	this.member[1].job = CLASS_PALADIN; 
+	this.member[2].job = CLASS_CLERIC; 
+	this.member[3].job = CLASS_SORCERER; 
 	
-	this.max_mp[0] = 0; this.current_mp[0]=this.max_mp[0];
-	this.max_mp[1] = 6; this.current_mp[1]=this.max_mp[1];
-	this.max_mp[2] = 12; this.current_mp[2]=this.max_mp[2];
-	this.max_mp[3] = 15; this.current_mp[3]=this.max_mp[3];
+	this.member[0].max_hp = 30; this.member[0].current_hp = this.member[0].max_hp;
+	this.member[1].max_hp = 25; this.member[1].current_hp = this.member[1].max_hp;
+	this.member[2].max_hp = 15; this.member[2].current_hp = this.member[2].max_hp;
+	this.member[3].max_hp = 12; this.member[3].current_hp = this.member[3].max_hp;
 	
-	this.base_delay[0] = 9; this.current_delay[0] = 0;
-	this.base_delay[1] = 10; this.current_delay[1] = 0;
-	this.base_delay[2] = 11; this.current_delay[2] = 0;
-	this.base_delay[3] = 12; this.current_delay[3] = 0;
+	this.member[0].max_mp = 0; this.member[0].current_mp = this.member[0].max_mp;
+	this.member[1].max_mp = 6; this.member[1].current_mp = this.member[1].max_mp;
+	this.member[2].max_mp = 12; this.member[2].current_mp = this.member[2].max_mp;
+	this.member[3].max_mp = 15; this.member[3].current_mp = this.member[3].max_mp;
 	
-	this.melee_die_num[0] = 2; this.melee_die_side[0] = 4; this.melee_die_bonus[0] = 1;
-	this.melee_die_num[1] = 2; this.melee_die_side[1] = 3; this.melee_die_bonus[1] = 1;
-	this.melee_die_num[2] = 1; this.melee_die_side[2] = 3; this.melee_die_bonus[2] = 0;
-	this.melee_die_num[3] = 1; this.melee_die_side[3] = 2; this.melee_die_bonus[3] = 0;
+	this.member[0].base_delay = 9; this.member[0].current_delay = 0;
+	this.member[1].base_delay = 10; this.member[1].current_delay = 0;
+	this.member[2].base_delay = 11; this.member[2].current_delay = 0;
+	this.member[3].base_delay = 12; this.member[3].current_delay = 0;
 	
-	this.ranged_die_num[0] = 1; this.ranged_die_side[0] = 3; this.ranged_die_bonus[0] = 1;
-	this.ranged_die_num[1] = 1; this.ranged_die_side[1] = 3; this.ranged_die_bonus[1] = 1;
-	this.ranged_die_num[2] = 1; this.ranged_die_side[2] = 3; this.ranged_die_bonus[2] = 1;
-	this.ranged_die_num[3] = 1; this.ranged_die_side[3] = 3; this.ranged_die_bonus[3] = 1;
+	this.member[0].melee_die_num = 2; this.member[0].melee_die_side = 4; this.member[0].melee_die_bonus = 1;
+	this.member[1].melee_die_num = 2; this.member[1].melee_die_side = 3; this.member[1].melee_die_bonus = 1;
+	this.member[2].melee_die_num = 1; this.member[2].melee_die_side = 3; this.member[2].melee_die_bonus = 0;
+	this.member[3].melee_die_num = 1; this.member[3].melee_die_side = 2; this.member[3].melee_die_bonus = 0;
 	
-	this.quick_spell[0]= SPELL_NONE;
-	this.quick_spell[1]= SPELL_SPIRIT_ARROW;
-	this.quick_spell[2]= SPELL_MIND_BLAST;
-	this.quick_spell[3]= SPELL_FLAME_ARROW;
+	this.member[0].ranged_die_num = 1; this.member[0].ranged_die_side = 3; this.member[0].ranged_die_bonus = 1;
+	this.member[1].ranged_die_num = 1; this.member[1].ranged_die_side = 3; this.member[1].ranged_die_bonus = 1;
+	this.member[2].ranged_die_num = 1; this.member[2].ranged_die_side = 3; this.member[2].ranged_die_bonus = 1;
+	this.member[3].ranged_die_num = 1; this.member[3].ranged_die_side = 3; this.member[3].ranged_die_bonus = 1;
 	
-	this.active_partymember = 0;
+	this.member[0].quick_spell = SPELL_NONE;
+	this.member[1].quick_spell = SPELL_SPIRIT_ARROW;
+	this.member[2].quick_spell = SPELL_MIND_BLAST;
+	this.member[3].quick_spell = SPELL_FLAME_ARROW;
 }
 
-Party.prototype.job = [];
-Party.prototype.max_hp = [];
-Party.prototype.max_mp = [];
-Party.prototype.current_hp = [];
-Party.prototype.current_mp = [];
-Party.prototype.status = [];
-Party.prototype.level = [];
-Party.prototype.xp = [];
-Party.prototype.name = [];
-Party.prototype.base_delay = [];
-Party.prototype.current_delay = [];
-Party.prototype.melee_die_num = [];
-Party.prototype.melee_die_side = [];
-Party.prototype.melee_die_bonus = [];
-Party.prototype.ranged_die_num = [];
-Party.prototype.ranged_die_side = [];
-Party.prototype.ranged_die_bonus = [];
-Party.prototype.spell_book = [];
-Party.prototype.quick_spell = [];
-Party.prototype.skill_fire_magic = [];
-Party.prototype.skill_earth_magic = [];
-Party.prototype.skill_wind_magic = [];
-Party.prototype.skill_water_magic = [];
-Party.prototype.skill_mind_magic = [];
-Party.prototype.skill_body_magic = [];
-Party.prototype.skill_spirit_magic = [];
-Party.prototype.skill_light_magic = [];
-Party.prototype.skill_dark_magic = [];
-Party.prototype.resist_fire = [];
-Party.prototype.resist_electric = [];
-Party.prototype.resist_cold = [];
-Party.prototype.resist_poison = [];
-Party.prototype.resist_magic = [];
-Party.prototype.resist_physical = [];
-
-
+Party.prototype.member = [];
 
 Party.prototype.is_incapacitated = function(party_member) 
-{ 
-	return (this.status[party_member] & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); 
+{
+	return (this.member[party_member].status & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); 
 };
 
 Party.prototype.is_ready = function(party_member) 
 {
-	return (this.current_delay[party_member] === 0 && !this.is_incapacitated(party_member)); 
+	return (this.member[party_member].current_delay === 0 && !this.is_incapacitated(party_member)); 
 };
 	
 Party.prototype.is_party_dead = function() 
@@ -144,7 +94,6 @@ Party.prototype.is_party_dead = function()
 	return false;
 };
 
-
 /* Interface to add experience to party members */
 Party.prototype.add_xp = function(xp_amount) 
 {
@@ -152,7 +101,7 @@ Party.prototype.add_xp = function(xp_amount)
 	
 	for (i=0; i<4; i++) {
 		if (!this.is_incapacitated(i)) {
-			this.xp[i] += xp_amount; 
+			this.member[i].xp += xp_amount; 
 		}
 	}
 };
@@ -171,24 +120,24 @@ Party.prototype.damage_party = function(attacker, damage_amount, target = -1, da
 		}
 	}
 	
-	this.current_hp[target] -= damage_amount;
+	this.member[target].current_hp -= damage_amount;
 	
-	if (this.current_hp[target] <= 0) { 
-		this.status[target] |= STATUS_UNCONCIOUS; 
+	if (this.member[target].current_hp <= 0) { 
+		this.member[target].status |= STATUS_UNCONCIOUS; 
 	}
 		
-	if (this.current_hp[target] <= -25) {
-		this.status[target] |= STATUS_DEAD; 
+	if (this.member[target].current_hp <= -25) {
+		this.member[target].status |= STATUS_DEAD; 
 	}
 		
-	if (this.current_hp[target] <= -100) {
-		this.status[target] |= STATUS_ERADICATED; 
+	if (this.member[target].current_hp <= -100) {
+		this.member[target].status |= STATUS_ERADICATED; 
 	}
 	
-	Hud.partymember[target].dirty = true;
+	Hud.partywidget[target].dirty = true;
 	
 	if (attacker != -1) { 
-		Hud.message.add_message(attacker.name + Player.get_damage_action(damage_type) + this.name[target] + " for " + damage_amount); 
+		Hud.message.add_message(attacker.name + Player.get_damage_action(damage_type) + this.member[target].name + " for " + damage_amount); 
 	}
 };
 
@@ -199,11 +148,11 @@ Party.prototype.reduce_delay = function(amount = 1)
 	
 	for (i=0; i<4; i++)
 	{
-		Party.current_delay[i] -= amount;
-		if (Party.current_delay[i] === 0) {
-			Hud.partymember[i].dirty = true; 
+		Party.member[i].current_delay -= amount;
+		if (Party.member[i].current_delay === 0) {
+			Hud.partywidget[i].dirty = true; 
 		}
-		Party.current_delay[i] = Math.max(Party.current_delay[i],0);
+		Party.member[i].current_delay = Math.max(Party.member[i].current_delay, 0);
 	}
 };
 
@@ -224,7 +173,7 @@ Party.prototype.find_ready_party_member = function()
 	/* Find new party member */
 	for (i=0; i<4; i++) {
 		if (this.is_ready(i) && !this.is_incapacitated(i)) {
-			Hud.partymember[i].dirty = true;
+			Hud.partywidget[i].dirty = true;
 			return i;
 		}
 	}
@@ -236,15 +185,15 @@ Party.prototype.find_ready_party_member = function()
 Party.prototype.change_active_party_member = function(next)
 {	
 	last = this.active_partymember;
-	delay = this.current_delay[next];
-	status = this.status[next];
+	delay = this.member[next].current_delay;
+	status = this.member[next].status;
 	
 	if (last == next) { return last; }
 	
 	if (this.is_ready(next) && !this.is_incapacitated(next)) { 
 		this.active_partymember = next;
-		if (last >= 0) { Hud.partymember[last].dirty = true; }
-		Hud.partymember[next].dirty = true;		
+		if (last >= 0) { Hud.partywidget[last].dirty = true; }
+		Hud.partywidget[next].dirty = true;		
 		return next;
 	}
 	return last;
@@ -260,7 +209,7 @@ Party.prototype.fall_damage = function (height_difference)
 {
 	var i, damage;
 	for (i=0; i<4; i++) {
-		damage = Math.round(-(height_difference+2)*Math.random()*0.25*Party.max_hp[i])+1;
+		damage = Math.round(-(height_difference+2)*Math.random()*0.25*Party.member[i].max_hp)+1;
 		this.damage_party(-1, damage, i);
 	}
 	

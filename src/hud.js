@@ -59,14 +59,14 @@ function Hud()
 	this.message = new Message(this);
 	this.hover = new Hover(this);
 	for (i=0; i<4; i++) {
-		this.partymember[i] = new Partymember(this,i); 
+		this.partywidget[i] = new Partywidget(this,i); 
 	}
 }
 
 Hud.prototype.dirty = true;
 Hud.prototype.party_dirty = true;
 Hud.prototype.message_dirty = true;
-Hud.prototype.partymember = [];
+Hud.prototype.partywidget = [];
 
 Hud.prototype.render = function() 
 {
@@ -79,8 +79,8 @@ Hud.prototype.render = function()
 	}
 	
 	for (i=0;i<4;i++) {
-		if (this.partymember[i].dirty) {
-			this.partymember[i].render();
+		if (this.partywidget[i].dirty) {
+			this.partywidget[i].render();
 		}
 	}
 	
@@ -166,8 +166,8 @@ Hud.prototype.resize = function()
 	
 	this.message_dirty = true;
 	this.status.dirty = true;
-	this.partymember[0].dirty = true;
-	this.partymember[1].dirty = true;
-	this.partymember[2].dirty = true;
-	this.partymember[3].dirty = true;
+	this.partywidget[0].dirty = true;
+	this.partywidget[1].dirty = true;
+	this.partywidget[2].dirty = true;
+	this.partywidget[3].dirty = true;
 };

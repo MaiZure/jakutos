@@ -60,5 +60,5 @@ Hover.prototype.get_hover_mob = function(xx, yy) {
 };
 
 Hover.prototype.get_hover_avatar = function(party_member) {
-	return Party.name[party_member] + " the " + Party.get_class(Party.job[party_member]);
+	return Party.member[party_member].name + " the " + Party.get_class(Party.member[party_member].job);
 };

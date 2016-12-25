@@ -1,4 +1,4 @@
---*v0.3---In Development-----------------------------
+--*v0.3---Dec 25, 2016------------------------------
 Progressive terrain climbing - falling hurts
 Player and monsters now cast attack spells.
 Monsters now have an AI (inactive, attacking and fleeing)

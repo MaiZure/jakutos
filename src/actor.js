@@ -211,14 +211,14 @@ Actor.prototype.update_pxpy = function()
 Actor.prototype.damage_actor = function(damage_amount, attacker, attacker_name = "", damage_type = DAM_PHYSICAL)
 {
 	this.current_hp -= damage_amount;
-		
-	if (this.current_hp < 1) { this.monster_die(); }
 	
 	if (attacker != -1) { 
 		this.last_hit = attacker;
 		this.mode = AISTATE_CHASE;
 		Hud.message.add_message(attacker_name + this.get_damage_action(damage_type) + this.name + " for " + damage_amount); 
 	}
+		
+	if (this.current_hp < 1) { this.monster_die(); }
 }
 
 /* Converts an input damage type to a verb */

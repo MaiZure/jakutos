@@ -46,10 +46,10 @@ Player.prototype.execute_melee_attack = function(target)
 	var i;
 	var damage = 0;
 	var party_member = Party.active_partymember;
-	var die_num = Party.melee_die_num[party_member];
-	var die_side = Party.melee_die_side[party_member];
-	var die_bonus = Party.melee_die_bonus[party_member];
-	var attacker = Party.name[party_member];
+	var die_num = Party.member[party_member].melee_die_num;
+	var die_side = Party.member[party_member].melee_die_side;
+	var die_bonus = Party.member[party_member].melee_die_bonus;
+	var attacker = Party.member[party_member].name;
 	var attack_type = DAM_PHYSICAL;
 	
 	for (i=0; i<die_num; i++) {
@@ -58,8 +58,8 @@ Player.prototype.execute_melee_attack = function(target)
 	
 	if (damage > 0) { target.damage_actor(damage, this, attacker); }
 	
-	Party.current_delay[party_member] = Party.base_delay[party_member];
-	Hud.partymember[party_member].dirty = true;
+	Party.member[party_member].current_delay = Party.member[party_member].base_delay;
+	Hud.partywidget[party_member].dirty = true;
 	Party.active_partymember = -1;
 };
 
@@ -73,10 +73,10 @@ Player.prototype.execute_ranged_attack = function(target = 0)
 	var i, shot;
 	var damage = 0;
 	var party_member = Party.active_partymember;
-	var die_num = Party.ranged_die_num[party_member];
-	var die_side = Party.ranged_die_side[party_member];
-	var die_bonus = Party.ranged_die_bonus[party_member];
-	var attacker = Party.name[party_member];
+	var die_num = Party.member[party_member].ranged_die_num;
+	var die_side = Party.member[party_member].ranged_die_side;
+	var die_bonus = Party.member[party_member].ranged_die_bonus;
+	var attacker = Party.member[party_member].name;
 	var attack_type = DAM_PHYSICAL;
 	
 	/* Makes the die calculation */
@@ -92,15 +92,15 @@ Player.prototype.execute_ranged_attack = function(target = 0)
 	shot.from_player = true;
 	shot.shooter = attacker;
 	
-	Party.current_delay[party_member] = Party.base_delay[party_member];
-	Hud.partymember[party_member].dirty = true;
+	Party.member[party_member].current_delay = Party.member[party_member].base_delay;
+	Hud.partywidget[party_member].dirty = true;
 	Party.active_partymember = -1;
 };
 
 /* Cast attack spells */
 Player.prototype.execute_cast_attack = function(target = 0)
 {
-
+	/* If nobody in the party is active, there is no attack */
 	if (Party.active_partymember === -1) { return false; }
 	
 	var i, cost;
@@ -108,12 +108,12 @@ Player.prototype.execute_cast_attack = function(target = 0)
 	var damage = 0;
 	
 	var party_member = Party.active_partymember;
-	var attacker = Party.name[party_member];
+	var attacker = Party.member[party_member].name;
 	
 	var spell, i, shot, damage;
 	
 	/* Pull readied spell*/
-	spell = Party.quick_spell[party_member];
+	spell = Party.member[party_member].quick_spell;
 	
 	/* If no spell, skip turn */
 	if (!spell) { return; }
@@ -121,7 +121,7 @@ Player.prototype.execute_cast_attack = function(target = 0)
 	/* Check MP cost */
 	cost = get_spell_cost(spell, this);
 	
-	if (Party.current_mp[party_member] >= cost) {
+	if (Party.member[party_member].current_mp >= cost) {
 		
 		/* Get damage of spell from this caster */
 		damage = get_spell_damage(spell, this);
@@ -134,9 +134,9 @@ Player.prototype.execute_cast_attack = function(target = 0)
 			shot.shooter = attacker;
 			shot.damage = damage;
 			
-			Party.current_mp[party_member] -= cost;
-			Party.current_delay[party_member] = Party.base_delay[party_member];
-			Hud.partymember[party_member].dirty = true;
+			Party.member[party_member].current_mp -= cost;
+			Party.member[party_member].current_delay = Party.member[party_member].base_delay;
+			Hud.partywidget[party_member].dirty = true;
 			Party.active_partymember = -1;
 		}
 	}
@@ -145,6 +145,9 @@ Player.prototype.execute_cast_attack = function(target = 0)
 /* Auto-attack decision maker (A-key)*/
 Player.prototype.execute_auto_attack = function()
 {
+	/* If nobody in the party is active, there is no attack */
+	if (Party.active_partymember === -1) { return false; }
+	
 	/* If there's no threats nearby then there is no auto attack */
 	if (!Player.threats.length) { return; }
 	
@@ -166,9 +169,9 @@ Player.prototype.execute_auto_attack = function()
 		this.execute_melee_attack(closest_enemy);
 	} else { 
 		/* Check the current spell */
-		var current_spell = Party.quick_spell[Party.active_partymember];
+		var current_spell = Party.member[Party.active_partymember].quick_spell;
 		var current_cost = get_spell_cost(current_spell, this)
-		var current_mp = Party.current_mp[Party.active_partymember];
+		var current_mp = Party.member[Party.active_partymember].current_mp;
 		
 		/* If there is a ready and castable spell - use it, otherwise bow */
 		if (current_spell && current_cost <= current_mp) {
@@ -187,7 +190,7 @@ Player.prototype.update_tick = function()
 	/* Update delay values */
 	Party.reduce_delay();
 	
-	/* Update active partymember */
+	/* Update active partywidget */
 	Party.active_partymember = Party.find_ready_party_member();
 	
 	/* Clear current threats */

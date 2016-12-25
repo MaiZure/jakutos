@@ -31,7 +31,7 @@ const VERSION_MINOR = 2;
 /* Game Settings */
 SETTING_ANIMATE = false;
 SETTING_EDIT_MODE = false;
-const NUMBER_OF_MONSTERS = 500;
+const NUMBER_OF_MONSTERS = 0//500;
 const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
 const FG_COLOR = "rgb(170,170,170)";
 const GRASSLAND = Math.round(Math.random());
@@ -187,3 +187,66 @@ const SPELL_MIND_BLAST = 3;
 const SPELL_STATIC_CHARGE = 4;
 const SPELL_COLD_BEAM = 5;
 const SPELL_SPIRIT_ARROW = 6;
+
+/* Wear slots */
+const WEAR_HEAD = 0;
+const WEAR_BODY = 1;
+const WEAR_FEET = 2;
+const WEAR_HANDS = 3;
+const WEAR_NECK = 4;
+const WEAR_FINGER_1 = 5;
+const WEAR_FINGER_2 = 6;
+const WEAR_FINGER_3 = 7;
+const WEAR_FINGER_4 = 8;
+const WEAR_FINGER_5 = 9;
+const WEAR_FINGER_6 = 10;
+const WEAR_LEFT = 11; /* Wield slot */
+const WEAR_RIGHT = 12; /* Wield slot */
+
+/* Stats */
+const STAT_MIGHT = 0;
+const STAT_ACCURACY = 1;
+const STAT_SPEED = 2;
+const STAT_ENDURANCE = 3;
+const STAT_INTELLIGENCE = 4;
+const STAT_PERSONALITY = 5;
+
+/* Skills */
+const SKILL_STAFF = 0;
+const SKILL_SWORD = 1;
+const SKILL_DAGGER = 2;
+const SKILL_AXE = 3;
+const SKILL_SPEAR = 4;
+const SKILL_BOW = 5;
+const SKILL_MACE = 6;
+const SKILL_ANCIENT = 7;
+const SKILL_SHIELD = 8;
+const SKILL_LEATHER = 9;
+const SKILL_CHAIN = 10;
+const SKILL_PLATE = 11;
+const SKILL_FIRE = 12;
+const SKILL_AIR = 13;
+const SKILL_WATER = 14;
+const SKILL_EARTH = 15;
+const SKILL_SPIRIT = 16;
+const SKILL_MIND = 17;
+const SKILL_BODY = 18;
+const SKILL_LIGHT = 19;
+const SKILL_DARK = 20;
+const SKILL_IDENTIFY = 21;
+const SKILL_MERCHANT = 22;
+const SKILL_REPAIR = 23;
+const SKILL_BODYBUILDING = 24;
+const SKILL_MEDITATION = 25;
+const SKILL_PERCEPTION = 26;
+const SKILL_DIPLOMACY = 27;
+const SKILL_DISARM = 28;
+const SKILL_LEARNING = 29;
+
+/* Resists */
+const RESIST_FIRE = 0;
+const RESIST_ELECTRIC = 1;
+const RESIST_COLD = 2;
+const RESIST_POISON = 3;
+const RESIST_MAGIC = 4;
+const RESIST_PHYSICAL = 5;
