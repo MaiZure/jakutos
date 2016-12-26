@@ -5,22 +5,25 @@
  *
  * This file is part of the project Jakutos.
  * 
- * Some open source application is free software: you can redistribute 
+ * Jakutos is free software: you can redistribute 
  * it and/or modify it under the terms of the GNU General Public 
  * License as published by the Free Software Foundation, either 
  * version 3 of the License, or (at your option) any later version.
  * 
- * Some open source application is distributed in the hope that it will 
+ * Jakutos is distributed in the hope that it will 
  * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Jakutos.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+/* Abstract object that manages the inventory for one party member. 
+   Connects Items to the player and associated statistics. Provides
+   an interface for wearing, wielding, removing, and invoking items */
 function Inventory(party_member)
 {
 	var i;
@@ -28,10 +31,130 @@ function Inventory(party_member)
 	this.backpack = [];
 	this.wear = [];
 	
-	for (i=0; i<=20; i++) {
+	for (i=0; i<16; i++) {
 		this.wear[i] = null;
 	}
 	
 	this.party_member = party_member;
 	
+	this.wear_item(TestItem);
+	
+}
+
+/* Need to incorporate dual wielding and multiple rings checks */
+Inventory.prototype.wear_item = function(item) 
+{	
+	/* Check if the item is real */
+	if (!item) { return; }
+	
+	/* Check if the item has a valid wear slot */
+	if (!item.wearable) { return; }
+	
+	var slot = item.wearable;
+	
+	/* Remove item currently worn */
+	if (this.wear[slot]) { this.remove_item(slot); }
+	
+	/* Wear the item */
+	this.wear[item.wearable] = item;
+	
+	/* Apply modifiers */
+	this.apply_modifiers(item);
+}
+
+/* Takes an item or slot and calls the appropriate remove function */
+Inventory.prototype.remove_item = function(target)
+{
+	/* No reference === no work */
+	if (!target) { return false; }
+	
+	/* Call the appropriate helper function */
+	if (typeof target === "object") { this.remove_by_item(target); }
+	if (typeof target === "number") { this.remove_by_slot(target); }
+}
+
+/* Removes an item from a given slot and puts it in the backpack */
+Inventory.prototype.remove_by_slot = function(slot) {
+	
+	/* Get reference the item */
+	var item = this.wear[slot];
+	
+	/* Add it to the backpack */
+	this.backpack.push(item);
+	
+	/* Remove it from the body */
+	this.wear[slot] = null;
+	
+	/* Remove associated modifiers */
+	this.remove_modifiers(item);
+}
+
+/* Removes an item by scanning all wear slots and puts it in the backpack */
+Inventory.prototype.remove_by_item = function(item) {
+	var i;
+	for (i=0;i<this.wear.length;i++) {
+		if (this.wear[i] === item) {
+			this.backpack.push(this.wear[i]);
+			this.wear[i] = null;
+			this.remove_modifiers(item);
+		}
+	}
+}
+
+/* Remove statistic modifiers from the party member */
+Inventory.prototype.remove_modifiers = function(item) {
+	var i, mod, stat, skill, resist, amount;
+	
+	/* Remove stat modifiers from player */
+	for (i=0; i<item.stat_modifier.length; i++) {
+		mod = item.stat_modifier[i];
+		stat = mod[0];
+		amount = mod[1];
+		this.party_member.stat_mods[stat] -= amount;
+	}
+	
+	/* Remove skill modifiers from player */
+	for (i=0; i<item.skill_modifier.length; i++) {
+		mod = item.skill_modifier[i];
+		skill = mod[0];
+		amount = mod[1];
+		this.party_member.skill_mods[skill] -= amount;
+	}
+	
+	/* Remove resist modifiers from player */
+	for (i=0; i<item.resist_modifier.length; i++) {
+		mod = item.resist_modifier[i];
+		resist = mod[0];
+		amount = mod[1];
+		this.party_member.resist_mods[resist] -= amount;
+	}
+}
+
+/* Add statistic modifiers from the party member  (COMBINE THIS WITH THE REMOVE PROCEDURE!)*/
+Inventory.prototype.apply_modifiers = function(item) {
+	var i, mod, stat, skill, resist, amount;
+	
+	/* Add stat modifiers to player */
+	for (i=0; i<item.stat_modifier.length; i++) {
+		mod = item.stat_modifier[i];
+		stat = mod[0];
+		amount = mod[1];
+		this.party_member.stat_mods[stat] += amount;
+	}
+	
+	/* Add skill modifiers to player */
+	for (i=0; i<item.skill_modifier.length; i++) {
+		mod = item.skill_modifier[i];
+		skill = mod[0];
+		amount = mod[1];
+		this.party_member.skill_mods[skill] += amount;
+	}
+	
+	/* Add resist modifiers to player */
+	for (i=0; i<item.resist_modifier.length; i++) {
+		mod = item.resist_modifier[i];
+		resist = mod[0];
+		amount = mod[1];
+		this.party_member.resist_mods[resist] += amount;
+	}
 }

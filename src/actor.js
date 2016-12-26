@@ -5,18 +5,18 @@
  *
  * This file is part of the project Jakutos.
  * 
- * Some open source application is free software: you can redistribute 
+ * Jakutos is free software: you can redistribute 
  * it and/or modify it under the terms of the GNU General Public 
  * License as published by the Free Software Foundation, either 
  * version 3 of the License, or (at your option) any later version.
  * 
- * Some open source application is distributed in the hope that it will 
+ * Jakutos is distributed in the hope that it will 
  * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Jakutos.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
@@ -178,6 +178,10 @@ Actor.prototype.execute_move = function()
 		
 		/* Update clock , change to manage height changes later*/
 		Hud.status.add_time(5);
+		
+		if (!Hud.is_active(Hud.message_box)) {
+			Hud.activate_message_widget(Hud.message);
+		}
 	}
 	
 	

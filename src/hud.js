@@ -5,18 +5,18 @@
  *
  * This file is part of the project Jakutos.
  * 
- * Some open source application is free software: you can redistribute 
+ * Jakutos is free software: you can redistribute 
  * it and/or modify it under the terms of the GNU General Public 
  * License as published by the Free Software Foundation, either 
  * version 3 of the License, or (at your option) any later version.
  * 
- * Some open source application is distributed in the hope that it will 
+ * Jakutos is distributed in the hope that it will 
  * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Jakutos.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
@@ -57,6 +57,7 @@ function Hud()
 	/* The hud should create its widgets */
 	this.status = new Status(this);
 	this.message = new Message(this);
+	this.inventory = new Inventorywidget(this);
 	this.hover = new Hover(this);
 	for (i=0; i<4; i++) {
 		this.partywidget[i] = new Partywidget(this,i); 
@@ -66,30 +67,25 @@ function Hud()
 Hud.prototype.dirty = true;
 Hud.prototype.party_dirty = true;
 Hud.prototype.message_dirty = true;
+Hud.prototype.inventory_dirty = false;
 Hud.prototype.partywidget = [];
 
 Hud.prototype.render = function() 
 {
-	if (this.dirty) {
-		this.debug_render(animation_context); 
-	}
+	if (this.dirty) { this.debug_render(animation_context); }
 	
-	if (this.message_dirty) {
-		this.message.render();
-	}
+	if (this.message_dirty) { this.message.render(); }
+	
+	if (this.inventory_dirty) { this.inventory.render(); }
+	
+	if (this.hover.dirty) { this.hover.render(); }
+	
+	if (this.status.dirty) { this.status.render(); }
 	
 	for (i=0;i<4;i++) {
 		if (this.partywidget[i].dirty) {
 			this.partywidget[i].render();
 		}
-	}
-	
-	if (this.hover.dirty) {
-		this.hover.render();
-	}
-	
-	if (this.status.dirty) {
-		this.status.render();
 	}
 	
 	this.debug();
@@ -108,6 +104,7 @@ Hud.prototype.debug_render = function(target_context)
 	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	*/
 };
 
+/* Draws all the background areas on the HUD */
 Hud.prototype.debug = function() 
 {
 	var i;
@@ -129,6 +126,8 @@ Hud.prototype.debug = function()
 	}
 };
 
+/* Called when the window is resize - basically redoes all the drawing calculations.
+   This thing is really ugly and needs to be reworked before it explodes */
 Hud.prototype.resize = function() 
 {
 	this.dirty = true;
@@ -164,10 +163,29 @@ Hud.prototype.resize = function()
 	
 	this.hover_bar_y = this.message_box_y+this.message_box_height+Math.round(base_canvas.height*0.01);
 	
-	this.message_dirty = true;
 	this.status.dirty = true;
 	this.partywidget[0].dirty = true;
 	this.partywidget[1].dirty = true;
 	this.partywidget[2].dirty = true;
 	this.partywidget[3].dirty = true;
+	if (this.is_active(this.message)) { this.message_dirty = true; }
+	if (this.is_active(this.inventory)) { this.inventory_dirty = true; }
 };
+
+/* We have several widgets that operate in the message window. This shifts between them */
+Hud.prototype.activate_message_widget = function(widget, argument = null)
+{
+	if (typeof widget !== "object") { return; }
+	
+	this.message.active = false;
+	this.inventory.active = false
+	
+	widget.active = true;
+	widget.render(argument);
+}
+
+/* Checks if a message box widget is active or not */
+Hud.prototype.is_active = function(widget) {
+	if (typeof widget !== "object") { return; }
+	return widget.active;
+}

@@ -5,22 +5,23 @@
  *
  * This file is part of the project Jakutos.
  * 
- * Some open source application is free software: you can redistribute 
+ * Jakutos is free software: you can redistribute 
  * it and/or modify it under the terms of the GNU General Public 
  * License as published by the Free Software Foundation, either 
  * version 3 of the License, or (at your option) any later version.
  * 
- * Some open source application is distributed in the hope that it will 
+ * Jakutos is distributed in the hope that it will 
  * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Jakutos.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+/* Holds all the data for a single party member */
 function Partymember(party, id) 
 {
 	var i;
@@ -33,9 +34,20 @@ function Partymember(party, id)
 	this.level = 1;
 	this.age = 20;
 	this.spell_book = [];
-	this.skill = [];
-	this.stat = [];
-	this.resist = [];
+	
+	/* Skill arrays including separate modifier arrays
+	   base is permanent, modifiers are temporary (spells/items) */
+    this.skill= [];  this.skill_mods = [];
+	this.stat = [];   this.stat_mods = [];
+	this.resist = []; this.resist_mods = [];
+	
+	for (i=0; i<30; i++) {
+		this.skill[i] = 0;  this.skill_mods[i] = 0;
+		this.stat[i] = 0;   this.stat_mods[i] = 0;
+		this.resist[i] = 0; this.resist_mods[i] = 0;
+	}
+	
+	this.armor = 0;   this.armor_mods = 0;
 	
 	this.job = CLASS_ARCHERER;
 	this.name = "Locke";

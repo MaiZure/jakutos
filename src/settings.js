@@ -5,18 +5,18 @@
  *
  * This file is part of the project Jakutos.
  * 
- * Some open source application is free software: you can redistribute 
+ * Jakutos is free software: you can redistribute 
  * it and/or modify it under the terms of the GNU General Public 
  * License as published by the Free Software Foundation, either 
  * version 3 of the License, or (at your option) any later version.
  * 
- * Some open source application is distributed in the hope that it will 
+ * Jakutos is distributed in the hope that it will 
  * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Jakutos.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
@@ -31,7 +31,7 @@ const VERSION_MINOR = 2;
 /* Game Settings */
 SETTING_ANIMATE = false;
 SETTING_EDIT_MODE = false;
-const NUMBER_OF_MONSTERS = 0//500;
+const NUMBER_OF_MONSTERS = 500;
 const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
 const FG_COLOR = "rgb(170,170,170)";
 const GRASSLAND = Math.round(Math.random());
@@ -189,19 +189,15 @@ const SPELL_COLD_BEAM = 5;
 const SPELL_SPIRIT_ARROW = 6;
 
 /* Wear slots */
-const WEAR_HEAD = 0;
-const WEAR_BODY = 1;
-const WEAR_FEET = 2;
-const WEAR_HANDS = 3;
-const WEAR_NECK = 4;
-const WEAR_FINGER_1 = 5;
-const WEAR_FINGER_2 = 6;
-const WEAR_FINGER_3 = 7;
-const WEAR_FINGER_4 = 8;
-const WEAR_FINGER_5 = 9;
-const WEAR_FINGER_6 = 10;
-const WEAR_LEFT = 11; /* Wield slot */
-const WEAR_RIGHT = 12; /* Wield slot */
+const WEAR_HEAD = 1;
+const WEAR_BODY = 2;
+const WEAR_FEET = 3;
+const WEAR_HANDS = 4;
+const WEAR_NECK = 5;
+const WEAR_CLOAK = 6;
+const WEAR_FINGER = 7;
+const WEAR_WIELD_SINGLE = 8; /* Wield slot */
+const WEAR_WIELD_BOTH = 9; /* Wield slot */
 
 /* Stats */
 const STAT_MIGHT = 0;

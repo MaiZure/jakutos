@@ -5,18 +5,18 @@
  *
  * This file is part of the project Jakutos.
  * 
- * Some open source application is free software: you can redistribute 
+ * Jakutos is free software: you can redistribute 
  * it and/or modify it under the terms of the GNU General Public 
  * License as published by the Free Software Foundation, either 
  * version 3 of the License, or (at your option) any later version.
  * 
- * Some open source application is distributed in the hope that it will 
+ * Jakutos is distributed in the hope that it will 
  * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Jakutos.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
@@ -64,7 +64,25 @@ function doMouseMove(event)
 
 function doMouseClick(event)
 {
+	/* Handle mouse click in the world */
+	if (mouse_in_world()) {
+		/* Future movement by click code will go here */
+		
+	} else { /* Handle mouse click in the HUD */
 	
+		/* Avatar box clicks */
+		if ( mouse_y > Hud.avatar_box_y ) {
+			if ( mouse_x < Hud.avatar_box_x[1] ) { 
+				Hud.activate_message_widget(Hud.inventory,0);
+			} else if ( mouse_x < Hud.avatar_box_x[2] ) { 
+				Hud.activate_message_widget(Hud.inventory,1);
+			} else if ( mouse_x < Hud.avatar_box_x[3] ) { 
+				Hud.activate_message_widget(Hud.inventory,2);
+			} else { 
+				Hud.activate_message_widget(Hud.inventory,3);
+			}
+		}
+	}	
 }
 
 /* Returns true if te mouse is currently in the game world area */

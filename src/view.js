@@ -5,22 +5,23 @@
  *
  * This file is part of the project Jakutos.
  * 
- * Some open source application is free software: you can redistribute 
+ * Jakutos is free software: you can redistribute 
  * it and/or modify it under the terms of the GNU General Public 
  * License as published by the Free Software Foundation, either 
  * version 3 of the License, or (at your option) any later version.
  * 
- * Some open source application is distributed in the hope that it will 
+ * Jakutos is distributed in the hope that it will 
  * be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Jakutos.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+ /* Constructor for the view */
 function View() 
 {
 	this.dirty = false;
@@ -141,6 +142,7 @@ View.prototype.render_animations = function()
 		},24);
 };
 
+/* Zooms out */
 View.prototype.world_rescale_down = function() 
 {
 	if (this.grid_height > 8) {
@@ -152,6 +154,7 @@ View.prototype.world_rescale_down = function()
 	}
 };
 
+/* Zooms in */
 View.prototype.world_rescale_up = function() 
 {
 	if (this.grid_height < 128) {
@@ -163,6 +166,7 @@ View.prototype.world_rescale_up = function()
 	}
 };
 
+/* Recalculates the size of a grid with respect to the view */
 View.prototype.recalculate_view_scale = function() 
 {
 	this.font_size = (this.grid_height*2)+"px";
@@ -170,6 +174,7 @@ View.prototype.recalculate_view_scale = function()
 	this.view_grid_height = Math.round(this.view_px_height/this.grid_height)+1;
 };
 
+/* Changes the draw position of the world with respect to the view */
 View.prototype.refocus = function(xx, yy, immediate = false) 
 {
 	var i;
@@ -209,6 +214,7 @@ View.prototype.refocus = function(xx, yy, immediate = false)
 	}
 };
 
+/* Deprecated */
 View.prototype.toggle_animate = function() 
 {
 	World.dirty = true;
@@ -216,6 +222,7 @@ View.prototype.toggle_animate = function()
 	SETTING_ANIMATE = !SETTING_ANIMATE;
 };
 
+/* Turns the minimap on and off */
 View.prototype.toggle_minimap = function() 
 {
 	Minimap.active = !Minimap.active;
@@ -229,6 +236,7 @@ View.prototype.toggle_minimap = function()
 	World.dirty = true;
 };
 
+/* Clears the world draw area */
 View.prototype.clear_world = function(target_context) 
 {
 	var xx = this.view_px_x;
@@ -238,11 +246,13 @@ View.prototype.clear_world = function(target_context)
 	target_context.clearRect(xx, yy, ww, hh);
 };
 
+/* Clears the entire context */
 View.prototype.clear_context = function(target_context) 
 {
 	target_context.clearRect(0,0,target_context.canvas.width,target_context.canvas.height);
 };
-	
+
+/* Triggered by window resizing */
 View.prototype.resizeWindow = function() 
 {
 	set_canvas_size();
