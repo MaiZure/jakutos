@@ -1,3 +1,13 @@
+--*v0.4---In Progress------------------------------
+Added an Inventory system
+Added Items and Item generation
+Added more diverse colors in the world
+Avatar icon interactions for HUD views
+Inventory item hover popups
+General world beautification
+UI beautification
+Only obvious actions trigger time to pass
+
 --*v0.3---Dec 25, 2016------------------------------
 Progressive terrain climbing - falling hurts
 Player and monsters now cast attack spells.

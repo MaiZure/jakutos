@@ -1,7 +1,7 @@
 /**
  * Project Jakutos
  *
- *  Copyright 2016 by MaiZure <maizure/\member.fsf.org>
+ *  Copyright 2016 by MaiZure <maizure/|\member.fsf.org>
  *
  * This file is part of the project Jakutos.
  * 
@@ -150,10 +150,10 @@ Actor.prototype.can_move = function(from_x,from_y,to_x,to_y)
 
 Actor.prototype.moveAnimate = function() 
 {	
-	if (this.next_x < this.map_x) { this.offset_x-=ANIMATION_STEPS;}
-	if (this.next_x > this.map_x) { this.offset_x+=ANIMATION_STEPS;}
-	if (this.next_y < this.map_y) { this.offset_y-=ANIMATION_STEPS;}
-	if (this.next_y > this.map_y) { this.offset_y+=ANIMATION_STEPS;}
+	if (this.next_x < this.map_x) { this.offset_x -= ANIMATION_STEPS;}
+	if (this.next_x > this.map_x) { this.offset_x += ANIMATION_STEPS;}
+	if (this.next_y < this.map_y) { this.offset_y -= ANIMATION_STEPS;}
+	if (this.next_y > this.map_y) { this.offset_y += ANIMATION_STEPS;}
 	
 	if (Math.abs(this.offset_x) >= View.grid_width || Math.abs(this.offset_y) >= View.grid_height) {
 		this.offset_x = 0;
@@ -179,9 +179,17 @@ Actor.prototype.execute_move = function()
 		/* Update clock , change to manage height changes later*/
 		Hud.status.add_time(5);
 		
+		/* The following should probably be relocated to somewhere more sensible */
+		/* Revert HUD to message window */
 		if (!Hud.is_active(Hud.message_box)) {
 			Hud.activate_message_widget(Hud.message);
 		}
+		
+		/* Turn off minimap if active */
+		if (Minimap.active) { View.toggle_minimap(); }
+		
+		/* Turn on item hover if active */
+		if ( Hud.inventory.popup_active ) { Hud.inventory.clear_item_popup(); }
 	}
 	
 	

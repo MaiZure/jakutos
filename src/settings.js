@@ -1,7 +1,7 @@
 /**
  * Project Jakutos
  *
- *  Copyright 2016 by MaiZure <maizure/\member.fsf.org>
+ *  Copyright 2016 by MaiZure <maizure/|\member.fsf.org>
  *
  * This file is part of the project Jakutos.
  * 
@@ -154,11 +154,15 @@ const KB_1 = 49;
 const KB_2 = 50;
 const KB_3 = 51;
 const KB_4 = 52;
+const KB_8 = 56;
 const KB_9 = 57;
 const KB_A = 65;
 const KB_C = 67;
 const KB_D = 68;
-const KB_E = 69;
+const KB_E = 69
+const KB_F = 70
+const KB_G = 71
+const KB_H = 72;
 const KB_M = 77;
 const KB_W = 87;
 const KB_X = 88;
@@ -196,8 +200,31 @@ const WEAR_HANDS = 4;
 const WEAR_NECK = 5;
 const WEAR_CLOAK = 6;
 const WEAR_FINGER = 7;
-const WEAR_WIELD_SINGLE = 8; /* Wield slot */
-const WEAR_WIELD_BOTH = 9; /* Wield slot */
+const WEAR_SHIELD = 8;
+const WEAR_WIELD_SINGLE = 9; /* Wield slot */
+const WEAR_WIELD_BOTH = 10; /* Wield slot */
+const WEAR_RANGED = 11;
+
+/* Item Types */
+const ITEM_SWORD = 1;
+const ITEM_AXE = 2;
+const ITEM_STAFF = 3;
+const ITEM_CLUB = 4;
+const ITEM_BOW = 5;
+const ITEM_SHIELD = 6;
+const ITEM_HELM = 7;
+const ITEM_CLOAK = 8;
+const ITEM_LEATHER = 9;
+const ITEM_CHAIN = 10;
+const ITEM_PLATE = 11;
+const ITEM_BOOTS = 12;
+const ITEM_GAUNTLETS = 13;
+const ITEM_RING = 14;
+const ITEM_AMULET = 15;
+const ITEM_WAND = 16;
+const ITEM_INGREDIENT = 17;
+const ITEM_SCROLL = 18;
+const ITEM_POTION = 19;
 
 /* Stats */
 const STAT_MIGHT = 0;
@@ -246,3 +273,7 @@ const RESIST_COLD = 2;
 const RESIST_POISON = 3;
 const RESIST_MAGIC = 4;
 const RESIST_PHYSICAL = 5;
+
+/* Inventory Width Modes */
+const MODE_WEAR = 0;
+const MODE_BACKPACK = 1;

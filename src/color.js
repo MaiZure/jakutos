@@ -1,7 +1,7 @@
 /**
  * Project Jakutos
  *
- *  Copyright 2016 by MaiZure <maizure/\member.fsf.org>
+ *  Copyright 2016 by MaiZure <maizure/|\member.fsf.org>
  *
  * This file is part of the project Jakutos.
  * 
@@ -42,8 +42,8 @@ const COL_MIND_BLAST = "rgb(240,160,32)";
 function random_grass_color()
 {
 	var r,g,b;
-	r = Math.round(Math.random()*40)+0;
-	g = Math.round(Math.random()*100)+100;
+	r = Math.round(Math.random()*20)+10;
+	g = Math.round(Math.random()*50)+125;
 	b = Math.round(Math.random()*40)+20;
 	return "rgb("+r+","+g+","+b+")";
 }
@@ -61,8 +61,8 @@ function random_dirt_color()
 {
 	var r,g,b;
 	r = Math.round(Math.random()*40)+150;
-	g = Math.round(Math.random()*40)+80;
-	b = Math.round(Math.random()*40)+20;
+	g = Math.round(Math.random()*20)+90;
+	b = Math.round(Math.random()*20)+40;
 	return "rgb("+r+","+g+","+b+")";
 }
 
@@ -71,7 +71,7 @@ function random_mountain_color()
 	var r,g,b;
 	r = Math.round(Math.random()*30)+160;
 	g = Math.round(Math.random()*10)+r;
-	b = Math.round(Math.random()*60)+170;
+	b = Math.round(Math.random()*30)+170;
 	return "rgb("+r+","+g+","+b+")";
 }
 

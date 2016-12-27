@@ -1,7 +1,7 @@
 /**
  * Project Jakutos
  *
- *  Copyright 2016 by MaiZure <maizure/\member.fsf.org>
+ *  Copyright 2016 by MaiZure <maizure/|\member.fsf.org>
  *
  * This file is part of the project Jakutos.
  * 
@@ -45,20 +45,17 @@ function doMouseMove(event)
 			
 			Hud.hover.add_message(Hud.hover.get_hover_mob(mouse_gx,mouse_gy));
 		}
-	} else { /* Handle mouse movement in the HUD */
+	/* Handle mouse movement in the HUD */
+	} else { 
 	
 		/* Avatar box hovers (refactor this to the basic 4-corners check after HUD is finalized) */
 		if ( mouse_y > Hud.avatar_box_y ) {
-			if ( mouse_x < Hud.avatar_box_x[1] ) { 
-				Hud.hover.add_message(Hud.hover.get_hover_avatar(0));
-			} else if ( mouse_x < Hud.avatar_box_x[2] ) { 
-				Hud.hover.add_message(Hud.hover.get_hover_avatar(1));
-			} else if ( mouse_x < Hud.avatar_box_x[3] ) { 
-				Hud.hover.add_message(Hud.hover.get_hover_avatar(2));
-			} else { 
-				Hud.hover.add_message(Hud.hover.get_hover_avatar(3));
-			}
-		}
+			     if ( mouse_x < Hud.avatar_box_x[1] ) { Hud.hover.add_message(Hud.hover.get_hover_avatar(0)); }
+			else if ( mouse_x < Hud.avatar_box_x[2] ) { Hud.hover.add_message(Hud.hover.get_hover_avatar(1)); }
+			else if ( mouse_x < Hud.avatar_box_x[3] ) { Hud.hover.add_message(Hud.hover.get_hover_avatar(2)); }
+			else                                      { Hud.hover.add_message(Hud.hover.get_hover_avatar(3)); }
+		/* Handle message box widget hovers */
+		} else { Hud.mouse_handler_hover(mouse_x, mouse_y); }
 	}
 }
 
@@ -72,15 +69,10 @@ function doMouseClick(event)
 	
 		/* Avatar box clicks */
 		if ( mouse_y > Hud.avatar_box_y ) {
-			if ( mouse_x < Hud.avatar_box_x[1] ) { 
-				Hud.activate_message_widget(Hud.inventory,0);
-			} else if ( mouse_x < Hud.avatar_box_x[2] ) { 
-				Hud.activate_message_widget(Hud.inventory,1);
-			} else if ( mouse_x < Hud.avatar_box_x[3] ) { 
-				Hud.activate_message_widget(Hud.inventory,2);
-			} else { 
-				Hud.activate_message_widget(Hud.inventory,3);
-			}
+			     if ( mouse_x < Hud.avatar_box_x[1] ) { Hud.activate_message_widget(Hud.inventory,0); } 
+			else if ( mouse_x < Hud.avatar_box_x[2] ) { Hud.activate_message_widget(Hud.inventory,1); } 
+			else if ( mouse_x < Hud.avatar_box_x[3] ) { Hud.activate_message_widget(Hud.inventory,2); } 
+			else                                      { Hud.activate_message_widget(Hud.inventory,3); }
 		}
 	}	
 }

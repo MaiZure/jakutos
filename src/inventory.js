@@ -1,7 +1,7 @@
 /**
  * Project Jakutos
  *
- *  Copyright 2016 by MaiZure <maizure/\member.fsf.org>
+ *  Copyright 2016 by MaiZure <maizure/|\member.fsf.org>
  *
  * This file is part of the project Jakutos.
  * 
@@ -37,7 +37,12 @@ function Inventory(party_member)
 	
 	this.party_member = party_member;
 	
-	this.wear_item(TestItem);
+	/* Temporary equipment generation tests */
+	for (var i=0;i<20;i++) {
+		var test_item = new Item();
+		this.backpack.push(test_item);
+		this.wear_item(test_item);
+	}
 	
 }
 
@@ -57,6 +62,9 @@ Inventory.prototype.wear_item = function(item)
 	
 	/* Wear the item */
 	this.wear[item.wearable] = item;
+	
+	/* Apply base statistics */
+	this.apply_stats(item);
 	
 	/* Apply modifiers */
 	this.apply_modifiers(item);
@@ -85,6 +93,9 @@ Inventory.prototype.remove_by_slot = function(slot) {
 	/* Remove it from the body */
 	this.wear[slot] = null;
 	
+	/* Remove base stats */
+	this.remove_stats(item);
+
 	/* Remove associated modifiers */
 	this.remove_modifiers(item);
 }
@@ -96,10 +107,51 @@ Inventory.prototype.remove_by_item = function(item) {
 		if (this.wear[i] === item) {
 			this.backpack.push(this.wear[i]);
 			this.wear[i] = null;
+			this.remove_stats(item);
 			this.remove_modifiers(item);
 		}
 	}
 }
+
+/* Applies base stats to the player from an item */
+Inventory.prototype.apply_stats = function(item) {
+	this.apply_armor(this.party_member, item);
+	this.apply_weapon(this.party_member, item);
+};
+
+/* Removes base stats from the player from an item */
+Inventory.prototype.remove_stats = function(item) {
+	this.remove_armor(this.party_member, item);
+	this.remove_weapon(this.party_member, item);
+};
+
+/* Helper function to apply armor stats - called from apply_stats() */
+Inventory.prototype.apply_armor = function(party_member, item) {
+	if (!item.is_armor(item)) { return false; }
+	party_member.armor += item.armor;
+};
+
+/* Helper function to remove armor stats - called from remove_stats() */
+Inventory.prototype.remove_armor = function(party_member, item) {
+	if (!item.is_armor(item)) { return false; }
+	party_member.armor -= item.armor;
+};
+
+/* Helper function to apply weapon stats - called from apply_stats() */
+Inventory.prototype.apply_weapon = function(party_member, item) {
+	if (!item.is_weapon(item)) { return false; }
+	party_member.die_num += item.die_num;
+	party_member.die_side += item.die_side;
+	party_member.die_bonus += item.die_bonus;
+};
+
+/* Helper function to remove weapon stats - called from remove_stats() */
+Inventory.prototype.remove_weapon = function(party_member, item) {
+	if (!item.is_weapon(item)) { return false; }
+	party_member.die_num -= item.die_num;
+	party_member.die_side -= item.die_side;
+	party_member.die_bonus -= item.die_bonus;
+};
 
 /* Remove statistic modifiers from the party member */
 Inventory.prototype.remove_modifiers = function(item) {

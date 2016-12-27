@@ -1,7 +1,7 @@
 /**
  * Project Jakutos
  *
- *  Copyright 2016 by MaiZure <maizure/\member.fsf.org>
+ *  Copyright 2016 by MaiZure <maizure/|\member.fsf.org>
  *
  * This file is part of the project Jakutos.
  * 
@@ -58,6 +58,7 @@ function Hud()
 	this.status = new Status(this);
 	this.message = new Message(this);
 	this.inventory = new Inventorywidget(this);
+	this.summary = new Summarywidget(this);
 	this.hover = new Hover(this);
 	for (i=0; i<4; i++) {
 		this.partywidget[i] = new Partywidget(this,i); 
@@ -77,6 +78,8 @@ Hud.prototype.render = function()
 	if (this.message_dirty) { this.message.render(); }
 	
 	if (this.inventory_dirty) { this.inventory.render(); }
+	
+	if (this.summary_dirty) { this.summary_render(); }
 	
 	if (this.hover.dirty) { this.hover.render(); }
 	
@@ -177,15 +180,27 @@ Hud.prototype.activate_message_widget = function(widget, argument = null)
 {
 	if (typeof widget !== "object") { return; }
 	
+	/* Turn off everything */
 	this.message.active = false;
-	this.inventory.active = false
+	this.inventory.active = false;
+	if (this.inventory.last_rendered_item) { this.inventory.clear_item_popup; }
 	
+	/* Turn on desired widget */
 	widget.active = true;
 	widget.render(argument);
-}
+};
 
 /* Checks if a message box widget is active or not */
 Hud.prototype.is_active = function(widget) {
 	if (typeof widget !== "object") { return; }
 	return widget.active;
-}
+};
+
+Hud.prototype.mouse_handler_hover = function(xx, yy) {
+	if (this.is_active(this.inventory)) { this.inventory.mouse_handler_hover(xx, yy); }
+	return false;
+};
+
+Hud.prototype.mouse_handler_click = function(xx, yy) {
+	
+};

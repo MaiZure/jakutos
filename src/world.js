@@ -1,7 +1,7 @@
 /**
  * Project Jakutos
  *
- *  Copyright 2016 by MaiZure <maizure/\member.fsf.org>
+ *  Copyright 2016 by MaiZure <maizure/|\member.fsf.org>
  *
  * This file is part of the project Jakutos.
  * 
@@ -202,15 +202,15 @@ World.prototype.get_map_color = function(height)
 		case -3: return COL_MAP_STAIRS; break;
 		case -2: return COL_MAP_DOOR; break;
 		case -1: return COL_MAP_BUILDING; break;
-		case 0: return COL_MAP_WATER; break;
-		case 1: return COL_MAP_DIRT; break;
-		case 2: return COL_MAP_GRASS; break;
-		case 3: return COL_MAP_GRASS; break;
+		case 0: return random_water_color(); break;
+		case 1: return random_dirt_color(); break;
+		case 2: return random_grass_color(); break;
+		case 3: return random_grass_color(); break;
 		case 4: return COL_MAP_HILL; break;
 		case 5: return COL_MAP_HILL; break;
 		case 6: return COL_MAP_LOW_MOUNTAIN; break;
 		case 7: return COL_MAP_LOW_MOUNTAIN; break;
-		default: return COL_MAP_HIGH_MOUNTAIN; break;
+		default: return random_mountain_color(); break;
 	}
 }
 

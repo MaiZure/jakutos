@@ -3,6 +3,7 @@ Need to rework the die_roll function across all attacks
 Need to streamline the monster/player skill references for damage
 Need to incorporate dual wielding and multiple rings in to wearing
 Need to get stats and modifiers in to items
+Need to refactor Minimap in to object form.
 
 Make move turn PQ
 Make diagonal movement

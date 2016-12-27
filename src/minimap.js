@@ -1,7 +1,7 @@
 /**
  * Project Jakutos
  *
- *  Copyright 2016 by MaiZure <maizure/\member.fsf.org>
+ *  Copyright 2016 by MaiZure <maizure/|\member.fsf.org>
  *
  * This file is part of the project Jakutos.
  * 
@@ -47,15 +47,11 @@ function Minimap()
 
 function renderMinimap() 
 {
-	if (this.active) {
-		if (this.minimap_world_dirty) { 
-			this._renderTerrain(base_context); 
-		}
-		
-		if (this.minimap_viewbox_dirty) {
-			this._renderViewbox(animation_context); 
-		}
-	}
+	if (!this.active) { return; }
+	
+	if (this.minimap_world_dirty) { this._renderTerrain(base_context); }
+	if (this.minimap_viewbox_dirty) { this._renderViewbox(animation_context); }
+	
 }
 
 function renderTerrain(target_context) 
@@ -66,7 +62,21 @@ function renderTerrain(target_context)
 			px = this.base_x+i;
 			py = this.base_y+j;
 			
-			target_context.fillStyle = World.gridcol[j][i];
+			switch (World.gridheight[j][i]) {
+				case -3: target_context.fillStyle = COL_MAP_STAIRS; break;
+				case -2: target_context.fillStyle = COL_MAP_DOOR; break;
+				case -1: target_context.fillStyle = COL_MAP_BUILDING; break;
+				case 0: target_context.fillStyle = COL_MAP_WATER; break;
+				case 1: target_context.fillStyle = COL_MAP_DIRT; break;
+				case 2: target_context.fillStyle = COL_MAP_GRASS; break;
+				case 3: target_context.fillStyle = COL_MAP_GRASS; break;
+				case 4: target_context.fillStyle = COL_MAP_HILL; break;
+				case 5: target_context.fillStyle = COL_MAP_HILL; break;
+				case 6: target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
+				case 7: target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
+				default: target_context.fillStyle = COL_MAP_HIGH_MOUNTAIN; break;
+			}
+			
 			target_context.fillRect(px/2,py/2,1,1);
 		}
 	}
@@ -100,9 +110,20 @@ function drawMinimap(target_context)
 	var player_y = Player.map_y;
 	var minimap_x = (View.view_px_width-this.minimap_width)/2;
 	var minimap_y = (View.view_px_height-this.minimap_height)/2;
+
 	target_context.putImageData(this.minimap_image, minimap_x,minimap_y);
+	
 	target_context.fillStyle = "rgb(255,0,0)";
 	target_context.fillRect(minimap_x+player_x/2-5, minimap_y+player_y/2-5, 10, 10);	
+	
+	target_context.lineWidth = 4;
+	target_context.strokeStyle = "rgb(0,0,0)";
+    target_context.strokeRect(minimap_x, minimap_y, this.minimap_width, this.minimap_height);
+	
+	target_context.lineWidth = 3;
+	target_context.strokeStyle = "rgb(180,60,60)";
+    target_context.strokeRect(minimap_x, minimap_y, this.minimap_width, this.minimap_height);
+	
 }
 
 function clear_minimap(target_context) 
