@@ -85,7 +85,7 @@ function handle_passive_events(key) {
 		case KB_2:
 		case KB_3:
 		case KB_4: Party.change_active_party_member(event.keyCode-KB_1); break;
-		case KB_8: Hud.inventory.toggle_item_popup(Party.member[0].inventory.backpack[Math.floor(Math.random()*Party.member[0].inventory.backpack.length)]); break;
+		case KB_8: console.log(World.get_current_region()); break;
 		case KB_X: View.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: View.toggle_minimap(); break;
 		case KB_MINUS: View.world_rescale_down(); break;

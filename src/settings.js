@@ -31,7 +31,7 @@ const VERSION_MINOR = 2;
 /* Game Settings */
 SETTING_ANIMATE = false;
 SETTING_EDIT_MODE = false;
-const NUMBER_OF_MONSTERS = 500;
+const NUMBER_OF_MONSTERS = 0//500;
 const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
 const FG_COLOR = "rgb(170,170,170)";
 const GRASSLAND = Math.round(Math.random());

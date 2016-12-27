@@ -22,7 +22,8 @@
  */
 
 /* Kick off the game when the window loads 
-   Other events are added after init */
+ * Other events are added after init 
+ */
 window.addEventListener("load", gameInit, false);
  
 /* Grab DOM objects */

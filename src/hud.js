@@ -85,6 +85,7 @@ Hud.prototype.render = function()
 	
 	if (this.status.dirty) { this.status.render(); }
 	
+	
 	for (i=0;i<4;i++) {
 		if (this.partywidget[i].dirty) {
 			this.partywidget[i].render();
@@ -181,12 +182,12 @@ Hud.prototype.activate_message_widget = function(widget, argument = null)
 	if (typeof widget !== "object") { return; }
 	
 	/* Turn off everything */
-	this.message.active = false;
-	this.inventory.active = false;
+	this.message.deactivate();
+	this.inventory.deactivate();
 	if (this.inventory.last_rendered_item) { this.inventory.clear_item_popup; }
 	
 	/* Turn on desired widget */
-	widget.active = true;
+	widget.activate();
 	widget.render(argument);
 };
 

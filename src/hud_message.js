@@ -76,3 +76,6 @@ Message.prototype.add_message = function(msg) {
 	this.hud.dirty = true;
 	Hud.render();
 };
+
+Message.prototype.activate = function() { this.active = true; };
+Message.prototype.deactivate = function() { this.active = false; };

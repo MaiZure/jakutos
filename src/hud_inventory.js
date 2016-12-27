@@ -32,7 +32,9 @@ function Inventorywidget(hud_instance)
 	this.current_party_member = -1;
 	this.mode = MODE_WEAR;
 	this.popup_active = false;
-	this.inv_line_lookup = [];
+	this.wear_line_lookup = [];
+	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
+	this.max_line = (this.hud.message_box_height / this.font_size);
 	
 	/* The following variables will contain references to popup renders
 	 * with the goal to compare current and previous render requests so
@@ -42,19 +44,29 @@ function Inventorywidget(hud_instance)
 	this.active_item = null;
 	this.last_rendered_item = null;
 	
-	for (i=0; i<30; i++) { this.inv_line_lookup[i] = null; }
+	for (i=0; i<30; i++) { this.wear_line_lookup[i] = null; }
 	
-	this.inv_line_lookup[3] = WEAR_WIELD_SINGLE;
-	this.inv_line_lookup[4] = WEAR_RANGED;
-	this.inv_line_lookup[5] = WEAR_HEAD;
-	this.inv_line_lookup[6] = WEAR_BODY;
-	this.inv_line_lookup[7] = WEAR_FEET;
-	this.inv_line_lookup[8] = WEAR_HANDS;
-	this.inv_line_lookup[9] = WEAR_NECK;
-	this.inv_line_lookup[10] = WEAR_CLOAK;
+	/* Poor man's line to wear slot reference */
+	this.wear_line_lookup[3] = WEAR_WIELD_SINGLE;
+	this.wear_line_lookup[4] = WEAR_RANGED;
+	this.wear_line_lookup[5] = WEAR_HEAD;
+	this.wear_line_lookup[6] = WEAR_BODY;
+	this.wear_line_lookup[7] = WEAR_FEET;
+	this.wear_line_lookup[8] = WEAR_HANDS;
+	this.wear_line_lookup[9] = WEAR_NECK;
+	this.wear_line_lookup[10] = WEAR_CLOAK;
 }
 
 Inventorywidget.prototype.render = function(party_member = -1)
+{
+	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
+	this.max_line = (this.hud.message_box_height / this.font_size);
+	
+	if (this.mode === MODE_WEAR) { this.render_wear(party_member); }
+	if (this.mode === MODE_BACKPACK) { this.render_backpack(party_member); }
+};
+
+Inventorywidget.prototype.render_wear = function(party_member = -1)
 {
 	/* A zero+ value for party_member changes the active render target
 	   Otherwise, we continue with the last target */
@@ -84,18 +96,40 @@ Inventorywidget.prototype.render = function(party_member = -1)
 	this.hud.inventory_dirty = false;
 };
 
+Inventorywidget.prototype.render_backpack = function(party_member = -1)
+{
+	if (party_member > -1) { this.current_party_member = party_member; }
+
+	/* There are no party members */
+	if (this.current_party_member === -1) { return false; }
+	
+	/* Clear the current window */
+	this.clear_message_window();
+	
+	/* An alias to the party member we're viewing */
+	var current = Party.member[this.current_party_member];
+	
+	/* Display equipment currently worn */
+	var i;
+	this.render_line(1, current.name + " is carrying: ");
+	
+	for (i=3; i<this.max_line; i++) { this.render_line(i, this.get_item_name(current.inventory.backpack, i) ); }
+	
+	this.hud.inventory_dirty = false;
+};
+
 Inventorywidget.prototype.clear_message_window = function() {
 	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
 };
 
 Inventorywidget.prototype.render_line = function(line, message) {
-	var font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
-	animation_context.font = font_size+"px Courier";
+	animation_context.font = this.font_size+"px Courier";
 	animation_context.fillStyle = FG_COLOR;
 	animation_context.textAlign = "left";
-	animation_context.fillText(message,this.hud.message_box_x+5,this.hud.message_box_y+line*font_size);
+	animation_context.fillText(message,this.hud.message_box_x+5,this.hud.message_box_y+line*this.font_size);
 };
 
+/* Looks up the name of an item */
 Inventorywidget.prototype.get_item_name = function(who, what)
 {
 	/* Who's on first?? ...yeah this was typed after probably 500 lines of code today */
@@ -103,6 +137,7 @@ Inventorywidget.prototype.get_item_name = function(who, what)
 	return who[what].name;
 };
 
+/* Interface to toggle item popup - no use yet */
 Inventorywidget.prototype.toggle_item_popup = function(item) 
 {
 	this.popup_active = !this.popup_active;
@@ -111,12 +146,22 @@ Inventorywidget.prototype.toggle_item_popup = function(item)
 	if ( !this.popup_active ) { this.clear_item_popup(); }
 };
 
+/* Turns on the item popup */
 Inventorywidget.prototype.activate_item_popup = function(item) 
 {
 	this.active_item = item
 	this.render_item_popup(active_item)
 };
 
+Inventorywidget.prototype.activate = function() 
+{
+	this.active = true;
+	this.mode = this.mode === MODE_WEAR ? MODE_BACKPACK : MODE_WEAR;
+};
+
+Inventorywidget.prototype.deactivate = function() { this.active = false; };
+
+/* removes the item popup */
 Inventorywidget.prototype.clear_item_popup = function()
 {
 	if (!this.last_rendered_item) { return; }
@@ -131,6 +176,7 @@ Inventorywidget.prototype.clear_item_popup = function()
 	this.last_rendered_item = null;
 };
 
+/* Renders the hover popup that describes an item */
 Inventorywidget.prototype.render_item_popup = function(item)
 {
 	if (!item) { return; }
@@ -190,25 +236,43 @@ Inventorywidget.prototype.render_item_popup = function(item)
 	this.last_rendered_item = item;
 };
 
+/* Receives handling commands from the Hud object as needed */
 Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	var line = this.mouse_to_text_line_number(mouse_x, mouse_y);
-	var wear_slot = this.inv_line_lookup[line];
 	var current = Party.member[this.current_party_member].inventory;
 	
-	if (current.wear[wear_slot]) {
-		var item = current.wear[wear_slot];
-		this.render_item_popup(item);
-	} else {
-		this.clear_item_popup(item);
+	/* Current looking at the equipped items list */
+	if (this.mode === MODE_WEAR) {
+		var wear_slot = this.wear_line_lookup[line];
+		
+		if (current.wear[wear_slot]) {
+			var item = current.wear[wear_slot];
+			this.render_item_popup(item);
+		} else {
+			this.clear_item_popup(item);
+		}
+	}
+	
+	/* Currently looking in tbe backpack */
+	if (this.mode === MODE_BACKPACK) {
+		var backpack_slot = line;
+		
+		if (current.backpack[backpack_slot]) {
+			var item = current.backpack[backpack_slot];
+			this.render_item_popup(item);
+		} else {
+			this.clear_item_popup(item);
+		}
 	}
 };
 
+/* Converts the mouse position to a message-box line number in the current view space */
 Inventorywidget.prototype.mouse_to_text_line_number = function(mouse_x, mouse_y) {
 	
 	/* This height must match the font size calculation from render_line(); */
-	var line_height = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
+	var line_height = this.font_size;
 	var top_line = this.hud.message_box_y;
 	
 	/* Start at line 1, for sanity */
-	return Math.floor( (mouse_y - top_line) / line_height ) + 1;
+	return Math.min(Math.floor( (mouse_y - top_line) / line_height ) + 1,this.max_line);
 };

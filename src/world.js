@@ -224,14 +224,17 @@ World.prototype.save_map = function()
 	var target_base_x = [];
 	var target_base_y = [];
 	var region_size = 252;
+	var region_num = this.get_current_region();
 	var line = ""
 	var ch;
 	
-	target_base_x[14] = region_size*4; target_base_y[14]  = region_size*2;
+	
+	target_base_x = region_size * (region_num % 5); 
+	target_base_y  = region_size * Math.floor(region_num/5);
 	
 	for (j=0; j<region_size; j++) {
 		for (i=0; i<region_size; i++) {
-			ch = this.gridheight[target_base_y[14]+j][target_base_x[14]+i];
+			ch = this.gridheight[target_base_y + j][target_base_x + i];
 			
 			switch (ch) {
 				case -3: ch = String.fromCharCode(60); break;
@@ -245,6 +248,7 @@ World.prototype.save_map = function()
 		}
 	}
 	console.log(line);
+	console.log("WORLD_MAP_"+(region_num+1));
 }
 
 /* Adds a wall to the current location */
@@ -350,4 +354,11 @@ World.prototype.raise_terrain = function(xx, yy) {
 	
 	/* Force immediate redraw */
 	World.dirty = true;
+}
+
+/* Returns the current region number - used in conjunction with map exporting */
+World.prototype.get_current_region = function() {
+	var gx = Player.map_x;
+	var gy = Player.map_y;
+	return Math.floor(gx/252) + Math.floor(gy/252)*5;
 }

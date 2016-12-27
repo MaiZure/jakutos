@@ -25,6 +25,7 @@
 function View() 
 {
 	this.dirty = false;
+	
 	this.view_grid_x = 0;
 	this.view_grid_y = 0;
 	this.grid_width = 14;
