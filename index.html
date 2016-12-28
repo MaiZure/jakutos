@@ -12,9 +12,19 @@
 	@font-face {
     font-family: 'clacon';
     src: url('./data/ClassicConsole.ttf');
-	}</style>
+	}
+	.noselect {
+		-webkit-touch-callout: none; /* iOS Safari */
+		-webkit-user-select: none; /* Chrome/Safari/Opera */
+		-khtml-user-select: none; /* Konqueror */
+		-moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  not supported by any browser */
+	}
+	</style>
+<div class="noselect" style="font-family: clacon;">&nbsp</div> <!-- Force the font CSS before randering canvas but prevent selection to avoid spurious DOM events -->
 <body bgcolor="#303030">
-<div style="font-family: clacon;">&nbsp</div> <!-- Force the font CSS before randering canvas -->
 <canvas id="Base" width="95%" height="95%" tabindex="1" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
 <canvas id="Animation" width="95%" height="95%" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
 <canvas id="Overlay" width="95%" height="95%" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>

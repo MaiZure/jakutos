@@ -75,11 +75,17 @@ Hud.prototype.render = function()
 {
 	if (this.dirty) { this.debug_render(animation_context); }
 	
-	if (this.message_dirty) { this.message.render(); }
+	switch (this.find_active_widget()) {
+		case this.message: this.message.render(); break;
+		case this.inventory: this.inventory.render(); break;
+		case this.summary: this.summary.render(); break;
+	}
+		
+	//if (this.message_dirty) { this.message.render(); }
 	
-	if (this.inventory_dirty) { this.inventory.render(); }
+	//if (this.inventory_dirty) { this.inventory.render(); }
 	
-	if (this.summary_dirty) { this.summary_render(); }
+	//if (this.summary_dirty) { this.summary_render(); }
 	
 	if (this.hover.dirty) { this.hover.render(); }
 	
@@ -230,13 +236,55 @@ Hud.prototype.mouse_handler_click = function(xx, yy) {
 	
 	/* Avatar box clicks */
 	if ( yy > Hud.avatar_box_y ) {
-		var target_party_member;
-		if (xx >= Hud.avatar_box_x[3]) { target_party_member = 3; }
-		if (xx < Hud.avatar_box_x[3]) { target_party_member = 2; }
-		if (xx < Hud.avatar_box_x[2]) { target_party_member = 1; }
-		if (xx < Hud.avatar_box_x[1]) { target_party_member = 0; }
+		var target_party_member = this.get_avatar_box_index(xx);
 		
 		Party.activate_party_member(target_party_member);
-		//Hud.activate_message_box_widget(Hud.inventory, target_party_member);
+	
+	/* Message Box area clicks */
+	} else {
+			Hud.inventory.mouse_handler_click(xx, yy);
 	}
+	
 };
+
+Hud.prototype.mouse_handler_release = function(xx, yy) {
+	
+	/* Avatar box release */
+	if ( yy > Hud.avatar_box_y ) {
+		/* Check for dragged items to swap */
+		if (this.inventory.selected_item) {
+			var item = this.inventory.selected_item;
+			var source = this.inventory.current_party_member;
+			/* Get the party member number */
+			var target_party_member = this.get_avatar_box_index(xx);
+			/* Give them the item */
+			Party.member[target_party_member].inventory.backpack.push(item);			
+			/* Remove it from the original player by taking it off and deleting from backpack
+			 * Note that if it's not worn, this step will do nothing. It must be in the backpack */
+			Party.member[source].inventory.remove_item(item);
+			Party.member[source].inventory.remove_from_backpack(item);
+			/* Remove the drag reference */
+			this.inventory.selected_item = null;
+			console.log(item);
+			console.log(source, target_party_member);
+			
+			this.inventory_dirty = true;
+		}
+	
+	/* Message Box area release */
+	} else {
+			Hud.inventory.mouse_handler_release(xx, yy);
+	}
+	
+};
+
+/* Returns the avatar box number */
+Hud.prototype.get_avatar_box_index = function(xx) {
+	var index;
+	if (xx >= Hud.avatar_box_x[3]) { index = 3; }
+	if (xx < Hud.avatar_box_x[3]) { index = 2; }
+	if (xx < Hud.avatar_box_x[2]) { index = 1; }
+	if (xx < Hud.avatar_box_x[1]) { index = 0; }
+	return index;
+	
+}

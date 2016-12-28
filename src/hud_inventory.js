@@ -32,6 +32,7 @@ function Inventorywidget(hud_instance)
 	this.current_party_member = -1;
 	this.mode = MODE_WEAR;
 	this.popup_active = false;
+	this.selected_item = null;
 	this.wear_line_lookup = [];
 	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
 	this.max_line = (this.hud.message_box_height / this.font_size);
@@ -153,10 +154,13 @@ Inventorywidget.prototype.activate_item_popup = function(item)
 	this.render_item_popup(active_item)
 };
 
+/* Activates the inventory widget. */
 Inventorywidget.prototype.activate = function() 
 {
+	/* If it's already active, we'll toggle modes */
 	if (this.active) {
 		this.toggle_mode();
+	/* Otherwise we start by viewing worn equipment */
 	} else {
 		this.active = true;
 		this.mode = MODE_WEAR;
@@ -248,56 +252,73 @@ Inventorywidget.prototype.render_item_popup = function(item)
 Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	var line = this.mouse_to_text_line_number(mouse_x, mouse_y);
 	var current = Party.member[this.current_party_member].inventory;
+	var current_item = this.get_item_at_point(mouse_x, mouse_y);
 	
-	/* Current looking at the equipped items list */
-	if (this.mode === MODE_WEAR) {
-		var wear_slot = this.wear_line_lookup[line];
-		
-		if (current.wear[wear_slot]) {
-			var item = current.wear[wear_slot];
-			this.render_item_popup(item);
-		} else {
-			this.clear_item_popup(item);
-		}
-	}
-	
-	/* Currently looking in tbe backpack */
-	if (this.mode === MODE_BACKPACK) {
-		var backpack_slot = line-3;
-		
-		if (current.backpack[backpack_slot]) {
-			var item = current.backpack[backpack_slot];
-			this.render_item_popup(item);
-		} else {
-			this.clear_item_popup(item);
-		}
+	/* Create a popup box if there's a valid item under the mouse */
+	if (current_item) {
+		this.render_item_popup(current_item);
+	} else {
+		this.clear_item_popup(current_item);
 	}
 };
 
 /* Receives handling commands from the Hud object as needed */
 Inventorywidget.prototype.mouse_handler_click = function(mouse_x, mouse_y) {
 	
-	/* Find the current line and item reference */
-	var line = this.mouse_to_text_line_number(mouse_x, mouse_y);
-	var current = Party.member[this.current_party_member].inventory;	
+	if (!this.active) { return; }
+	
+	/* Saves the reference to the item just clicked in case user drags */
+	this.selected_item = this.get_item_at_point(mouse_x, mouse_y);
+};
+
+Inventorywidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
+	
+	if (!this.active) { return; }
+	
+	/* Get the item clicked on and the reference to the active inventory */
+	var current_item = this.get_item_at_point(mouse_x, mouse_y);
+	var current_party_member = Party.member[this.current_party_member].inventory;
+	
+	/* No item under? nothing happens */
+	if (!current_item) { return; }
 	
 	/* If we're viewing equipped items, then clicking removes items */
-	If (this.mode === MODE_WEAR) {
-		
-	}
-	/* If we're viewing inventory items, then clicking wears them */
-	If (this.mode === MODE_BACKPACK) {
-		
-	}
+	if (this.mode === MODE_WEAR) { current_party_member.remove_item(current_item); }
 	
+	/* If we're viewing inventory items, then clicking wears them */
+	if (this.mode === MODE_BACKPACK) { current_party_member.wear_item(current_item); }
+	/* Tracking the selected item in case of drag */
+	this.selected_item = null;
 };
+
 /* Converts the mouse position to a message-box line number in the current view space */
 Inventorywidget.prototype.mouse_to_text_line_number = function(mouse_x, mouse_y) {
 	
 	/* This height must match the font size calculation from render_line(); */
 	var line_height = this.font_size;
 	var top_line = this.hud.message_box_y;
-	
 	/* Start at line 1, for sanity */
-	return Math.min(Math.floor( (mouse_y - top_line) / line_height ) + 1,this.max_line);
+	var line = Math.floor( (mouse_y - top_line) / line_height ) + 1;
+	
+	/* Need to be able to distinguish an invalid line */
+	if (line > this.max_line || line < 1 ) { return false; }
+
+	return line;
 };
+
+/* Finds the item text at a given point, typically the mouse pointer */
+Inventorywidget.prototype.get_item_at_point = function(xx, yy) {
+	/* Find the current line and item reference
+	 * We're actually getting info here for either inventory mode */
+	var line = this.mouse_to_text_line_number(xx, yy);
+	var current_party_member = Party.member[this.current_party_member].inventory;
+	var wear_slot = this.wear_line_lookup[line];
+	var backpack_slot = line-3;
+	var current_item;
+	
+	/* Reference the appropriate data array given the mode */
+	if (this.mode === MODE_WEAR) { current_item = current_party_member.wear[wear_slot]; }
+	if (this.mode === MODE_BACKPACK) { current_item = current_party_member.backpack[backpack_slot]; }
+	
+	return current_item;
+}

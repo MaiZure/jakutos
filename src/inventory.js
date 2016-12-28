@@ -38,7 +38,7 @@ function Inventory(party_member)
 	this.party_member = party_member;
 	
 	/* Temporary equipment generation tests */
-	for (var i=0;i<20;i++) {
+	for (var i=0;i<2;i++) {
 		var test_item = new Item();
 		this.backpack.push(test_item);
 		this.wear_item(test_item);
@@ -63,12 +63,17 @@ Inventory.prototype.wear_item = function(item)
 	/* Wear the item */
 	this.wear[item.wearable] = item;
 	
+	/* Remove it from the backpack */
+	this.remove_from_backpack(item);
+	
 	/* Apply base statistics */
 	this.apply_stats(item);
 	
 	/* Apply modifiers */
 	this.apply_modifiers(item);
-}
+	
+	Hud.inventory_dirty = true;
+};
 
 /* Takes an item or slot and calls the appropriate remove function */
 Inventory.prototype.remove_item = function(target)
@@ -79,11 +84,13 @@ Inventory.prototype.remove_item = function(target)
 	/* Call the appropriate helper function */
 	if (typeof target === "object") { this.remove_by_item(target); }
 	if (typeof target === "number") { this.remove_by_slot(target); }
-}
+	
+	Hud.inventory_dirty = true;
+};
 
 /* Removes an item from a given slot and puts it in the backpack */
-Inventory.prototype.remove_by_slot = function(slot) {
-	
+Inventory.prototype.remove_by_slot = function(slot) 
+{	
 	/* Get reference the item */
 	var item = this.wear[slot];
 	
@@ -101,7 +108,8 @@ Inventory.prototype.remove_by_slot = function(slot) {
 }
 
 /* Removes an item by scanning all wear slots and puts it in the backpack */
-Inventory.prototype.remove_by_item = function(item) {
+Inventory.prototype.remove_by_item = function(item) 
+{	
 	var i;
 	for (i=0;i<this.wear.length;i++) {
 		if (this.wear[i] === item) {
@@ -114,31 +122,36 @@ Inventory.prototype.remove_by_item = function(item) {
 }
 
 /* Applies base stats to the player from an item */
-Inventory.prototype.apply_stats = function(item) {
+Inventory.prototype.apply_stats = function(item) 
+{
 	this.apply_armor(this.party_member, item);
 	this.apply_weapon(this.party_member, item);
 };
 
 /* Removes base stats from the player from an item */
-Inventory.prototype.remove_stats = function(item) {
+Inventory.prototype.remove_stats = function(item) 
+{
 	this.remove_armor(this.party_member, item);
 	this.remove_weapon(this.party_member, item);
 };
 
 /* Helper function to apply armor stats - called from apply_stats() */
-Inventory.prototype.apply_armor = function(party_member, item) {
+Inventory.prototype.apply_armor = function(party_member, item) 
+{
 	if (!item.is_armor(item)) { return false; }
 	party_member.armor += item.armor;
 };
 
 /* Helper function to remove armor stats - called from remove_stats() */
-Inventory.prototype.remove_armor = function(party_member, item) {
+Inventory.prototype.remove_armor = function(party_member, item) 
+{
 	if (!item.is_armor(item)) { return false; }
 	party_member.armor -= item.armor;
 };
 
 /* Helper function to apply weapon stats - called from apply_stats() */
-Inventory.prototype.apply_weapon = function(party_member, item) {
+Inventory.prototype.apply_weapon = function(party_member, item) 
+{
 	if (!item.is_weapon(item)) { return false; }
 	party_member.die_num += item.die_num;
 	party_member.die_side += item.die_side;
@@ -146,7 +159,8 @@ Inventory.prototype.apply_weapon = function(party_member, item) {
 };
 
 /* Helper function to remove weapon stats - called from remove_stats() */
-Inventory.prototype.remove_weapon = function(party_member, item) {
+Inventory.prototype.remove_weapon = function(party_member, item) 
+{
 	if (!item.is_weapon(item)) { return false; }
 	party_member.die_num -= item.die_num;
 	party_member.die_side -= item.die_side;
@@ -154,7 +168,8 @@ Inventory.prototype.remove_weapon = function(party_member, item) {
 };
 
 /* Remove statistic modifiers from the party member */
-Inventory.prototype.remove_modifiers = function(item) {
+Inventory.prototype.remove_modifiers = function(item) 
+{
 	var i, mod, stat, skill, resist, amount;
 	
 	/* Remove stat modifiers from player */
@@ -183,7 +198,8 @@ Inventory.prototype.remove_modifiers = function(item) {
 }
 
 /* Add statistic modifiers from the party member  (COMBINE THIS WITH THE REMOVE PROCEDURE!)*/
-Inventory.prototype.apply_modifiers = function(item) {
+Inventory.prototype.apply_modifiers = function(item) 
+{
 	var i, mod, stat, skill, resist, amount;
 	
 	/* Add stat modifiers to player */
@@ -209,4 +225,10 @@ Inventory.prototype.apply_modifiers = function(item) {
 		amount = mod[1];
 		this.party_member.resist_mods[resist] += amount;
 	}
+};
+
+Inventory.prototype.remove_from_backpack = function(item) { 
+	var index = this.backpack.indexOf(item);
+	if (index !== -1) { this.backpack.splice(index,1); }
+	Hud.inventory_dirty = true;
 }

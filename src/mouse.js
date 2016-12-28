@@ -71,5 +71,16 @@ function doMouseClick(event)
 	View.render(base_context,animation_context,overlay_context);
 }
 
+function doMouseRelease(event)
+{
+	/* Handle mouse release in the world */
+	if (mouse_in_world()) {
+	
+	/* Handle mouse release in the HUD */
+	} else { Hud.mouse_handler_release(mouse_x, mouse_y); }	
+	
+	View.render(base_context,animation_context,overlay_context);
+}
+
 /* Returns true if te mouse is currently in the game world area */
 function mouse_in_world() { return (mouse_x < View.view_px_width); }

@@ -590,11 +590,17 @@ Hud.prototype.render = function()
 {
 	if (this.dirty) { this.debug_render(animation_context); }
 	
-	if (this.message_dirty) { this.message.render(); }
+	switch (this.find_active_widget()) {
+		case this.message: this.message.render(); break;
+		case this.inventory: this.inventory.render(); break;
+		case this.summary: this.summary.render(); break;
+	}
+		
+	//if (this.message_dirty) { this.message.render(); }
 	
-	if (this.inventory_dirty) { this.inventory.render(); }
+	//if (this.inventory_dirty) { this.inventory.render(); }
 	
-	if (this.summary_dirty) { this.summary_render(); }
+	//if (this.summary_dirty) { this.summary_render(); }
 	
 	if (this.hover.dirty) { this.hover.render(); }
 	
@@ -745,16 +751,58 @@ Hud.prototype.mouse_handler_click = function(xx, yy) {
 	
 	/* Avatar box clicks */
 	if ( yy > Hud.avatar_box_y ) {
-		var target_party_member;
-		if (xx >= Hud.avatar_box_x[3]) { target_party_member = 3; }
-		if (xx < Hud.avatar_box_x[3]) { target_party_member = 2; }
-		if (xx < Hud.avatar_box_x[2]) { target_party_member = 1; }
-		if (xx < Hud.avatar_box_x[1]) { target_party_member = 0; }
+		var target_party_member = this.get_avatar_box_index(xx);
 		
 		Party.activate_party_member(target_party_member);
-		//Hud.activate_message_box_widget(Hud.inventory, target_party_member);
+	
+	/* Message Box area clicks */
+	} else {
+			Hud.inventory.mouse_handler_click(xx, yy);
 	}
+	
 };
+
+Hud.prototype.mouse_handler_release = function(xx, yy) {
+	
+	/* Avatar box release */
+	if ( yy > Hud.avatar_box_y ) {
+		/* Check for dragged items to swap */
+		if (this.inventory.selected_item) {
+			var item = this.inventory.selected_item;
+			var source = this.inventory.current_party_member;
+			/* Get the party member number */
+			var target_party_member = this.get_avatar_box_index(xx);
+			/* Give them the item */
+			Party.member[target_party_member].inventory.backpack.push(item);			
+			/* Remove it from the original player by taking it off and deleting from backpack
+			 * Note that if it's not worn, this step will do nothing. It must be in the backpack */
+			Party.member[source].inventory.remove_item(item);
+			Party.member[source].inventory.remove_from_backpack(item);
+			/* Remove the drag reference */
+			this.inventory.selected_item = null;
+			console.log(item);
+			console.log(source, target_party_member);
+			
+			this.inventory_dirty = true;
+		}
+	
+	/* Message Box area release */
+	} else {
+			Hud.inventory.mouse_handler_release(xx, yy);
+	}
+	
+};
+
+/* Returns the avatar box number */
+Hud.prototype.get_avatar_box_index = function(xx) {
+	var index;
+	if (xx >= Hud.avatar_box_x[3]) { index = 3; }
+	if (xx < Hud.avatar_box_x[3]) { index = 2; }
+	if (xx < Hud.avatar_box_x[2]) { index = 1; }
+	if (xx < Hud.avatar_box_x[1]) { index = 0; }
+	return index;
+	
+}
  
 function Hover(hud_instance) {
 	this.hud = hud_instance;
@@ -809,6 +857,7 @@ function Inventorywidget(hud_instance)
 	this.current_party_member = -1;
 	this.mode = MODE_WEAR;
 	this.popup_active = false;
+	this.selected_item = null;
 	this.wear_line_lookup = [];
 	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
 	this.max_line = (this.hud.message_box_height / this.font_size);
@@ -930,10 +979,13 @@ Inventorywidget.prototype.activate_item_popup = function(item)
 	this.render_item_popup(active_item)
 };
 
+/* Activates the inventory widget. */
 Inventorywidget.prototype.activate = function() 
 {
+	/* If it's already active, we'll toggle modes */
 	if (this.active) {
 		this.toggle_mode();
+	/* Otherwise we start by viewing worn equipment */
 	} else {
 		this.active = true;
 		this.mode = MODE_WEAR;
@@ -1025,59 +1077,76 @@ Inventorywidget.prototype.render_item_popup = function(item)
 Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	var line = this.mouse_to_text_line_number(mouse_x, mouse_y);
 	var current = Party.member[this.current_party_member].inventory;
+	var current_item = this.get_item_at_point(mouse_x, mouse_y);
 	
-	/* Current looking at the equipped items list */
-	if (this.mode === MODE_WEAR) {
-		var wear_slot = this.wear_line_lookup[line];
-		
-		if (current.wear[wear_slot]) {
-			var item = current.wear[wear_slot];
-			this.render_item_popup(item);
-		} else {
-			this.clear_item_popup(item);
-		}
-	}
-	
-	/* Currently looking in tbe backpack */
-	if (this.mode === MODE_BACKPACK) {
-		var backpack_slot = line-3;
-		
-		if (current.backpack[backpack_slot]) {
-			var item = current.backpack[backpack_slot];
-			this.render_item_popup(item);
-		} else {
-			this.clear_item_popup(item);
-		}
+	/* Create a popup box if there's a valid item under the mouse */
+	if (current_item) {
+		this.render_item_popup(current_item);
+	} else {
+		this.clear_item_popup(current_item);
 	}
 };
 
 /* Receives handling commands from the Hud object as needed */
 Inventorywidget.prototype.mouse_handler_click = function(mouse_x, mouse_y) {
 	
-	/* Find the current line and item reference */
-	var line = this.mouse_to_text_line_number(mouse_x, mouse_y);
-	var current = Party.member[this.current_party_member].inventory;	
+	if (!this.active) { return; }
+	
+	/* Saves the reference to the item just clicked in case user drags */
+	this.selected_item = this.get_item_at_point(mouse_x, mouse_y);
+};
+
+Inventorywidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
+	
+	if (!this.active) { return; }
+	
+	/* Get the item clicked on and the reference to the active inventory */
+	var current_item = this.get_item_at_point(mouse_x, mouse_y);
+	var current_party_member = Party.member[this.current_party_member].inventory;
+	
+	/* No item under? nothing happens */
+	if (!current_item) { return; }
 	
 	/* If we're viewing equipped items, then clicking removes items */
-	If (this.mode === MODE_WEAR) {
-		
-	}
-	/* If we're viewing inventory items, then clicking wears them */
-	If (this.mode === MODE_BACKPACK) {
-		
-	}
+	if (this.mode === MODE_WEAR) { current_party_member.remove_item(current_item); }
 	
+	/* If we're viewing inventory items, then clicking wears them */
+	if (this.mode === MODE_BACKPACK) { current_party_member.wear_item(current_item); }
+	/* Tracking the selected item in case of drag */
+	this.selected_item = null;
 };
+
 /* Converts the mouse position to a message-box line number in the current view space */
 Inventorywidget.prototype.mouse_to_text_line_number = function(mouse_x, mouse_y) {
 	
 	/* This height must match the font size calculation from render_line(); */
 	var line_height = this.font_size;
 	var top_line = this.hud.message_box_y;
-	
 	/* Start at line 1, for sanity */
-	return Math.min(Math.floor( (mouse_y - top_line) / line_height ) + 1,this.max_line);
+	var line = Math.floor( (mouse_y - top_line) / line_height ) + 1;
+	
+	/* Need to be able to distinguish an invalid line */
+	if (line > this.max_line || line < 1 ) { return false; }
+
+	return line;
 };
+
+/* Finds the item text at a given point, typically the mouse pointer */
+Inventorywidget.prototype.get_item_at_point = function(xx, yy) {
+	/* Find the current line and item reference
+	 * We're actually getting info here for either inventory mode */
+	var line = this.mouse_to_text_line_number(xx, yy);
+	var current_party_member = Party.member[this.current_party_member].inventory;
+	var wear_slot = this.wear_line_lookup[line];
+	var backpack_slot = line-3;
+	var current_item;
+	
+	/* Reference the appropriate data array given the mode */
+	if (this.mode === MODE_WEAR) { current_item = current_party_member.wear[wear_slot]; }
+	if (this.mode === MODE_BACKPACK) { current_item = current_party_member.backpack[backpack_slot]; }
+	
+	return current_item;
+}
  
 function Message(hud_instance) {
 	var i;
@@ -1363,6 +1432,7 @@ function Summarywidget(hud_instance)
 
 Summarywidget.prototype.render = function()
 {
+	this.clear_message_window();
 	this.render_line(1, this.party.member[this.party.active_partymember].name + ":");
 	this.render_line(3, "Future summary statistics");
 }
@@ -1377,6 +1447,10 @@ Summarywidget.prototype.render_line = function(line, message) {
 Summarywidget.prototype.activate = function() { this.active = true; }
 Summarywidget.prototype.deactivate = function() { this.active = false; }
 
+Summarywidget.prototype.clear_message_window = function() {
+	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
+};
+
 function gameInit() 
 {
 	var i;
@@ -1388,6 +1462,7 @@ function gameInit()
 	document.addEventListener("keydown", doKeyDown, false);
 	overlay_canvas.addEventListener("mousemove", doMouseMove, false);
 	overlay_canvas.addEventListener("mousedown", doMouseClick, false);
+	overlay_canvas.addEventListener("mouseup", doMouseRelease, false);
 	
 	View = new View();
 	World = new World();
@@ -1448,7 +1523,7 @@ function Inventory(party_member)
 	this.party_member = party_member;
 	
 	/* Temporary equipment generation tests */
-	for (var i=0;i<20;i++) {
+	for (var i=0;i<2;i++) {
 		var test_item = new Item();
 		this.backpack.push(test_item);
 		this.wear_item(test_item);
@@ -1473,12 +1548,17 @@ Inventory.prototype.wear_item = function(item)
 	/* Wear the item */
 	this.wear[item.wearable] = item;
 	
+	/* Remove it from the backpack */
+	this.remove_from_backpack(item);
+	
 	/* Apply base statistics */
 	this.apply_stats(item);
 	
 	/* Apply modifiers */
 	this.apply_modifiers(item);
-}
+	
+	Hud.inventory_dirty = true;
+};
 
 /* Takes an item or slot and calls the appropriate remove function */
 Inventory.prototype.remove_item = function(target)
@@ -1489,11 +1569,13 @@ Inventory.prototype.remove_item = function(target)
 	/* Call the appropriate helper function */
 	if (typeof target === "object") { this.remove_by_item(target); }
 	if (typeof target === "number") { this.remove_by_slot(target); }
-}
+	
+	Hud.inventory_dirty = true;
+};
 
 /* Removes an item from a given slot and puts it in the backpack */
-Inventory.prototype.remove_by_slot = function(slot) {
-	
+Inventory.prototype.remove_by_slot = function(slot) 
+{	
 	/* Get reference the item */
 	var item = this.wear[slot];
 	
@@ -1511,7 +1593,8 @@ Inventory.prototype.remove_by_slot = function(slot) {
 }
 
 /* Removes an item by scanning all wear slots and puts it in the backpack */
-Inventory.prototype.remove_by_item = function(item) {
+Inventory.prototype.remove_by_item = function(item) 
+{	
 	var i;
 	for (i=0;i<this.wear.length;i++) {
 		if (this.wear[i] === item) {
@@ -1524,31 +1607,36 @@ Inventory.prototype.remove_by_item = function(item) {
 }
 
 /* Applies base stats to the player from an item */
-Inventory.prototype.apply_stats = function(item) {
+Inventory.prototype.apply_stats = function(item) 
+{
 	this.apply_armor(this.party_member, item);
 	this.apply_weapon(this.party_member, item);
 };
 
 /* Removes base stats from the player from an item */
-Inventory.prototype.remove_stats = function(item) {
+Inventory.prototype.remove_stats = function(item) 
+{
 	this.remove_armor(this.party_member, item);
 	this.remove_weapon(this.party_member, item);
 };
 
 /* Helper function to apply armor stats - called from apply_stats() */
-Inventory.prototype.apply_armor = function(party_member, item) {
+Inventory.prototype.apply_armor = function(party_member, item) 
+{
 	if (!item.is_armor(item)) { return false; }
 	party_member.armor += item.armor;
 };
 
 /* Helper function to remove armor stats - called from remove_stats() */
-Inventory.prototype.remove_armor = function(party_member, item) {
+Inventory.prototype.remove_armor = function(party_member, item) 
+{
 	if (!item.is_armor(item)) { return false; }
 	party_member.armor -= item.armor;
 };
 
 /* Helper function to apply weapon stats - called from apply_stats() */
-Inventory.prototype.apply_weapon = function(party_member, item) {
+Inventory.prototype.apply_weapon = function(party_member, item) 
+{
 	if (!item.is_weapon(item)) { return false; }
 	party_member.die_num += item.die_num;
 	party_member.die_side += item.die_side;
@@ -1556,7 +1644,8 @@ Inventory.prototype.apply_weapon = function(party_member, item) {
 };
 
 /* Helper function to remove weapon stats - called from remove_stats() */
-Inventory.prototype.remove_weapon = function(party_member, item) {
+Inventory.prototype.remove_weapon = function(party_member, item) 
+{
 	if (!item.is_weapon(item)) { return false; }
 	party_member.die_num -= item.die_num;
 	party_member.die_side -= item.die_side;
@@ -1564,7 +1653,8 @@ Inventory.prototype.remove_weapon = function(party_member, item) {
 };
 
 /* Remove statistic modifiers from the party member */
-Inventory.prototype.remove_modifiers = function(item) {
+Inventory.prototype.remove_modifiers = function(item) 
+{
 	var i, mod, stat, skill, resist, amount;
 	
 	/* Remove stat modifiers from player */
@@ -1593,7 +1683,8 @@ Inventory.prototype.remove_modifiers = function(item) {
 }
 
 /* Add statistic modifiers from the party member  (COMBINE THIS WITH THE REMOVE PROCEDURE!)*/
-Inventory.prototype.apply_modifiers = function(item) {
+Inventory.prototype.apply_modifiers = function(item) 
+{
 	var i, mod, stat, skill, resist, amount;
 	
 	/* Add stat modifiers to player */
@@ -1619,6 +1710,12 @@ Inventory.prototype.apply_modifiers = function(item) {
 		amount = mod[1];
 		this.party_member.resist_mods[resist] += amount;
 	}
+};
+
+Inventory.prototype.remove_from_backpack = function(item) { 
+	var index = this.backpack.indexOf(item);
+	if (index !== -1) { this.backpack.splice(index,1); }
+	Hud.inventory_dirty = true;
 }
 
 /* Prototype for all items in the game. I'll try to implement all items using
@@ -2443,6 +2540,17 @@ function doMouseClick(event)
 	
 	/* Handle mouse click in the HUD */
 	} else { Hud.mouse_handler_click(mouse_x, mouse_y); }	
+	
+	View.render(base_context,animation_context,overlay_context);
+}
+
+function doMouseRelease(event)
+{
+	/* Handle mouse release in the world */
+	if (mouse_in_world()) {
+	
+	/* Handle mouse release in the HUD */
+	} else { Hud.mouse_handler_release(mouse_x, mouse_y); }	
 	
 	View.render(base_context,animation_context,overlay_context);
 }

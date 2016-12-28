@@ -32,6 +32,7 @@ function gameInit()
 	document.addEventListener("keydown", doKeyDown, false);
 	overlay_canvas.addEventListener("mousemove", doMouseMove, false);
 	overlay_canvas.addEventListener("mousedown", doMouseClick, false);
+	overlay_canvas.addEventListener("mouseup", doMouseRelease, false);
 	
 	View = new View();
 	World = new World();
