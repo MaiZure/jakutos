@@ -177,13 +177,17 @@ Hud.prototype.resize = function()
 };
 
 /* We have several widgets that operate in the message window. This shifts between them */
-Hud.prototype.activate_message_widget = function(widget, argument = null)
+Hud.prototype.activate_message_box_widget = function(widget, argument = null)
 {
 	if (typeof widget !== "object") { return; }
 	
-	/* Turn off everything */
-	this.message.deactivate();
-	this.inventory.deactivate();
+	/* Desired widget is not already active so turn off everything */
+	if ( !this.is_active(widget) ) {
+		this.message.deactivate();
+		this.summary.deactivate();
+		this.inventory.deactivate();
+	}
+	
 	if (this.inventory.last_rendered_item) { this.inventory.clear_item_popup; }
 	
 	/* Turn on desired widget */
@@ -191,10 +195,30 @@ Hud.prototype.activate_message_widget = function(widget, argument = null)
 	widget.render(argument);
 };
 
+Hud.prototype.cycle_message_box_widgets = function(party_member)
+{
+	var current_widget = this.find_active_widget();
+	var next_widget;
+	
+	switch ( current_widget ) {
+		case this.message: next_widget = this.summary;  break;
+		case this.summary: next_widget = this.inventory;  break;
+		case this.inventory: next_widget = this.inventory;  break;
+	}
+	
+	Hud.activate_message_box_widget(next_widget, party_member);
+};
+
 /* Checks if a message box widget is active or not */
 Hud.prototype.is_active = function(widget) {
 	if (typeof widget !== "object") { return; }
 	return widget.active;
+};
+
+Hud.prototype.find_active_widget = function() {
+	if (this.message.active) { return this.message; }
+	if (this.summary.active) { return this.summary; }
+	if (this.inventory.active) { return this.inventory; }
 };
 
 Hud.prototype.mouse_handler_hover = function(xx, yy) {
@@ -204,4 +228,15 @@ Hud.prototype.mouse_handler_hover = function(xx, yy) {
 
 Hud.prototype.mouse_handler_click = function(xx, yy) {
 	
+	/* Avatar box clicks */
+	if ( yy > Hud.avatar_box_y ) {
+		var target_party_member;
+		if (xx >= Hud.avatar_box_x[3]) { target_party_member = 3; }
+		if (xx < Hud.avatar_box_x[3]) { target_party_member = 2; }
+		if (xx < Hud.avatar_box_x[2]) { target_party_member = 1; }
+		if (xx < Hud.avatar_box_x[1]) { target_party_member = 0; }
+		
+		Party.activate_party_member(target_party_member);
+		//Hud.activate_message_box_widget(Hud.inventory, target_party_member);
+	}
 };

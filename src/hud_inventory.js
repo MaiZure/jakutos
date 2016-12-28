@@ -113,7 +113,7 @@ Inventorywidget.prototype.render_backpack = function(party_member = -1)
 	var i;
 	this.render_line(1, current.name + " is carrying: ");
 	
-	for (i=3; i<this.max_line; i++) { this.render_line(i, this.get_item_name(current.inventory.backpack, i) ); }
+	for (i=3; i<this.max_line; i++) { this.render_line(i, this.get_item_name(current.inventory.backpack, i-3) ); }
 	
 	this.hud.inventory_dirty = false;
 };
@@ -155,7 +155,15 @@ Inventorywidget.prototype.activate_item_popup = function(item)
 
 Inventorywidget.prototype.activate = function() 
 {
-	this.active = true;
+	if (this.active) {
+		this.toggle_mode();
+	} else {
+		this.active = true;
+		this.mode = MODE_WEAR;
+	}
+};
+
+Inventorywidget.prototype.toggle_mode = function() {
 	this.mode = this.mode === MODE_WEAR ? MODE_BACKPACK : MODE_WEAR;
 };
 
@@ -255,7 +263,7 @@ Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	
 	/* Currently looking in tbe backpack */
 	if (this.mode === MODE_BACKPACK) {
-		var backpack_slot = line;
+		var backpack_slot = line-3;
 		
 		if (current.backpack[backpack_slot]) {
 			var item = current.backpack[backpack_slot];
@@ -266,6 +274,23 @@ Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	}
 };
 
+/* Receives handling commands from the Hud object as needed */
+Inventorywidget.prototype.mouse_handler_click = function(mouse_x, mouse_y) {
+	
+	/* Find the current line and item reference */
+	var line = this.mouse_to_text_line_number(mouse_x, mouse_y);
+	var current = Party.member[this.current_party_member].inventory;	
+	
+	/* If we're viewing equipped items, then clicking removes items */
+	If (this.mode === MODE_WEAR) {
+		
+	}
+	/* If we're viewing inventory items, then clicking wears them */
+	If (this.mode === MODE_BACKPACK) {
+		
+	}
+	
+};
 /* Converts the mouse position to a message-box line number in the current view space */
 Inventorywidget.prototype.mouse_to_text_line_number = function(mouse_x, mouse_y) {
 	

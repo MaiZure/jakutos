@@ -64,17 +64,11 @@ function doMouseClick(event)
 	/* Handle mouse click in the world */
 	if (mouse_in_world()) {
 		/* Future movement by click code will go here */
-		
-	} else { /* Handle mouse click in the HUD */
 	
-		/* Avatar box clicks */
-		if ( mouse_y > Hud.avatar_box_y ) {
-			     if ( mouse_x < Hud.avatar_box_x[1] ) { Hud.activate_message_widget(Hud.inventory,0); } 
-			else if ( mouse_x < Hud.avatar_box_x[2] ) { Hud.activate_message_widget(Hud.inventory,1); } 
-			else if ( mouse_x < Hud.avatar_box_x[3] ) { Hud.activate_message_widget(Hud.inventory,2); } 
-			else                                      { Hud.activate_message_widget(Hud.inventory,3); }
-		}
-	}	
+	/* Handle mouse click in the HUD */
+	} else { Hud.mouse_handler_click(mouse_x, mouse_y); }	
+	
+	View.render(base_context,animation_context,overlay_context);
 }
 
 /* Returns true if te mouse is currently in the game world area */

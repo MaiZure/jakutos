@@ -84,7 +84,7 @@ function handle_passive_events(key) {
 		case KB_1:
 		case KB_2:
 		case KB_3:
-		case KB_4: Party.change_active_party_member(event.keyCode-KB_1); break;
+		case KB_4: Party.activate_party_member(event.keyCode-KB_1); break;
 		case KB_8: console.log(World.get_current_region()); break;
 		case KB_X: View.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: View.toggle_minimap(); break;

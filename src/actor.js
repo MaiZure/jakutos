@@ -182,7 +182,7 @@ Actor.prototype.execute_move = function()
 		/* The following should probably be relocated to somewhere more sensible */
 		/* Revert HUD to message window */
 		if (!Hud.is_active(Hud.message_box)) {
-			Hud.activate_message_widget(Hud.message);
+			Hud.activate_message_box_widget(Hud.message);
 		}
 		
 		/* Turn off minimap if active */

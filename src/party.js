@@ -182,21 +182,26 @@ Party.prototype.find_ready_party_member = function()
 };
 
 /* Procedurally changes active party member and functionally returns the slot */
-Party.prototype.change_active_party_member = function(next)
+Party.prototype.activate_party_member = function(next)
 {	
 	last = this.active_partymember;
-	delay = this.member[next].current_delay;
-	status = this.member[next].status;
 	
-	if (last == next) { return last; }
+	/* Changing to the already active player opens party member info */
+	if (last === next) { 
+		Hud.cycle_message_box_widgets(next); 
+	} else {
+		Hud.activate_message_box_widget(Hud.message);
+	}
 	
+	
+	/* Changing the active party member */
 	if (this.is_ready(next) && !this.is_incapacitated(next)) { 
 		this.active_partymember = next;
 		if (last >= 0) { Hud.partywidget[last].dirty = true; }
 		Hud.partywidget[next].dirty = true;		
-		return next;
+	} else {
+		Hud.cycle_message_box_widgets(next);//Hud.activate_message_box_widget(Hud.inventory, next);
 	}
-	return last;
 };
 
 Party.prototype.get_xp_requirement = function (level) 

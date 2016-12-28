@@ -53,7 +53,7 @@ Message.prototype.render = function() {
 		animation_context.font = font_size+"px Courier";
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
-		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);	
+		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);
 		num = (++num) % this.message_buffer_size;
 	}
 	

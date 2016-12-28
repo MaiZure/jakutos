@@ -183,7 +183,7 @@ Actor.prototype.execute_move = function()
 		/* The following should probably be relocated to somewhere more sensible */
 		/* Revert HUD to message window */
 		if (!Hud.is_active(Hud.message_box)) {
-			Hud.activate_message_widget(Hud.message);
+			Hud.activate_message_box_widget(Hud.message);
 		}
 		
 		/* Turn off minimap if active */
@@ -469,7 +469,7 @@ Mindblast.prototype.render = function()
 
 const COL_MAP_BUILDING = 'rgb(170,150,70)';
 const COL_MAP_DOOR = 'rgb(220,220,120)';
-const COL_MAP_STAIRS = 'rgb(60,220,220)';
+const COL_MAP_STAIRS = 'rgb(220,60,60)';
 const COL_MAP_WATER = 'rgb(100,100,175)';
 const COL_MAP_DIRT = 'rgb(170,100,50)';
 const COL_MAP_GRASS = 'rgb(20,150,50)';
@@ -692,13 +692,17 @@ Hud.prototype.resize = function()
 };
 
 /* We have several widgets that operate in the message window. This shifts between them */
-Hud.prototype.activate_message_widget = function(widget, argument = null)
+Hud.prototype.activate_message_box_widget = function(widget, argument = null)
 {
 	if (typeof widget !== "object") { return; }
 	
-	/* Turn off everything */
-	this.message.deactivate();
-	this.inventory.deactivate();
+	/* Desired widget is not already active so turn off everything */
+	if ( !this.is_active(widget) ) {
+		this.message.deactivate();
+		this.summary.deactivate();
+		this.inventory.deactivate();
+	}
+	
 	if (this.inventory.last_rendered_item) { this.inventory.clear_item_popup; }
 	
 	/* Turn on desired widget */
@@ -706,10 +710,30 @@ Hud.prototype.activate_message_widget = function(widget, argument = null)
 	widget.render(argument);
 };
 
+Hud.prototype.cycle_message_box_widgets = function(party_member)
+{
+	var current_widget = this.find_active_widget();
+	var next_widget;
+	
+	switch ( current_widget ) {
+		case this.message: next_widget = this.summary;  break;
+		case this.summary: next_widget = this.inventory;  break;
+		case this.inventory: next_widget = this.inventory;  break;
+	}
+	
+	Hud.activate_message_box_widget(next_widget, party_member);
+};
+
 /* Checks if a message box widget is active or not */
 Hud.prototype.is_active = function(widget) {
 	if (typeof widget !== "object") { return; }
 	return widget.active;
+};
+
+Hud.prototype.find_active_widget = function() {
+	if (this.message.active) { return this.message; }
+	if (this.summary.active) { return this.summary; }
+	if (this.inventory.active) { return this.inventory; }
 };
 
 Hud.prototype.mouse_handler_hover = function(xx, yy) {
@@ -719,6 +743,17 @@ Hud.prototype.mouse_handler_hover = function(xx, yy) {
 
 Hud.prototype.mouse_handler_click = function(xx, yy) {
 	
+	/* Avatar box clicks */
+	if ( yy > Hud.avatar_box_y ) {
+		var target_party_member;
+		if (xx >= Hud.avatar_box_x[3]) { target_party_member = 3; }
+		if (xx < Hud.avatar_box_x[3]) { target_party_member = 2; }
+		if (xx < Hud.avatar_box_x[2]) { target_party_member = 1; }
+		if (xx < Hud.avatar_box_x[1]) { target_party_member = 0; }
+		
+		Party.activate_party_member(target_party_member);
+		//Hud.activate_message_box_widget(Hud.inventory, target_party_member);
+	}
 };
  
 function Hover(hud_instance) {
@@ -855,7 +890,7 @@ Inventorywidget.prototype.render_backpack = function(party_member = -1)
 	var i;
 	this.render_line(1, current.name + " is carrying: ");
 	
-	for (i=3; i<this.max_line; i++) { this.render_line(i, this.get_item_name(current.inventory.backpack, i) ); }
+	for (i=3; i<this.max_line; i++) { this.render_line(i, this.get_item_name(current.inventory.backpack, i-3) ); }
 	
 	this.hud.inventory_dirty = false;
 };
@@ -897,7 +932,15 @@ Inventorywidget.prototype.activate_item_popup = function(item)
 
 Inventorywidget.prototype.activate = function() 
 {
-	this.active = true;
+	if (this.active) {
+		this.toggle_mode();
+	} else {
+		this.active = true;
+		this.mode = MODE_WEAR;
+	}
+};
+
+Inventorywidget.prototype.toggle_mode = function() {
 	this.mode = this.mode === MODE_WEAR ? MODE_BACKPACK : MODE_WEAR;
 };
 
@@ -997,7 +1040,7 @@ Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	
 	/* Currently looking in tbe backpack */
 	if (this.mode === MODE_BACKPACK) {
-		var backpack_slot = line;
+		var backpack_slot = line-3;
 		
 		if (current.backpack[backpack_slot]) {
 			var item = current.backpack[backpack_slot];
@@ -1008,6 +1051,23 @@ Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	}
 };
 
+/* Receives handling commands from the Hud object as needed */
+Inventorywidget.prototype.mouse_handler_click = function(mouse_x, mouse_y) {
+	
+	/* Find the current line and item reference */
+	var line = this.mouse_to_text_line_number(mouse_x, mouse_y);
+	var current = Party.member[this.current_party_member].inventory;	
+	
+	/* If we're viewing equipped items, then clicking removes items */
+	If (this.mode === MODE_WEAR) {
+		
+	}
+	/* If we're viewing inventory items, then clicking wears them */
+	If (this.mode === MODE_BACKPACK) {
+		
+	}
+	
+};
 /* Converts the mouse position to a message-box line number in the current view space */
 Inventorywidget.prototype.mouse_to_text_line_number = function(mouse_x, mouse_y) {
 	
@@ -1051,7 +1111,7 @@ Message.prototype.render = function() {
 		animation_context.font = font_size+"px Courier";
 		animation_context.fillStyle = FG_COLOR;
 		animation_context.textAlign = "left";
-		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);	
+		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);
 		num = (++num) % this.message_buffer_size;
 	}
 	
@@ -1296,8 +1356,26 @@ function Summarywidget(hud_instance)
 	this.party = Party;
 	this.active = false;
 	this.current_party_member = -1;
+	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
+	this.max_line = (this.hud.message_box_height / this.font_size);
 	
 }
+
+Summarywidget.prototype.render = function()
+{
+	this.render_line(1, this.party.member[this.party.active_partymember].name + ":");
+	this.render_line(3, "Future summary statistics");
+}
+
+Summarywidget.prototype.render_line = function(line, message) {
+	animation_context.font = this.font_size+"px Courier";
+	animation_context.fillStyle = FG_COLOR;
+	animation_context.textAlign = "left";
+	animation_context.fillText(message,this.hud.message_box_x+5,this.hud.message_box_y+line*this.font_size);
+};
+
+Summarywidget.prototype.activate = function() { this.active = true; }
+Summarywidget.prototype.deactivate = function() { this.active = false; }
 
 function gameInit() 
 {
@@ -1915,7 +1993,7 @@ function handle_passive_events(key) {
 		case KB_1:
 		case KB_2:
 		case KB_3:
-		case KB_4: Party.change_active_party_member(event.keyCode-KB_1); break;
+		case KB_4: Party.activate_party_member(event.keyCode-KB_1); break;
 		case KB_8: console.log(World.get_current_region()); break;
 		case KB_X: View.refocus(Player.map_x, Player.map_y); break;
 		case KB_M: View.toggle_minimap(); break;
@@ -2362,17 +2440,11 @@ function doMouseClick(event)
 	/* Handle mouse click in the world */
 	if (mouse_in_world()) {
 		/* Future movement by click code will go here */
-		
-	} else { /* Handle mouse click in the HUD */
 	
-		/* Avatar box clicks */
-		if ( mouse_y > Hud.avatar_box_y ) {
-			     if ( mouse_x < Hud.avatar_box_x[1] ) { Hud.activate_message_widget(Hud.inventory,0); } 
-			else if ( mouse_x < Hud.avatar_box_x[2] ) { Hud.activate_message_widget(Hud.inventory,1); } 
-			else if ( mouse_x < Hud.avatar_box_x[3] ) { Hud.activate_message_widget(Hud.inventory,2); } 
-			else                                      { Hud.activate_message_widget(Hud.inventory,3); }
-		}
-	}	
+	/* Handle mouse click in the HUD */
+	} else { Hud.mouse_handler_click(mouse_x, mouse_y); }	
+	
+	View.render(base_context,animation_context,overlay_context);
 }
 
 /* Returns true if te mouse is currently in the game world area */
@@ -2539,21 +2611,26 @@ Party.prototype.find_ready_party_member = function()
 };
 
 /* Procedurally changes active party member and functionally returns the slot */
-Party.prototype.change_active_party_member = function(next)
+Party.prototype.activate_party_member = function(next)
 {	
 	last = this.active_partymember;
-	delay = this.member[next].current_delay;
-	status = this.member[next].status;
 	
-	if (last == next) { return last; }
+	/* Changing to the already active player opens party member info */
+	if (last === next) { 
+		Hud.cycle_message_box_widgets(next); 
+	} else {
+		Hud.activate_message_box_widget(Hud.message);
+	}
 	
+	
+	/* Changing the active party member */
 	if (this.is_ready(next) && !this.is_incapacitated(next)) { 
 		this.active_partymember = next;
 		if (last >= 0) { Hud.partywidget[last].dirty = true; }
 		Hud.partywidget[next].dirty = true;		
-		return next;
+	} else {
+		Hud.cycle_message_box_widgets(next);//Hud.activate_message_box_widget(Hud.inventory, next);
 	}
-	return last;
 };
 
 Party.prototype.get_xp_requirement = function (level) 
