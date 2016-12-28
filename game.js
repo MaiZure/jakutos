@@ -578,6 +578,10 @@ function Hud()
 	for (i=0; i<4; i++) {
 		this.partywidget[i] = new Partywidget(this,i); 
 	}
+	
+	/* Last minute hack to simulate dragging items */
+	this.last_drag_x = 0;
+	this.last_drag_y = 0;
 }
 
 Hud.prototype.dirty = true;
@@ -627,6 +631,30 @@ Hud.prototype.debug_render = function(target_context)
 	//target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
 	//target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-75);	
 	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	*/
+};
+
+Hud.prototype.render_selected_item = function(xx, yy)
+{
+	var item_name = this.inventory.selected_item.name;
+	var font_size = this.inventory.font_size;
+	
+	/* clear last rendered text drag */
+	this.clear_last_drag_render();
+	
+	overlay_context.font = font_size+"px Courier";
+	overlay_context.fillStyle = FG_COLOR;
+	overlay_context.textAlign = "center";
+	overlay_context.fillText(item_name,xx,yy);
+	
+	this.last_drag_x = xx;
+	this.last_drag_y = yy;
+	
+};
+
+Hud.prototype.clear_last_drag_render = function()
+{
+	var font_size = this.inventory.font_size;
+	overlay_context.clearRect(this.last_drag_x-this.message_box_width/2,this.last_drag_y-font_size, this.message_box_width,font_size*2);
 };
 
 /* Draws all the background areas on the HUD */
@@ -780,8 +808,6 @@ Hud.prototype.mouse_handler_release = function(xx, yy) {
 			Party.member[source].inventory.remove_from_backpack(item);
 			/* Remove the drag reference */
 			this.inventory.selected_item = null;
-			console.log(item);
-			console.log(source, target_party_member);
 			
 			this.inventory_dirty = true;
 		}
@@ -790,6 +816,8 @@ Hud.prototype.mouse_handler_release = function(xx, yy) {
 	} else {
 			Hud.inventory.mouse_handler_release(xx, yy);
 	}
+	
+	this.clear_last_drag_render();
 	
 };
 
@@ -802,6 +830,18 @@ Hud.prototype.get_avatar_box_index = function(xx) {
 	if (xx < Hud.avatar_box_x[1]) { index = 0; }
 	return index;
 	
+}
+
+/* The container HUD widget is used for interaction with chests
+ * to display and drag their contents. This is remarkably similar
+ * to the Inventorywidget and both could probably be extended 
+ * from some common ancestor. This widget has less complexity 
+ */
+function Containerwidget(hud_instance) {
+	
+	this.hud = hud_instance;
+	this.container = null;
+	this.active = false;
 }
  
 function Hover(hud_instance) {
@@ -938,7 +978,6 @@ Inventorywidget.prototype.render_backpack = function(party_member = -1)
 	/* Display equipment currently worn */
 	var i;
 	this.render_line(1, current.name + " is carrying: ");
-	
 	for (i=3; i<this.max_line; i++) { this.render_line(i, this.get_item_name(current.inventory.backpack, i-3) ); }
 	
 	this.hud.inventory_dirty = false;
@@ -948,6 +987,7 @@ Inventorywidget.prototype.clear_message_window = function() {
 	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
 };
 
+/* Renders a single line of text in the message window */
 Inventorywidget.prototype.render_line = function(line, message) {
 	animation_context.font = this.font_size+"px Courier";
 	animation_context.fillStyle = FG_COLOR;
@@ -1100,6 +1140,9 @@ Inventorywidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
 	
 	if (!this.active) { return; }
 	
+	/* Releasing items in the message window never does anything */
+	this.selected_item = null;
+	
 	/* Get the item clicked on and the reference to the active inventory */
 	var current_item = this.get_item_at_point(mouse_x, mouse_y);
 	var current_party_member = Party.member[this.current_party_member].inventory;
@@ -1112,8 +1155,6 @@ Inventorywidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
 	
 	/* If we're viewing inventory items, then clicking wears them */
 	if (this.mode === MODE_BACKPACK) { current_party_member.wear_item(current_item); }
-	/* Tracking the selected item in case of drag */
-	this.selected_item = null;
 };
 
 /* Converts the mouse position to a message-box line number in the current view space */
@@ -2521,6 +2562,7 @@ function doMouseMove(event)
 	/* Handle mouse movement in the HUD */
 	} else { 
 	
+		if (Hud.inventory.selected_item) { Hud.render_selected_item(mouse_x, mouse_y); }
 		/* Avatar box hovers (refactor this to the basic 4-corners check after HUD is finalized) */
 		if ( mouse_y > Hud.avatar_box_y ) {
 			     if ( mouse_x < Hud.avatar_box_x[1] ) { Hud.hover.add_message(Hud.hover.get_hover_avatar(0)); }

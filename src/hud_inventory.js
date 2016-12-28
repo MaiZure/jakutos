@@ -113,7 +113,6 @@ Inventorywidget.prototype.render_backpack = function(party_member = -1)
 	/* Display equipment currently worn */
 	var i;
 	this.render_line(1, current.name + " is carrying: ");
-	
 	for (i=3; i<this.max_line; i++) { this.render_line(i, this.get_item_name(current.inventory.backpack, i-3) ); }
 	
 	this.hud.inventory_dirty = false;
@@ -123,6 +122,7 @@ Inventorywidget.prototype.clear_message_window = function() {
 	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
 };
 
+/* Renders a single line of text in the message window */
 Inventorywidget.prototype.render_line = function(line, message) {
 	animation_context.font = this.font_size+"px Courier";
 	animation_context.fillStyle = FG_COLOR;
@@ -275,6 +275,9 @@ Inventorywidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
 	
 	if (!this.active) { return; }
 	
+	/* Releasing items in the message window never does anything */
+	this.selected_item = null;
+	
 	/* Get the item clicked on and the reference to the active inventory */
 	var current_item = this.get_item_at_point(mouse_x, mouse_y);
 	var current_party_member = Party.member[this.current_party_member].inventory;
@@ -287,8 +290,6 @@ Inventorywidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
 	
 	/* If we're viewing inventory items, then clicking wears them */
 	if (this.mode === MODE_BACKPACK) { current_party_member.wear_item(current_item); }
-	/* Tracking the selected item in case of drag */
-	this.selected_item = null;
 };
 
 /* Converts the mouse position to a message-box line number in the current view space */

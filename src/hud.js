@@ -63,6 +63,10 @@ function Hud()
 	for (i=0; i<4; i++) {
 		this.partywidget[i] = new Partywidget(this,i); 
 	}
+	
+	/* Last minute hack to simulate dragging items */
+	this.last_drag_x = 0;
+	this.last_drag_y = 0;
 }
 
 Hud.prototype.dirty = true;
@@ -112,6 +116,30 @@ Hud.prototype.debug_render = function(target_context)
 	//target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
 	//target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-75);	
 	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	*/
+};
+
+Hud.prototype.render_selected_item = function(xx, yy)
+{
+	var item_name = this.inventory.selected_item.name;
+	var font_size = this.inventory.font_size;
+	
+	/* clear last rendered text drag */
+	this.clear_last_drag_render();
+	
+	overlay_context.font = font_size+"px Courier";
+	overlay_context.fillStyle = FG_COLOR;
+	overlay_context.textAlign = "center";
+	overlay_context.fillText(item_name,xx,yy);
+	
+	this.last_drag_x = xx;
+	this.last_drag_y = yy;
+	
+};
+
+Hud.prototype.clear_last_drag_render = function()
+{
+	var font_size = this.inventory.font_size;
+	overlay_context.clearRect(this.last_drag_x-this.message_box_width/2,this.last_drag_y-font_size, this.message_box_width,font_size*2);
 };
 
 /* Draws all the background areas on the HUD */
@@ -265,8 +293,6 @@ Hud.prototype.mouse_handler_release = function(xx, yy) {
 			Party.member[source].inventory.remove_from_backpack(item);
 			/* Remove the drag reference */
 			this.inventory.selected_item = null;
-			console.log(item);
-			console.log(source, target_party_member);
 			
 			this.inventory_dirty = true;
 		}
@@ -275,6 +301,8 @@ Hud.prototype.mouse_handler_release = function(xx, yy) {
 	} else {
 			Hud.inventory.mouse_handler_release(xx, yy);
 	}
+	
+	this.clear_last_drag_render();
 	
 };
 

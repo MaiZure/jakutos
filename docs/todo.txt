@@ -4,6 +4,7 @@ Need to streamline the monster/player skill references for damage
 Need to incorporate dual wielding and multiple rings in to wearing
 Need to get stats and modifiers in to items
 Need to refactor Minimap in to object form.
+Move font_size and other calcs from widget to parent HUD
 
 Make move turn PQ
 Make diagonal movement
@@ -21,3 +22,4 @@ REFACTOR: Streamline object heirarchy and interfaces (less coupling)
 REFACTOR: Generalize casting to merge monsters/Players/effects
 REFACTOR: Message/Inventory/Summary widgets probably need an ancestor (1 or 2 protoype functions are duplicated within each (ie. render_line() )
 REFACTOR: If I wanted to get serious about the Hud and subwidgets, I'd need a registration system...YAGNI
+REFACTOR: Inventorywidget and Containerwidget probably have a common ancestor

@@ -48,6 +48,7 @@ function doMouseMove(event)
 	/* Handle mouse movement in the HUD */
 	} else { 
 	
+		if (Hud.inventory.selected_item) { Hud.render_selected_item(mouse_x, mouse_y); }
 		/* Avatar box hovers (refactor this to the basic 4-corners check after HUD is finalized) */
 		if ( mouse_y > Hud.avatar_box_y ) {
 			     if ( mouse_x < Hud.avatar_box_x[1] ) { Hud.hover.add_message(Hud.hover.get_hover_avatar(0)); }
