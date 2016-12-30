@@ -47,6 +47,8 @@ function Hud()
 	this.hover_bar_height = Math.round(base_canvas.height*0.05);
 	this.hover_bar_width = this.view_px_width;
 	
+	this.font_size = Math.max(Math.round(this.status_bar_height*0.60),12);
+	
 	this.message_box_x = this.view_px_x+4;
 	this.message_box_y = this.status_bar_height+Math.round(base_canvas.height*0.01);
 	this.message_box_width = this.view_px_width-8;
@@ -59,7 +61,9 @@ function Hud()
 	this.message = new Message(this);
 	this.inventory = new Inventorywidget(this);
 	this.summary = new Summarywidget(this);
+	this.container = new Containerwidget(this);
 	this.hover = new Hover(this);
+	
 	for (i=0; i<4; i++) {
 		this.partywidget[i] = new Partywidget(this,i); 
 	}
@@ -73,8 +77,10 @@ Hud.prototype.dirty = true;
 Hud.prototype.party_dirty = true;
 Hud.prototype.message_dirty = true;
 Hud.prototype.inventory_dirty = false;
+Hud.prototype.container_dirty = false;
 Hud.prototype.partywidget = [];
 
+/* Renders information in the HUD */
 Hud.prototype.render = function() 
 {
 	if (this.dirty) { this.debug_render(animation_context); }
@@ -83,13 +89,8 @@ Hud.prototype.render = function()
 		case this.message: this.message.render(); break;
 		case this.inventory: this.inventory.render(); break;
 		case this.summary: this.summary.render(); break;
+		case this.container: this.container.render(); break;
 	}
-		
-	//if (this.message_dirty) { this.message.render(); }
-	
-	//if (this.inventory_dirty) { this.inventory.render(); }
-	
-	//if (this.summary_dirty) { this.summary_render(); }
 	
 	if (this.hover.dirty) { this.hover.render(); }
 	
@@ -118,15 +119,14 @@ Hud.prototype.debug_render = function(target_context)
 	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	*/
 };
 
-Hud.prototype.render_selected_item = function(xx, yy)
+Hud.prototype.render_selected_item = function(xx, yy, item)
 {
-	var item_name = this.inventory.selected_item.name;
-	var font_size = this.inventory.font_size;
+	var item_name = item.name;
 	
 	/* clear last rendered text drag */
 	this.clear_last_drag_render();
 	
-	overlay_context.font = font_size+"px Courier";
+	overlay_context.font = this.font_size+"px Courier";
 	overlay_context.fillStyle = FG_COLOR;
 	overlay_context.textAlign = "center";
 	overlay_context.fillText(item_name,xx,yy);
@@ -220,12 +220,14 @@ Hud.prototype.activate_message_box_widget = function(widget, argument = null)
 		this.message.deactivate();
 		this.summary.deactivate();
 		this.inventory.deactivate();
+		this.container.deactivate();
 	}
 	
 	if (this.inventory.last_rendered_item) { this.inventory.clear_item_popup; }
+	if (this.container.last_rendered_item) { this.container.clear_item_popup; }
 	
 	/* Turn on desired widget */
-	widget.activate();
+	widget.activate(argument);
 	widget.render(argument);
 };
 
@@ -253,10 +255,12 @@ Hud.prototype.find_active_widget = function() {
 	if (this.message.active) { return this.message; }
 	if (this.summary.active) { return this.summary; }
 	if (this.inventory.active) { return this.inventory; }
+	if (this.container.active) { return this.container; }
 };
 
 Hud.prototype.mouse_handler_hover = function(xx, yy) {
 	if (this.is_active(this.inventory)) { this.inventory.mouse_handler_hover(xx, yy); }
+	if (this.is_active(this.container)) { this.container.mouse_handler_hover(xx, yy); }
 	return false;
 };
 
@@ -271,6 +275,7 @@ Hud.prototype.mouse_handler_click = function(xx, yy) {
 	/* Message Box area clicks */
 	} else {
 			Hud.inventory.mouse_handler_click(xx, yy);
+			Hud.container.mouse_handler_click(xx, yy);
 	}
 	
 };
@@ -280,26 +285,47 @@ Hud.prototype.mouse_handler_release = function(xx, yy) {
 	/* Avatar box release */
 	if ( yy > Hud.avatar_box_y ) {
 		/* Check for dragged items to swap */
-		if (this.inventory.selected_item) {
-			var item = this.inventory.selected_item;
-			var source = this.inventory.current_party_member;
+		var active_widget = null;
+		
+		if (this.inventory.active) { active_widget = this.inventory; }
+		if (this.container.active) { active_widget = this.container; }
+		
+		if (!active_widget) { return; }
+		
+		if (active_widget.selected_item) {
+			/* Give them the item */
+			var item = active_widget.selected_item;
 			/* Get the party member number */
 			var target_party_member = this.get_avatar_box_index(xx);
 			/* Give them the item */
-			Party.member[target_party_member].inventory.backpack.push(item);			
-			/* Remove it from the original player by taking it off and deleting from backpack
-			 * Note that if it's not worn, this step will do nothing. It must be in the backpack */
-			Party.member[source].inventory.remove_item(item);
-			Party.member[source].inventory.remove_from_backpack(item);
-			/* Remove the drag reference */
-			this.inventory.selected_item = null;
+			Party.member[target_party_member].inventory.backpack.push(item);
 			
-			this.inventory_dirty = true;
+			/* Wrap up depending on the source (other player or container) */
+			switch (active_widget) {
+				case this.inventory: {
+					var source = active_widget.current_party_member;
+					/* Remove it from the original player by taking it off and deleting from backpack
+					 * Note that if it's not worn, this step will do nothing. It must be in the backpack */
+					Party.member[source].inventory.remove_item(item);
+					Party.member[source].inventory.remove_from_backpack(item);
+					
+					this.inventory_dirty = true;
+				}; break;
+				case this.container: {
+					this.container.container.remove_from_container(item);
+					
+					this.container_dirty = true; 
+				} break;
+			}
+			
+			/* Remove the drag reference */
+			active_widget.selected_item = null;
 		}
 	
 	/* Message Box area release */
 	} else {
 			Hud.inventory.mouse_handler_release(xx, yy);
+			Hud.container.mouse_handler_release(xx, yy);
 	}
 	
 	this.clear_last_drag_render();

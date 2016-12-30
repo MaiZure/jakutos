@@ -119,6 +119,12 @@ View.prototype.render = function (world_context, actor_context)
 				Monsters[i].render(actor_context); 
 			}
 		}
+		
+		for (i=0; i<Containers.length; i++) {
+			if (Containers[i].dirty) { 
+				Containers[i].render(base_context); 
+			}
+		}
 	}
 };
 
@@ -198,6 +204,7 @@ View.prototype.refocus = function(xx, yy, immediate = false)
 			World.dirty = true;
 			Player.dirty = true;
 			for (i=0; i<Monsters.length; i++) { Monsters[i].dirty = true; }
+			for (i=0; i<Containers.length; i++) { Containers[i].dirty = true; }
 		}
 	} else {
 		this.dirty = true;
@@ -293,6 +300,7 @@ function _animate_camera()
 			
 			Player.render(animation_context);
 			World.render(base_context);
+			for (i=0; i<Containers.length; i++) { Containers[i].render(base_context); }
 			Hud.render();
 			for (i=0; i<Monsters.length; i++) { Monsters[i].render(animation_context); }
 		

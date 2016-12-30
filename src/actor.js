@@ -170,6 +170,7 @@ Actor.prototype.execute_move = function()
 	World.gridmob[this.map_y][this.map_x] = null;
 	World.gridmob[this.next_y][this.next_x] = this;
 	
+	/* Player movement has special consequences */
 	if (this == Player) {
 		
 		/* Fall damage (refactor this to calc height difference only once per move) */
@@ -180,7 +181,7 @@ Actor.prototype.execute_move = function()
 		Hud.status.add_time(5);
 		
 		/* The following should probably be relocated to somewhere more sensible */
-		/* Revert HUD to message window */
+		/* Revert HUD to message window when the player moves*/
 		if (!Hud.is_active(Hud.message_box)) {
 			Hud.activate_message_box_widget(Hud.message);
 		}
@@ -190,6 +191,10 @@ Actor.prototype.execute_move = function()
 		
 		/* Turn on item hover if active */
 		if ( Hud.inventory.popup_active ) { Hud.inventory.clear_item_popup(); }
+		
+		/* Chest/Container case */
+		if (World.gridobj[this.next_y][this.next_x]) { Hud.activate_message_box_widget(Hud.container, World.gridobj[this.next_y][this.next_x]); }
+		
 	}
 	
 	

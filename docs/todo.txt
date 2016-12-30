@@ -23,3 +23,5 @@ REFACTOR: Generalize casting to merge monsters/Players/effects
 REFACTOR: Message/Inventory/Summary widgets probably need an ancestor (1 or 2 protoype functions are duplicated within each (ie. render_line() )
 REFACTOR: If I wanted to get serious about the Hud and subwidgets, I'd need a registration system...YAGNI
 REFACTOR: Inventorywidget and Containerwidget probably have a common ancestor
+REFACTOR: Chests are static world objects but could use some of the Actor functions. Consider a 2nd layer of "world obj" inheritence. 
+REFACTOR: Excessive checking for the active hud widget, especially with mouse handling. Should probably have a variable alias set up.

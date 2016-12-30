@@ -30,6 +30,7 @@ function World()
 	this.gridcol = [[],[]];
 	this.gridheight = [[],[]];
 	this.gridmob=[[],[]];
+	this.gridobj=[[],[]];
 
 	this.load_map();
 }
@@ -92,6 +93,7 @@ World.prototype.build_map = function()
 		this.gridcol[i] = [];
 		this.gridheight[i]= [];
 		this.gridmob[i] = [];
+		this.gridobj[i] = [];
 	}
 	
 	for (j=0; j<WORLD_SIZE_Y; j++) {
@@ -143,6 +145,7 @@ World.prototype.load_map = function load_map()
 		this.gridcol[i] = [];
 		this.gridheight[i] = [];
 		this.gridmob[i] = [];
+		this.gridobj[i] = [];
 	}
 	
 	for (k=0; k<15; k++) {

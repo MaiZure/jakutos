@@ -40,9 +40,12 @@ function gameInit()
 	Party = new Party();
 	
 	Monsters = [];
+	Containers = [];
 	Animations = [];
 	
 	for (i=0; i<NUMBER_OF_MONSTERS; i++) { Monsters[i] = create_monster(); }
+	
+	Containers.push(new Container());
 	
 	Hud = new Hud();
 	

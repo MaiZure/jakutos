@@ -23,14 +23,15 @@
 
 function Summarywidget(hud_instance)
 {
+	MessageBase.call(this, hud_instance);
+	
 	this.hud = hud_instance;
 	this.party = Party;
-	this.active = false;
 	this.current_party_member = -1;
-	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
-	this.max_line = (this.hud.message_box_height / this.font_size);
 	
 }
+
+Summarywidget.prototype = Object.create(MessageBase.prototype);
 
 Summarywidget.prototype.render = function()
 {
@@ -39,16 +40,3 @@ Summarywidget.prototype.render = function()
 	this.render_line(3, "Future summary statistics");
 }
 
-Summarywidget.prototype.render_line = function(line, message) {
-	animation_context.font = this.font_size+"px Courier";
-	animation_context.fillStyle = FG_COLOR;
-	animation_context.textAlign = "left";
-	animation_context.fillText(message,this.hud.message_box_x+5,this.hud.message_box_y+line*this.font_size);
-};
-
-Summarywidget.prototype.activate = function() { this.active = true; }
-Summarywidget.prototype.deactivate = function() { this.active = false; }
-
-Summarywidget.prototype.clear_message_window = function() {
-	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
-};

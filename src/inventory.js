@@ -38,7 +38,7 @@ function Inventory(party_member)
 	this.party_member = party_member;
 	
 	/* Temporary equipment generation tests */
-	for (var i=0;i<2;i++) {
+	for (var i=0; i<2; i++) {
 		var test_item = new Item();
 		this.backpack.push(test_item);
 		this.wear_item(test_item);

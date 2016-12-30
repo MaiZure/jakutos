@@ -171,6 +171,7 @@ Actor.prototype.execute_move = function()
 	World.gridmob[this.map_y][this.map_x] = null;
 	World.gridmob[this.next_y][this.next_x] = this;
 	
+	/* Player movement has special consequences */
 	if (this == Player) {
 		
 		/* Fall damage (refactor this to calc height difference only once per move) */
@@ -181,7 +182,7 @@ Actor.prototype.execute_move = function()
 		Hud.status.add_time(5);
 		
 		/* The following should probably be relocated to somewhere more sensible */
-		/* Revert HUD to message window */
+		/* Revert HUD to message window when the player moves*/
 		if (!Hud.is_active(Hud.message_box)) {
 			Hud.activate_message_box_widget(Hud.message);
 		}
@@ -191,6 +192,10 @@ Actor.prototype.execute_move = function()
 		
 		/* Turn on item hover if active */
 		if ( Hud.inventory.popup_active ) { Hud.inventory.clear_item_popup(); }
+		
+		/* Chest/Container case */
+		if (World.gridobj[this.next_y][this.next_x]) { Hud.activate_message_box_widget(Hud.container, World.gridobj[this.next_y][this.next_x]); }
+		
 	}
 	
 	
@@ -535,6 +540,77 @@ function height_to_color(height)
 	return "rgb("+r+","+g+","+b+")";
 }
  
+/* This is the logical entitity for containers. It stores the contents
+ * and other metadata */
+ 
+function Container()
+{
+	this.map_x = 1100;
+	this.map_y = 671;
+	this.px = 0;
+	this.py = 0;
+	this.dirty = true;
+	
+	World.gridobj[this.map_y][this.map_x] = this;
+	
+	this.contents = [];
+	
+	var i;
+	for (i=0; i<5; i++)
+	this.contents.push(new Item());
+}
+
+Container.prototype.render = function(target_context)
+{
+	/* Cull outside view port*/
+	if (!this.is_visible()) { this.dirty = false; return; }
+	
+	/* Set where we draw to */
+	this.update_pxpy();
+	
+	/* Set drawing properties for the target context */
+	target_context.font = View.font_size+" clacon";
+	target_context.textAlign = "left";
+	target_context.fillStyle = "rgb(200,200,32)";
+	
+	/* Draw avatar*/
+	target_context.fillText("_",this.px,this.py+View.grid_height);	
+	
+	this.dirty = false;
+};
+
+Container.prototype.is_visible = function() 
+{
+	if (this.map_x < View.view_grid_x) {
+		return false; 
+	}
+	if (this.map_x > View.view_grid_x + View.view_grid_width-1) {
+		return false; 
+	}
+	if (this.map_y < View.view_grid_y) { 
+		return false; 
+	}
+	if (this.map_y > View.view_grid_y + View.view_grid_height-1) { 
+		return false; 
+	}		
+
+	return true;
+};
+
+/* Updates pixel position in the view */
+Container.prototype.update_pxpy = function()
+{
+	var current_view_grid_x = this.map_x-View.view_grid_x;
+	var current_view_grid_y = this.map_y-View.view_grid_y;
+	this.px = current_view_grid_x*View.grid_width;
+	this.py = current_view_grid_y*View.grid_height;
+};
+
+Container.prototype.remove_from_container = function(item) { 
+	var index = this.contents.indexOf(item);
+	if (index !== -1) { this.contents.splice(index,1); }
+	Hud.container_dirty = true;
+}
 
 function Hud() 
 {
@@ -562,6 +638,8 @@ function Hud()
 	this.hover_bar_height = Math.round(base_canvas.height*0.05);
 	this.hover_bar_width = this.view_px_width;
 	
+	this.font_size = Math.max(Math.round(this.status_bar_height*0.60),12);
+	
 	this.message_box_x = this.view_px_x+4;
 	this.message_box_y = this.status_bar_height+Math.round(base_canvas.height*0.01);
 	this.message_box_width = this.view_px_width-8;
@@ -574,7 +652,9 @@ function Hud()
 	this.message = new Message(this);
 	this.inventory = new Inventorywidget(this);
 	this.summary = new Summarywidget(this);
+	this.container = new Containerwidget(this);
 	this.hover = new Hover(this);
+	
 	for (i=0; i<4; i++) {
 		this.partywidget[i] = new Partywidget(this,i); 
 	}
@@ -588,8 +668,10 @@ Hud.prototype.dirty = true;
 Hud.prototype.party_dirty = true;
 Hud.prototype.message_dirty = true;
 Hud.prototype.inventory_dirty = false;
+Hud.prototype.container_dirty = false;
 Hud.prototype.partywidget = [];
 
+/* Renders information in the HUD */
 Hud.prototype.render = function() 
 {
 	if (this.dirty) { this.debug_render(animation_context); }
@@ -598,13 +680,8 @@ Hud.prototype.render = function()
 		case this.message: this.message.render(); break;
 		case this.inventory: this.inventory.render(); break;
 		case this.summary: this.summary.render(); break;
+		case this.container: this.container.render(); break;
 	}
-		
-	//if (this.message_dirty) { this.message.render(); }
-	
-	//if (this.inventory_dirty) { this.inventory.render(); }
-	
-	//if (this.summary_dirty) { this.summary_render(); }
 	
 	if (this.hover.dirty) { this.hover.render(); }
 	
@@ -633,15 +710,14 @@ Hud.prototype.debug_render = function(target_context)
 	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	*/
 };
 
-Hud.prototype.render_selected_item = function(xx, yy)
+Hud.prototype.render_selected_item = function(xx, yy, item)
 {
-	var item_name = this.inventory.selected_item.name;
-	var font_size = this.inventory.font_size;
+	var item_name = item.name;
 	
 	/* clear last rendered text drag */
 	this.clear_last_drag_render();
 	
-	overlay_context.font = font_size+"px Courier";
+	overlay_context.font = this.font_size+"px Courier";
 	overlay_context.fillStyle = FG_COLOR;
 	overlay_context.textAlign = "center";
 	overlay_context.fillText(item_name,xx,yy);
@@ -735,12 +811,14 @@ Hud.prototype.activate_message_box_widget = function(widget, argument = null)
 		this.message.deactivate();
 		this.summary.deactivate();
 		this.inventory.deactivate();
+		this.container.deactivate();
 	}
 	
 	if (this.inventory.last_rendered_item) { this.inventory.clear_item_popup; }
+	if (this.container.last_rendered_item) { this.container.clear_item_popup; }
 	
 	/* Turn on desired widget */
-	widget.activate();
+	widget.activate(argument);
 	widget.render(argument);
 };
 
@@ -768,10 +846,12 @@ Hud.prototype.find_active_widget = function() {
 	if (this.message.active) { return this.message; }
 	if (this.summary.active) { return this.summary; }
 	if (this.inventory.active) { return this.inventory; }
+	if (this.container.active) { return this.container; }
 };
 
 Hud.prototype.mouse_handler_hover = function(xx, yy) {
 	if (this.is_active(this.inventory)) { this.inventory.mouse_handler_hover(xx, yy); }
+	if (this.is_active(this.container)) { this.container.mouse_handler_hover(xx, yy); }
 	return false;
 };
 
@@ -786,6 +866,7 @@ Hud.prototype.mouse_handler_click = function(xx, yy) {
 	/* Message Box area clicks */
 	} else {
 			Hud.inventory.mouse_handler_click(xx, yy);
+			Hud.container.mouse_handler_click(xx, yy);
 	}
 	
 };
@@ -795,26 +876,47 @@ Hud.prototype.mouse_handler_release = function(xx, yy) {
 	/* Avatar box release */
 	if ( yy > Hud.avatar_box_y ) {
 		/* Check for dragged items to swap */
-		if (this.inventory.selected_item) {
-			var item = this.inventory.selected_item;
-			var source = this.inventory.current_party_member;
+		var active_widget = null;
+		
+		if (this.inventory.active) { active_widget = this.inventory; }
+		if (this.container.active) { active_widget = this.container; }
+		
+		if (!active_widget) { return; }
+		
+		if (active_widget.selected_item) {
+			/* Give them the item */
+			var item = active_widget.selected_item;
 			/* Get the party member number */
 			var target_party_member = this.get_avatar_box_index(xx);
 			/* Give them the item */
-			Party.member[target_party_member].inventory.backpack.push(item);			
-			/* Remove it from the original player by taking it off and deleting from backpack
-			 * Note that if it's not worn, this step will do nothing. It must be in the backpack */
-			Party.member[source].inventory.remove_item(item);
-			Party.member[source].inventory.remove_from_backpack(item);
-			/* Remove the drag reference */
-			this.inventory.selected_item = null;
+			Party.member[target_party_member].inventory.backpack.push(item);
 			
-			this.inventory_dirty = true;
+			/* Wrap up depending on the source (other player or container) */
+			switch (active_widget) {
+				case this.inventory: {
+					var source = active_widget.current_party_member;
+					/* Remove it from the original player by taking it off and deleting from backpack
+					 * Note that if it's not worn, this step will do nothing. It must be in the backpack */
+					Party.member[source].inventory.remove_item(item);
+					Party.member[source].inventory.remove_from_backpack(item);
+					
+					this.inventory_dirty = true;
+				}; break;
+				case this.container: {
+					this.container.container.remove_from_container(item);
+					
+					this.container_dirty = true; 
+				} break;
+			}
+			
+			/* Remove the drag reference */
+			active_widget.selected_item = null;
 		}
 	
 	/* Message Box area release */
 	} else {
 			Hud.inventory.mouse_handler_release(xx, yy);
+			Hud.container.mouse_handler_release(xx, yy);
 	}
 	
 	this.clear_last_drag_render();
@@ -834,14 +936,84 @@ Hud.prototype.get_avatar_box_index = function(xx) {
 
 /* The container HUD widget is used for interaction with chests
  * to display and drag their contents. This is remarkably similar
- * to the Inventorywidget and both could probably be extended 
- * from some common ancestor. This widget has less complexity 
+ * to the Containerwidget and both could probably be extended 
+ * from some common ancestor. This widget is less complex 
  */
 function Containerwidget(hud_instance) {
 	
-	this.hud = hud_instance;
+	MessageBase.call(this, hud_instance);
 	this.container = null;
-	this.active = false;
+	this.name = "Chest";
+}
+
+Containerwidget.prototype = Object.create(MessageBase.prototype);
+
+Containerwidget.prototype.render = function()
+{
+	
+	if (!this.container) { 
+		this.hud.container_dirty = false;
+		return false; 
+	}
+	/* Clear the current window */
+	this.clear_message_window();
+	
+	this.render_line(1, this.name + " contents: ");
+	
+	var i;
+	
+	for (i=0; i<this.container.contents.length; i++) {
+		this.render_line(i+3, this.container.contents[i].name);
+	}
+	
+	this.hud.container_dirty = false;
+};
+
+Containerwidget.prototype.activate = function(container) { 
+	this.active = true; 
+	this.hud.container_dirty = true;
+	this.container = container;
+};
+
+
+/* Receives handling commands from the Hud object as needed */
+Containerwidget.prototype.mouse_handler_click = function(mouse_x, mouse_y) {
+	
+	if (!this.active) { return; }
+	
+	/* Saves the reference to the item just clicked in case user drags */
+	this.selected_item = this.get_item_at_point(mouse_x, mouse_y);
+};
+
+Containerwidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
+	
+	if (!this.active) { return; }
+	
+	/* Releasing items in the message window never does anything */
+	this.selected_item = null;
+	
+	/* Get the item clicked on and the reference to the active inventory */
+	var current_item = this.get_item_at_point(mouse_x, mouse_y);
+	var current_party_member = Party.member[Party.active_partymember].inventory;
+	
+	/* No item under? nothing happens */
+	if (!current_item) { return; }
+	
+	/* If we're viewing equipped items, then clicking removes items */
+	current_party_member.backpack.push(current_item);
+	this.container.remove_from_container(current_item);
+	
+};
+
+/* Finds the item text at a given point, typically the mouse pointer */
+Containerwidget.prototype.get_item_at_point = function(xx, yy) {
+	/* Find the current line and item reference */
+	var line = this.mouse_to_text_line_number(xx, yy);
+	
+	/* Reference the appropriate data array given the mode */
+	var current_item = this.container.contents[line-3];
+	
+	return current_item;
 }
  
 function Hover(hud_instance) {
@@ -890,25 +1062,15 @@ Hover.prototype.get_hover_avatar = function(party_member) {
    It is activated through the main HUD and replaces the message box */
 function Inventorywidget(hud_instance)
 {
+	
+	MessageBase.call(this, hud_instance);
+	
 	var i;
 	this.hud = hud_instance;
 	this.party = Party;
-	this.active = false;
 	this.current_party_member = -1;
 	this.mode = MODE_WEAR;
-	this.popup_active = false;
-	this.selected_item = null;
 	this.wear_line_lookup = [];
-	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
-	this.max_line = (this.hud.message_box_height / this.font_size);
-	
-	/* The following variables will contain references to popup renders
-	 * with the goal to compare current and previous render requests so
-	 * we don't constantly render the same item popup repeatedly unless
-	 * the item actually changes 
-	 */
-	this.active_item = null;
-	this.last_rendered_item = null;
 	
 	for (i=0; i<30; i++) { this.wear_line_lookup[i] = null; }
 	
@@ -922,6 +1084,8 @@ function Inventorywidget(hud_instance)
 	this.wear_line_lookup[9] = WEAR_NECK;
 	this.wear_line_lookup[10] = WEAR_CLOAK;
 }
+
+Inventorywidget.prototype = Object.create(MessageBase.prototype);
 
 Inventorywidget.prototype.render = function(party_member = -1)
 {
@@ -983,17 +1147,7 @@ Inventorywidget.prototype.render_backpack = function(party_member = -1)
 	this.hud.inventory_dirty = false;
 };
 
-Inventorywidget.prototype.clear_message_window = function() {
-	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
-};
 
-/* Renders a single line of text in the message window */
-Inventorywidget.prototype.render_line = function(line, message) {
-	animation_context.font = this.font_size+"px Courier";
-	animation_context.fillStyle = FG_COLOR;
-	animation_context.textAlign = "left";
-	animation_context.fillText(message,this.hud.message_box_x+5,this.hud.message_box_y+line*this.font_size);
-};
 
 /* Looks up the name of an item */
 Inventorywidget.prototype.get_item_name = function(who, what)
@@ -1036,25 +1190,145 @@ Inventorywidget.prototype.toggle_mode = function() {
 	this.mode = this.mode === MODE_WEAR ? MODE_BACKPACK : MODE_WEAR;
 };
 
-Inventorywidget.prototype.deactivate = function() { this.active = false; };
-
-/* removes the item popup */
-Inventorywidget.prototype.clear_item_popup = function()
-{
-	if (!this.last_rendered_item) { return; }
-	var width = 320;
-	var height = 240;
-	var top_left_x = Math.max((View.view_px_width-width)/2,0);
-	var top_left_y = Math.max((View.view_px_height-height)/2,0);
+/* Receives handling commands from the Hud object as needed */
+Inventorywidget.prototype.mouse_handler_click = function(mouse_x, mouse_y) {
 	
-	overlay_context.clearRect(top_left_x, top_left_y, width, height);
-	this.popup_active = false;
-	this.active_item = null;
+	if (!this.active) { return; }
+	
+	/* Saves the reference to the item just clicked in case user drags */
+	this.selected_item = this.get_item_at_point(mouse_x, mouse_y);
+};
+
+Inventorywidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
+	
+	if (!this.active) { return; }
+	
+	/* Releasing items in the message window never does anything */
+	this.selected_item = null;
+	
+	/* Get the item clicked on and the reference to the active inventory */
+	var current_item = this.get_item_at_point(mouse_x, mouse_y);
+	var current_party_member = Party.member[this.current_party_member].inventory;
+	
+	/* No item under? nothing happens */
+	if (!current_item) { return; }
+	
+	/* If we're viewing equipped items, then clicking removes items */
+	if (this.mode === MODE_WEAR) { current_party_member.remove_item(current_item); }
+	
+	/* If we're viewing inventory items, then clicking wears them */
+	if (this.mode === MODE_BACKPACK) { current_party_member.wear_item(current_item); }
+};
+
+/* Finds the item text at a given point, typically the mouse pointer */
+Inventorywidget.prototype.get_item_at_point = function(xx, yy) {
+	/* Find the current line and item reference
+	 * We're actually getting info here for either inventory mode */
+	var line = this.mouse_to_text_line_number(xx, yy);
+	var current_party_member = Party.member[this.current_party_member].inventory;
+	var wear_slot = this.wear_line_lookup[line];
+	var backpack_slot = line-3;
+	var current_item;
+	
+	/* Reference the appropriate data array given the mode */
+	if (this.mode === MODE_WEAR) { current_item = current_party_member.wear[wear_slot]; }
+	if (this.mode === MODE_BACKPACK) { current_item = current_party_member.backpack[backpack_slot]; }
+	
+	return current_item;
+}
+ 
+function Message(hud_instance) {
+	MessageBase.call(this, hud_instance);
+	
+	var i;
+	this.hud = hud_instance; /* save parent pinter */
+	
+	for (i=0; i<this.message_buffer_size; i++) {
+		this.message_log.push(""); 
+	}
+	
+	this.message_index = this.message_buffer_size-1;
+	this.message_rows = Math.round(this.hud.message_box_height/BASE_FONT_SIZE)-1;
+	
+	/* The message box competes for space with other widgets */
+	this.active = true;
+}
+
+Message.prototype = Object.create(MessageBase.prototype);
+
+Message.prototype.message_buffer_size = 64;
+Message.prototype.message_log = [];
+Message.prototype.hud = 0; /* parent pointer unknown during prototyping */
+
+Message.prototype.render = function() {
+	
+	if (!this.active) { return; }
+	
+	var i;
+	var num = this.message_index;
+	this.message_rows = Math.round(this.hud.message_box_height/this.font_size)-1;
+	this.clear_message_window();
+	animation_context.font = this.font_size+"px Courier";
+	animation_context.fillStyle = FG_COLOR;
+	animation_context.textAlign = "left";
+	for (i=0; i<this.message_rows; i++) {
+		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+this.font_size+i*this.font_size);
+		num = (++num) % this.message_buffer_size;
+	}
+	
+	this.hud.message_dirty = false;
+};
+
+Message.prototype.add_message = function(msg) {
+	this.message_index--;
+	
+	if (this.message_index < 0) {
+		this.message_index = this.message_buffer_size-1;
+	}
+	
+	this.message_log[this.message_index] = msg;
+	this.hud.message_dirty = true;
+	this.hud.dirty = true;
+	Hud.render();
+};
+ 
+/* Many of the message box interactive widgets have common methods.
+ * I'm sticking those methods in this object that others will derive
+ */
+function MessageBase(hud_instance) {
+	this.hud = hud_instance;
+	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
+	this.max_line = (this.hud.message_box_height / this.font_size);
+	this.popup_active = false
+	this.selected_item = null;
+	this.active = false;
+	/* The following variables will contain references to popup renders
+	 * with the goal to compare current and previous render requests so
+	 * we don't constantly render the same item popup repeatedly unless
+	 * the item actually changes 
+	 */
+	
+	this.active_item = null;	
 	this.last_rendered_item = null;
+} 
+
+MessageBase.prototype.activate = function() { this.active = true; };
+MessageBase.prototype.deactivate = function() { this.active = false; };
+
+MessageBase.prototype.clear_message_window = function() {
+	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
+};
+
+/* Renders a single line of text in the message window */
+MessageBase.prototype.render_line = function(line, message) {
+	animation_context.font = this.font_size+"px Courier";
+	animation_context.fillStyle = FG_COLOR;
+	animation_context.textAlign = "left";
+	animation_context.fillText(message,this.hud.message_box_x+5,this.hud.message_box_y+line*this.font_size);
 };
 
 /* Renders the hover popup that describes an item */
-Inventorywidget.prototype.render_item_popup = function(item)
+MessageBase.prototype.render_item_popup = function(item)
 {
 	if (!item) { return; }
 	if (item === this.last_rendered_item) { return; }
@@ -1113,10 +1387,24 @@ Inventorywidget.prototype.render_item_popup = function(item)
 	this.last_rendered_item = item;
 };
 
+/* removes the item popup */
+MessageBase.prototype.clear_item_popup = function()
+{
+	if (!this.last_rendered_item) { return; }
+	var width = 320;
+	var height = 240;
+	var top_left_x = Math.max((View.view_px_width-width)/2,0);
+	var top_left_y = Math.max((View.view_px_height-height)/2,0);
+	
+	overlay_context.clearRect(top_left_x, top_left_y, width, height);
+	this.popup_active = false;
+	this.active_item = null;
+	this.last_rendered_item = null;
+};
+
 /* Receives handling commands from the Hud object as needed */
-Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
+MessageBase.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	var line = this.mouse_to_text_line_number(mouse_x, mouse_y);
-	var current = Party.member[this.current_party_member].inventory;
 	var current_item = this.get_item_at_point(mouse_x, mouse_y);
 	
 	/* Create a popup box if there's a valid item under the mouse */
@@ -1127,38 +1415,8 @@ Inventorywidget.prototype.mouse_handler_hover = function(mouse_x, mouse_y) {
 	}
 };
 
-/* Receives handling commands from the Hud object as needed */
-Inventorywidget.prototype.mouse_handler_click = function(mouse_x, mouse_y) {
-	
-	if (!this.active) { return; }
-	
-	/* Saves the reference to the item just clicked in case user drags */
-	this.selected_item = this.get_item_at_point(mouse_x, mouse_y);
-};
-
-Inventorywidget.prototype.mouse_handler_release = function(mouse_x, mouse_y) {
-	
-	if (!this.active) { return; }
-	
-	/* Releasing items in the message window never does anything */
-	this.selected_item = null;
-	
-	/* Get the item clicked on and the reference to the active inventory */
-	var current_item = this.get_item_at_point(mouse_x, mouse_y);
-	var current_party_member = Party.member[this.current_party_member].inventory;
-	
-	/* No item under? nothing happens */
-	if (!current_item) { return; }
-	
-	/* If we're viewing equipped items, then clicking removes items */
-	if (this.mode === MODE_WEAR) { current_party_member.remove_item(current_item); }
-	
-	/* If we're viewing inventory items, then clicking wears them */
-	if (this.mode === MODE_BACKPACK) { current_party_member.wear_item(current_item); }
-};
-
 /* Converts the mouse position to a message-box line number in the current view space */
-Inventorywidget.prototype.mouse_to_text_line_number = function(mouse_x, mouse_y) {
+MessageBase.prototype.mouse_to_text_line_number = function(mouse_x, mouse_y) {
 	
 	/* This height must match the font size calculation from render_line(); */
 	var line_height = this.font_size;
@@ -1171,82 +1429,6 @@ Inventorywidget.prototype.mouse_to_text_line_number = function(mouse_x, mouse_y)
 
 	return line;
 };
-
-/* Finds the item text at a given point, typically the mouse pointer */
-Inventorywidget.prototype.get_item_at_point = function(xx, yy) {
-	/* Find the current line and item reference
-	 * We're actually getting info here for either inventory mode */
-	var line = this.mouse_to_text_line_number(xx, yy);
-	var current_party_member = Party.member[this.current_party_member].inventory;
-	var wear_slot = this.wear_line_lookup[line];
-	var backpack_slot = line-3;
-	var current_item;
-	
-	/* Reference the appropriate data array given the mode */
-	if (this.mode === MODE_WEAR) { current_item = current_party_member.wear[wear_slot]; }
-	if (this.mode === MODE_BACKPACK) { current_item = current_party_member.backpack[backpack_slot]; }
-	
-	return current_item;
-}
- 
-function Message(hud_instance) {
-	var i;
-	this.hud = hud_instance; /* save parent pinter */
-	
-	for (i=0; i<this.message_buffer_size; i++) {
-		this.message_log.push(""); 
-	}
-	
-	this.message_index = this.message_buffer_size-1;
-	this.message_rows = Math.round(this.hud.message_box_height/BASE_FONT_SIZE)-1;
-	
-	/* The message box competes for space with other widgets */
-	this.active = true;
-}
-
-Message.prototype.message_buffer_size = 64;
-Message.prototype.message_log = [];
-Message.prototype.hud = 0; /* parent pointer unknown during prototyping */
-
-Message.prototype.render = function() {
-	
-	if (!this.active) { return; }
-	
-	var i;
-	var num = this.message_index;
-	var font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
-	this.message_rows = Math.round(this.hud.message_box_height/font_size)-1;
-	this.clear_message_window();
-	for (i=0; i<this.message_rows; i++) {
-		animation_context.font = font_size+"px Courier";
-		animation_context.fillStyle = FG_COLOR;
-		animation_context.textAlign = "left";
-		animation_context.fillText(this.message_log[num],this.hud.message_box_x+5,this.hud.message_box_y+font_size+i*font_size);
-		num = (++num) % this.message_buffer_size;
-	}
-	
-	this.hud.message_dirty = false;
-};
-
-Message.prototype.clear_message_window = function() {
-	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
-};
-
-Message.prototype.add_message = function(msg) {
-	this.message_index--;
-	
-	if (this.message_index < 0) {
-		this.message_index = this.message_buffer_size-1;
-	}
-	
-	this.message_log[this.message_index] = msg;
-	this.hud.message_dirty = true;
-	this.hud.dirty = true;
-	Hud.render();
-};
-
-Message.prototype.activate = function() { this.active = true; };
-Message.prototype.deactivate = function() { this.active = false; };
  
 function Partywidget(hud_id, new_id) 
 {
@@ -1462,14 +1644,15 @@ Status.prototype.update_status = function()
 
 function Summarywidget(hud_instance)
 {
+	MessageBase.call(this, hud_instance);
+	
 	this.hud = hud_instance;
 	this.party = Party;
-	this.active = false;
 	this.current_party_member = -1;
-	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
-	this.max_line = (this.hud.message_box_height / this.font_size);
 	
 }
+
+Summarywidget.prototype = Object.create(MessageBase.prototype);
 
 Summarywidget.prototype.render = function()
 {
@@ -1478,19 +1661,6 @@ Summarywidget.prototype.render = function()
 	this.render_line(3, "Future summary statistics");
 }
 
-Summarywidget.prototype.render_line = function(line, message) {
-	animation_context.font = this.font_size+"px Courier";
-	animation_context.fillStyle = FG_COLOR;
-	animation_context.textAlign = "left";
-	animation_context.fillText(message,this.hud.message_box_x+5,this.hud.message_box_y+line*this.font_size);
-};
-
-Summarywidget.prototype.activate = function() { this.active = true; }
-Summarywidget.prototype.deactivate = function() { this.active = false; }
-
-Summarywidget.prototype.clear_message_window = function() {
-	animation_context.clearRect(this.hud.message_box_x,this.hud.message_box_y,this.hud.message_box_width,this.hud.message_box_height);
-};
 
 function gameInit() 
 {
@@ -1511,9 +1681,12 @@ function gameInit()
 	Party = new Party();
 	
 	Monsters = [];
+	Containers = [];
 	Animations = [];
 	
 	for (i=0; i<NUMBER_OF_MONSTERS; i++) { Monsters[i] = create_monster(); }
+	
+	Containers.push(new Container());
 	
 	Hud = new Hud();
 	
@@ -1564,7 +1737,7 @@ function Inventory(party_member)
 	this.party_member = party_member;
 	
 	/* Temporary equipment generation tests */
-	for (var i=0;i<2;i++) {
+	for (var i=0; i<2; i++) {
 		var test_item = new Item();
 		this.backpack.push(test_item);
 		this.wear_item(test_item);
@@ -2562,7 +2735,8 @@ function doMouseMove(event)
 	/* Handle mouse movement in the HUD */
 	} else { 
 	
-		if (Hud.inventory.selected_item) { Hud.render_selected_item(mouse_x, mouse_y); }
+		if (Hud.inventory.selected_item) { Hud.render_selected_item(mouse_x, mouse_y, Hud.inventory.selected_item); }
+		if (Hud.container.selected_item) { Hud.render_selected_item(mouse_x, mouse_y, Hud.container.selected_item); }
 		/* Avatar box hovers (refactor this to the basic 4-corners check after HUD is finalized) */
 		if ( mouse_y > Hud.avatar_box_y ) {
 			     if ( mouse_x < Hud.avatar_box_x[1] ) { Hud.hover.add_message(Hud.hover.get_hover_avatar(0)); }
@@ -3523,6 +3697,12 @@ View.prototype.render = function (world_context, actor_context)
 				Monsters[i].render(actor_context); 
 			}
 		}
+		
+		for (i=0; i<Containers.length; i++) {
+			if (Containers[i].dirty) { 
+				Containers[i].render(base_context); 
+			}
+		}
 	}
 };
 
@@ -3602,6 +3782,7 @@ View.prototype.refocus = function(xx, yy, immediate = false)
 			World.dirty = true;
 			Player.dirty = true;
 			for (i=0; i<Monsters.length; i++) { Monsters[i].dirty = true; }
+			for (i=0; i<Containers.length; i++) { Containers[i].dirty = true; }
 		}
 	} else {
 		this.dirty = true;
@@ -3697,6 +3878,7 @@ function _animate_camera()
 			
 			Player.render(animation_context);
 			World.render(base_context);
+			for (i=0; i<Containers.length; i++) { Containers[i].render(base_context); }
 			Hud.render();
 			for (i=0; i<Monsters.length; i++) { Monsters[i].render(animation_context); }
 		
@@ -3726,6 +3908,7 @@ function World()
 	this.gridcol = [[],[]];
 	this.gridheight = [[],[]];
 	this.gridmob=[[],[]];
+	this.gridobj=[[],[]];
 
 	this.load_map();
 }
@@ -3788,6 +3971,7 @@ World.prototype.build_map = function()
 		this.gridcol[i] = [];
 		this.gridheight[i]= [];
 		this.gridmob[i] = [];
+		this.gridobj[i] = [];
 	}
 	
 	for (j=0; j<WORLD_SIZE_Y; j++) {
@@ -3839,6 +4023,7 @@ World.prototype.load_map = function load_map()
 		this.gridcol[i] = [];
 		this.gridheight[i] = [];
 		this.gridmob[i] = [];
+		this.gridobj[i] = [];
 	}
 	
 	for (k=0; k<15; k++) {
