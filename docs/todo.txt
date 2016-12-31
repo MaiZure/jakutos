@@ -4,7 +4,6 @@ Need to streamline the monster/player skill references for damage
 Need to incorporate dual wielding and multiple rings in to wearing
 Need to get stats and modifiers in to items
 Need to refactor Minimap in to object form.
-Move font_size and other calcs from widget to parent HUD
 
 Make move turn PQ
 Make diagonal movement

@@ -163,6 +163,7 @@ const KB_E = 69
 const KB_F = 70
 const KB_G = 71
 const KB_H = 72;
+const KB_L = 76;
 const KB_M = 77;
 const KB_W = 87;
 const KB_X = 88;

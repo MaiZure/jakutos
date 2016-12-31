@@ -55,6 +55,7 @@ function handle_active_events(key) {
 		case KB_D: World.set_door(); break;
 		case KB_E: World.set_stairs(); break;
 		case KB_H: console.log(World.gridheight[Player.map_y][Player.map_x]); break;
+		case KB_L: console.log(Player.map_x, Player.map_y); break;
 		case KB_TILDE: SETTING_EDIT_MODE = !SETTING_EDIT_MODE; break;
 		case KB_LBRACKET: World.lower_terrain(Player.map_x, Player.map_y); break;
 		case KB_RBRACKET: World.raise_terrain(Player.map_x, Player.map_y); break;

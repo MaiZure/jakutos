@@ -26,19 +26,15 @@
  
 function Container()
 {
-	this.map_x = 1100;
-	this.map_y = 671;
+	this.map_x = 0;
+	this.map_y = 0;
 	this.px = 0;
 	this.py = 0;
+	this.level = 0;
+	this.gold = 0;
 	this.dirty = true;
 	
-	World.gridobj[this.map_y][this.map_x] = this;
-	
 	this.contents = [];
-	
-	var i;
-	for (i=0; i<5; i++)
-	this.contents.push(new Item());
 }
 
 Container.prototype.render = function(target_context)
@@ -91,4 +87,20 @@ Container.prototype.remove_from_container = function(item) {
 	var index = this.contents.indexOf(item);
 	if (index !== -1) { this.contents.splice(index,1); }
 	Hud.container_dirty = true;
+};
+
+Container.prototype.fill_container = function() {
+	var i;
+	for (i=0; i<this.level+1; i++) { this.contents.push(new Item()); }
+	for (i=0; i<this.level*this.level; i++) { this.gold += Math.round(Math.random()*500);}
+};
+
+Container.prototype.set_position = function(xx, yy) {
+	this.map_x = xx;
+	this.map_y = yy;
+	this.update_pxpy();
+};
+
+Container.prototype.set_level = function(level) {
+	this.level = level;
 }

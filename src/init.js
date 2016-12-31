@@ -34,21 +34,29 @@ function gameInit()
 	overlay_canvas.addEventListener("mousedown", doMouseClick, false);
 	overlay_canvas.addEventListener("mouseup", doMouseRelease, false);
 	
+	/* Make the game-level objects */
 	View = new View();
 	World = new World();
 	Player = create_player();
 	Party = new Party();
 	
+	/* Make game-level data accessor arrays */
 	Monsters = [];
 	Containers = [];
 	Animations = [];
 	
-	for (i=0; i<NUMBER_OF_MONSTERS; i++) { Monsters[i] = create_monster(); }
+	/* populator world containers (chests) */
+	World.init_static_containers(Containers);
 	
-	Containers.push(new Container());
+	/* Generate monsters from spawn points */
+	for (i=0; i<World.spawn_points.length; i++) {
+		World.spawn_points[i].spawn_monsters();
+	}
 	
+	/* Create the Hud */
 	Hud = new Hud();
 	
+	/* Create the minimap */
 	Minimap = new Minimap();
 	
 	View.refocus(Player.map_x, Player.map_y, true);
@@ -71,10 +79,4 @@ function create_player()
 	actor.update_pxpy();
 	
 	return actor;
-}
-
-function create_monster(type = MTYPE_GOBLIN, level=MLEVEL_RANDOM, xx=0, yy=0) 
-{
-	var monster = new Monster(type, level, xx, yy);
-	return monster;
 }

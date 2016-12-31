@@ -109,12 +109,16 @@ Hud.prototype.render = function()
 
 Hud.prototype.debug_render = function(target_context) 
 {	
-	/* This function is intentionally left blank 
-	//target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
-	//target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
-	//target_context.fillStyle = FG_COLOR;
-	//target_context.textAlign = "right";
-	//target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
+	/* This function is intentionally left blank */
+	/*
+	if (SETTING_EDIT_MODE) {
+		target_context.clearRect(target_context.canvas.width-150,this.avatar_box_y-150,target_context.canvas.width,150);
+		target_context.font = BASE_FONT_SIZE+"px Sans-Serif";
+		target_context.fillStyle = FG_COLOR;
+		target_context.textAlign = "right";
+		target_context.fillText("("+Player.map_x+","+Player.map_y+")",target_context.canvas.width,this.avatar_box_y-100);	
+	}
+	*/
 	//target_context.fillText("("+mouse_x+","+mouse_y+")",target_context.canvas.width,this.avatar_box_y-75);	
 	//target_context.fillText("("+mouse_gx+","+mouse_gy+")",target_context.canvas.width,this.avatar_box_y-50);	*/
 };
@@ -300,7 +304,7 @@ Hud.prototype.mouse_handler_release = function(xx, yy) {
 			/* Give them the item */
 			Party.member[target_party_member].inventory.backpack.push(item);
 			
-			/* Wrap up depending on the source (other player or container) */
+			/* Wrap up depending on the source (between part members or from containers) */
 			switch (active_widget) {
 				case this.inventory: {
 					var source = active_widget.current_party_member;

@@ -56,6 +56,7 @@ Containerwidget.prototype.render = function()
 	this.hud.container_dirty = false;
 };
 
+/* Turn on the container viewer widget */
 Containerwidget.prototype.activate = function(container) { 
 	this.active = true; 
 	this.hud.container_dirty = true;

@@ -25,14 +25,21 @@
 /* Constructor for the region (map) */
 function World()
 {
+	var i;
+	
 	this.dirty = true;
 	this.grid = [[],[]]
 	this.gridcol = [[],[]];
 	this.gridheight = [[],[]];
 	this.gridmob=[[],[]];
 	this.gridobj=[[],[]];
+	
+	this.spawn_points = [];
 
 	this.load_map();
+	
+	this.init_spawn_points();
+	
 }
 
 /* Renders the visible portion of the world */
@@ -215,7 +222,7 @@ World.prototype.get_map_color = function(height)
 		case 7: return COL_MAP_LOW_MOUNTAIN; break;
 		default: return random_mountain_color(); break;
 	}
-}
+};
 
 /* In-game World editing methods below */
 /* Export map as string */
@@ -252,7 +259,7 @@ World.prototype.save_map = function()
 	}
 	console.log(line);
 	console.log("WORLD_MAP_"+(region_num+1));
-}
+};
 
 /* Adds a wall to the current location */
 World.prototype.set_wall = function()
@@ -275,7 +282,7 @@ World.prototype.set_wall = function()
 	}
 	
 	this.dirty = true
-}
+};
 
 /* Adds a door to the current location */
 World.prototype.set_door = function()
@@ -298,7 +305,7 @@ World.prototype.set_door = function()
 	}
 	
 	this.dirty = true
-}
+};
 
 /* Adds stairs to the current location */
 World.prototype.set_stairs = function()
@@ -315,7 +322,7 @@ World.prototype.set_stairs = function()
 	this.gridcol[yy][xx] = COL_MAP_STAIRS;
 	
 	this.dirty = true
-}
+};
 
 /* Lowers the current terrain to as low as water level */
 World.prototype.lower_terrain = function(xx, yy) {
@@ -336,7 +343,7 @@ World.prototype.lower_terrain = function(xx, yy) {
 	
 	/* Force immediate redraw */
 	World.dirty = true;
-}
+};
 
 /* Raises the current terrain to a maximum of 25 */
 World.prototype.raise_terrain = function(xx, yy) {
@@ -357,11 +364,64 @@ World.prototype.raise_terrain = function(xx, yy) {
 	
 	/* Force immediate redraw */
 	World.dirty = true;
-}
+};
 
 /* Returns the current region number - used in conjunction with map exporting */
 World.prototype.get_current_region = function() {
 	var gx = Player.map_x;
 	var gy = Player.map_y;
 	return Math.floor(gx/252) + Math.floor(gy/252)*5;
-}
+};
+
+World.prototype.create_container = function(xx, yy, level) {
+	var container = new Container();
+	container.set_position(xx,yy);
+	container.set_level(level);
+	container.fill_container();
+	this.gridobj[yy][xx] = container;
+	return container
+};
+
+World.prototype.init_static_containers = function(container_ds) {
+	
+	/* New Sporigal town area containers */
+	container_ds.push(this.create_container(898, 546, 2));
+	container_ds.push(this.create_container(954, 542, 2));
+	container_ds.push(this.create_container(962, 578, 2));
+	container_ds.push(this.create_container(1124, 672, 0));
+	container_ds.push(this.create_container(1060, 669, 0));
+	container_ds.push(this.create_container(1067, 692, 0));
+	container_ds.push(this.create_container(1073, 636, 0));
+	container_ds.push(this.create_container(1049, 637, 0));
+	container_ds.push(this.create_container(1048, 637, 1));
+	container_ds.push(this.create_container(1170, 684, 1));
+	container_ds.push(this.create_container(1170, 688, 1));
+};
+
+World.prototype.init_spawn_points = function() {
+	
+	/* NEW SPORIGAL */
+	/* New Sporigal docks */
+	this.spawn_points.push(new Monsterspawner(1123, 674, MTYPE_GOBLIN));
+	/* New Sporigal Keep */
+	this.spawn_points.push(new Monsterspawner(1063, 694, MTYPE_GOBLIN));
+	this.spawn_points.push(new Monsterspawner(1059, 694, MTYPE_GOBLIN));
+	/* New Sporigal Guild */
+	this.spawn_points.push(new Monsterspawner(1079, 633, MTYPE_GOBLIN));
+	/* New Sporigal Temple */
+	this.spawn_points.push(new Monsterspawner(1055, 636, MTYPE_GOBLIN));
+	this.spawn_points.push(new Monsterspawner(1052, 634, MTYPE_MAGE));
+	this.spawn_points.push(new Monsterspawner(1049, 635, MTYPE_GOBLIN));
+	/* New Sporigal South Bridge */
+	this.spawn_points.push(new Monsterspawner(1061, 671, MTYPE_GOBLIN));
+	this.spawn_points.push(new Monsterspawner(1062, 668, MTYPE_GOBLIN));
+	/* New Sporigal eastern lowlands */
+	this.spawn_points.push(new Monsterspawner(1117, 689, MTYPE_MAGE));
+	
+	/* CASTLE IRONFIST */
+	/* Baa followers at entrance */
+	this.spawn_points.push(new Monsterspawner(940, 659, MTYPE_BAA));
+	this.spawn_points.push(new Monsterspawner(938, 653, MTYPE_BAA));
+	this.spawn_points.push(new Monsterspawner(935, 661, MTYPE_BAA));
+	this.spawn_points.push(new Monsterspawner(931, 665, MTYPE_BAA));
+};

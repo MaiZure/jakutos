@@ -24,6 +24,7 @@
 function Party() 
 {
 	this.active_partymember = 0;
+	this.gold = 0;
 	
 	var i;
 	
@@ -75,16 +76,19 @@ function Party()
 
 Party.prototype.member = [];
 
+/* Check if a party member is incapacitated - flags comparison */
 Party.prototype.is_incapacitated = function(party_member) 
 {
 	return (this.member[party_member].status & (STATUS_DEAD | STATUS_UNCONCIOUS | STATUS_ASLEEP | STATUS_PARALYZED | STATUS_ERADICATED)); 
 };
 
+/* Check if a party member is ready to attack */
 Party.prototype.is_ready = function(party_member) 
 {
 	return (this.member[party_member].current_delay === 0 && !this.is_incapacitated(party_member)); 
 };
-	
+
+/* Check if the entire party is incapacitated */
 Party.prototype.is_party_dead = function() 
 {
 	if (this.is_incapacitated(0) && this.is_incapacitated(1) && this.is_incapacitated(2) && this.is_incapacitated(3)) {
@@ -193,7 +197,6 @@ Party.prototype.activate_party_member = function(next)
 		Hud.activate_message_box_widget(Hud.message);
 	}
 	
-	
 	/* Changing the active party member */
 	if (this.is_ready(next) && !this.is_incapacitated(next)) { 
 		this.active_partymember = next;
@@ -204,12 +207,14 @@ Party.prototype.activate_party_member = function(next)
 	}
 };
 
+/* Generate the experience requirement for levels */
 Party.prototype.get_xp_requirement = function (level) 
 {
 	if (level == 1) { return 0; }
 	return 1000 * (level-1) + this.xp_requirement(level-1);
 };
 
+/* Apply damage to the party from falling */
 Party.prototype.fall_damage = function (height_difference) 
 {
 	var i, damage;
@@ -221,6 +226,7 @@ Party.prototype.fall_damage = function (height_difference)
 	Hud.message.add_message("Waaaa...!");
 };
 
+/* Get the text name for each class */
 Party.prototype.get_class = function(party_class)
 {
 	switch (party_class) {

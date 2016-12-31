@@ -182,7 +182,7 @@ Actor.prototype.execute_move = function()
 		
 		/* The following should probably be relocated to somewhere more sensible */
 		/* Revert HUD to message window when the player moves*/
-		if (!Hud.is_active(Hud.message_box)) {
+		if (!Hud.is_active(Hud.message)) {
 			Hud.activate_message_box_widget(Hud.message);
 		}
 		
@@ -193,7 +193,15 @@ Actor.prototype.execute_move = function()
 		if ( Hud.inventory.popup_active ) { Hud.inventory.clear_item_popup(); }
 		
 		/* Chest/Container case */
-		if (World.gridobj[this.next_y][this.next_x]) { Hud.activate_message_box_widget(Hud.container, World.gridobj[this.next_y][this.next_x]); }
+		if (World.gridobj[this.next_y][this.next_x]) { 
+			var container = World.gridobj[this.next_y][this.next_x];
+			Hud.activate_message_box_widget(Hud.container, container); 
+			if (container.gold > 0) { 
+				Party.gold += container.gold;
+				Hud.hover.add_message("You take " + container.gold + " coins");
+				container.gold = 0;
+			}
+		}
 		
 	}
 	
