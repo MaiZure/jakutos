@@ -1,4 +1,4 @@
---*v0.4---In Progress------------------------------
+--*v0.4---Dec 31, 2016------------------------------
 Added an Inventory system
 Added Items and Item generation
 Added more diverse colors in the world

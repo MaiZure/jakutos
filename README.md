@@ -1,7 +1,7 @@
 # jakutos
 Project Jakutos is a Roguelike that I'm writing to learn both JavaScript the GitHub workflow. I've decided to use Might and Magic 6 as the model for this project.
 
-current version: **0.3**
+current version: **0.4**
 
 The current master branch is playable directly on [GitHub Pages][reference-id-for-github-pages]
 [reference-id-for-github-pages]:http://maizure.github.io/jakutos/
@@ -18,7 +18,6 @@ Right now, there is a default party with 4 different classes. Each has it's own 
 v0.4 branch in progress with quite a few more features.
 
 ##Tentative Roadmap
-v0.4 - Inventory and Item Management. Castle Ironfist region development  
 v0.5 - Character development, skills/levels. More monsters and better placement. Bootleg Bay  
 v0.6 - Internal dungeon development (procedural? maybe). Free Haven  
 v0.7 - Quest framework. Town interactions. Darkmoon, SilverCove, and Myst  
@@ -29,6 +28,20 @@ v1.0 - Open to suggestion :)
 
 ##Version Notes
 ---
+--*v0.4---Dec 31, 2016------------------------------
+Added an Inventory system
+Added Items and Item generation
+Added more diverse colors in the world
+Avatar icon interactions for HUD views
+Inventory item hover popups
+Dragging items between party members
+General world beautification
+UI beautification
+Only obvious actions trigger time to pass
+Chests and other containers
+Monster spawning on the world map by class/type
+Castle Ironfist more developed
+
 --*v0.3---Dec 25, 2016------------------------------  
 Progressive terrain climbing - falling hurts  
 Player and monsters now cast attack spells.  
