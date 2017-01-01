@@ -41,10 +41,13 @@ Player.prototype.threats = [];
 /* Melee attack */
 Player.prototype.execute_melee_attack = function(target) 
 {
+	/* If there isn't an active party member, then nothing happens */
 	if (Party.active_partymember === -1) { return false; }
 	
 	var i;
 	var damage = 0;
+	
+	/* Create local aliases to the appropriate statistics to shorten our future calls */
 	var party_member = Party.active_partymember;
 	var die_num = Party.member[party_member].melee_die_num;
 	var die_side = Party.member[party_member].melee_die_side;
@@ -52,12 +55,13 @@ Player.prototype.execute_melee_attack = function(target)
 	var attacker = Party.member[party_member].name;
 	var attack_type = DAM_PHYSICAL;
 	
-	for (i=0; i<die_num; i++) {
-		damage += Math.round(Math.random()*(die_side-1)+1)+die_bonus;
-	}
+	/* Get the damage */
+	damage = Math.roll_die(die_num, die_side, die_bonus);
 	
+	/* If there is damage, then apply it */
 	if (damage > 0) { target.damage_actor(damage, this, attacker); }
 	
+	/* Update the party stats */
 	Party.member[party_member].current_delay = Party.member[party_member].base_delay;
 	Hud.partywidget[party_member].dirty = true;
 	Party.active_partymember = -1;
@@ -179,9 +183,8 @@ Player.prototype.execute_auto_attack = function()
 		} else {
 			this.execute_ranged_attack(closest_enemy);
 		}
-	}
-		
-}
+	}	
+};
 
 /* Run a few fixed turn checks
    This happens after the player turn, but before monster turn */

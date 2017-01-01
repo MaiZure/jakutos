@@ -50,6 +50,7 @@ function Inventorywidget(hud_instance)
 
 Inventorywidget.prototype = Object.create(MessageBase.prototype);
 
+/* Initial render function that calls the appropriate helper function */
 Inventorywidget.prototype.render = function(party_member = -1)
 {
 	this.font_size = Math.max(Math.round(this.hud.status_bar_height*0.60),12);
@@ -59,6 +60,7 @@ Inventorywidget.prototype.render = function(party_member = -1)
 	if (this.mode === MODE_BACKPACK) { this.render_backpack(party_member); }
 };
 
+/* Displays the equipment worn by the current player */
 Inventorywidget.prototype.render_wear = function(party_member = -1)
 {
 	/* A zero+ value for party_member changes the active render target
@@ -89,6 +91,7 @@ Inventorywidget.prototype.render_wear = function(party_member = -1)
 	this.hud.inventory_dirty = false;
 };
 
+/* Display contents of the party member's backpack */
 Inventorywidget.prototype.render_backpack = function(party_member = -1)
 {
 	if (party_member > -1) { this.current_party_member = party_member; }
@@ -109,8 +112,6 @@ Inventorywidget.prototype.render_backpack = function(party_member = -1)
 	
 	this.hud.inventory_dirty = false;
 };
-
-
 
 /* Looks up the name of an item */
 Inventorywidget.prototype.get_item_name = function(who, what)
@@ -149,6 +150,7 @@ Inventorywidget.prototype.activate = function()
 	}
 };
 
+/* Toggles between the two inventory operating modes */
 Inventorywidget.prototype.toggle_mode = function() {
 	this.mode = this.mode === MODE_WEAR ? MODE_BACKPACK : MODE_WEAR;
 };
@@ -198,4 +200,4 @@ Inventorywidget.prototype.get_item_at_point = function(xx, yy) {
 	if (this.mode === MODE_BACKPACK) { current_item = current_party_member.backpack[backpack_slot]; }
 	
 	return current_item;
-}
+};

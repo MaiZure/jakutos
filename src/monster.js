@@ -25,24 +25,23 @@ function Monster(type, level, xx, yy)
 {
 	Actor.call(this);
 	
-	/* Set monster world location */
-	if (xx === 0) { 
-		this.map_x = Math.round(Math.random()*(WORLD_SIZE_X-4))+2; 
-	} else { 
-		this.map_x = xx;
-	}
+	/* Set monster world location as provided */
+	this.map_x = xx;
+	this.map_y = yy;
 	
-	if (yy === 0) {
-		this.map_y = Math.round(Math.random()*(WORLD_SIZE_Y-4))+2; 
-	} else { 
-		this.map_y = yy;
-	}
+	/* If either input is invalid, then randomize monster position */
+	if (xx === 0) { this.map_x = Math.round(Math.random()*(WORLD_SIZE_X-4))+2; }	
+	if (yy === 0) { this.map_y = Math.round(Math.random()*(WORLD_SIZE_Y-4))+2; }
 	
+	/* match a second set of location variable so that intended location and 
+	 * actual match on init */
 	this.next_x = this.map_x;
-	this.next_y = this.map_y;	
+	this.next_y = this.map_y;
+
+	/* Update the screen view based on logical world location set above */
 	this.update_pxpy();
 	
-	
+	/* random difficulty level if it was provided directly */
 	this.level = level == MLEVEL_RANDOM ? 
 		level+=Math.round(Math.random()*2+1) : 
 		level;
@@ -55,7 +54,7 @@ function Monster(type, level, xx, yy)
 		case MLEVEL_UNIQUE: this.color = COL_MOB_UNIQUE; break;
 	}	
 	
-	/* Monster Stats */
+	/* Default monster stats that should be overwritten by load_monster() */
 	this.name = "NoName";
 	this.avatar = "?";
 	this.max_hp = 1; this.current_hp = this.max_hp;
@@ -70,6 +69,7 @@ function Monster(type, level, xx, yy)
 	World.gridmob[this.map_y][this.map_x]=this;
 }
 
+/* Inheritance in JavaScript */
 Monster.prototype = Object.create(Actor.prototype);
 Monster.prototype.constructor = Monster;
 
@@ -104,9 +104,11 @@ Monster.prototype.execute_melee_attack = function(target)
 	
 	var i;
 	var damage = 0;
-	for (i=0; i<this.melee_die_num; i++)
-		damage+=Math.round(Math.random()*(this.melee_die_side-1)+1)+this.melee_die_bonus;
 	
+	/* For each die, roll a random side and add it to the damage */
+	damage = Math.roll_die(this.melee_die_num, this.melee_die_side, this.melee_die_bonus);
+	
+	/* If there is damage, apply it */
 	if (damage > 0) {
 		target.last_hit = this;
 		Party.damage_party(this, damage, -1, DAM_PHYSICAL);
@@ -134,27 +136,34 @@ Monster.prototype.execute_cast_attack = function()
 
 Monster.prototype.ai_action = function() 
 {
+	/* Find the distance to the player */
 	this.update_player_distance();
 	
+	/* If the player is nearby (20 steps), chase the player */
 	if (this.player_distance <= 20) { this.mode = AISTATE_CHASE; }
 	
+	/* if the monster isn't ready to move, skip turn */
 	if (!this.is_active()) { return false; }
 	if (this.stunned) { this.stunned--; return false; }
 	
+	/* If the monster is weak, then run */
 	if (this.current_hp/this.max_hp < 0.25) { this.mode = AISTATE_FLEE; }
 	
+	/* Perform the appropriate move depending on the AI state */
 	switch (this.mode) {
 		case AISTATE_WANDER: this.ai_move_random(); break;
 		case AISTATE_CHASE: this.ai_move_approach(); break;
 		case AISTATE_FLEE: this.ai_move_run(); break;
 	} 
 	
+	/* Do the actual move */
 	this.execute_move();
 };
 
 /* Monsters move in random directions */
 Monster.prototype.ai_move_random = function() 
 {	
+	/* Random movement in cardinal directions */
 	switch (Math.floor(Math.random()*4)) {
 		case 0: this.check_action(DIR_W); break;
 		case 1: this.check_action(DIR_N); break;
@@ -166,16 +175,22 @@ Monster.prototype.ai_move_random = function()
 /* Monsters generally move toward the player */
 Monster.prototype.ai_move_approach = function() 
 {	
+	/* Create an array to hold candidate movements */
 	var candidates = [DIR_NA];
 	
+	/* Add candidate movements based on player bearing */
 	if (this.map_x < Player.map_x) { candidates.push(DIR_E, DIR_NE, DIR_SE); }
 	if (this.map_x > Player.map_x) { candidates.push(DIR_W, DIR_NW, DIR_SW); }	
 	if (this.map_y < Player.map_y) { candidates.push(DIR_S, DIR_SE, DIR_SW); }
 	if (this.map_y > Player.map_y) { candidates.push(DIR_N, DIR_NW, DIR_NE); }
 	
+	/* Pick a random direction from the candidates */
 	var action = Math.floor(Math.random()*candidates.length);
+	
+	/* Check the validity of the action */
 	this.check_action(candidates[action]);
 	
+	/* Sometimes the monster will ranged attack rather than move */
 	if (action === DIR_NA && Math.random() < 0.5) { 
 		this.execute_cast_attack(); 
 	}
@@ -186,17 +201,23 @@ Monster.prototype.ai_move_approach = function()
 
 /* Monsters generally move away from the player */
 Monster.prototype.ai_move_run = function() 
-{	
+{
+	/* Create an array to hold candidate movements */
 	var candidates = [DIR_NA];
 	
+	/* Add candidate movements based on player bearing */
 	if (this.map_x < Player.map_x) { candidates.push(DIR_W, DIR_NW, DIR_SW); }
 	if (this.map_x > Player.map_x) { candidates.push(DIR_E, DIR_NE, DIR_SE); }	
 	if (this.map_y < Player.map_y) { candidates.push(DIR_N, DIR_NE, DIR_NW); }
 	if (this.map_y > Player.map_y) { candidates.push(DIR_S, DIR_SW, DIR_SE); }
 	
+	/* Pick a random direction from the candidates */
 	var action = Math.floor(Math.random()*candidates.length);
+	
+	/* Check the validity of the action */
 	this.check_action(candidates[action]);
 	
+	/* This might help the garbage collector */
 	candidates = null;
 };
 
@@ -249,7 +270,7 @@ Monster.prototype.load_monster = function(m, type, level)
 					m.avatar = "m";
 					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 0;
 					m.skill_fire_magic = 1;
-					m.spell_book.push(SPELL_FLAME_ARROW); // Cold Beam
+					m.spell_book.push(SPELL_FLAME_ARROW);
 					m.xp_reward = 24;
 				} break;
 				case MLEVEL_MEDIUM: 
@@ -307,5 +328,7 @@ Monster.prototype.load_monster = function(m, type, level)
 			}
 		} break;
 	}
+	
+	/* Match hitpoints to the polymorphed maximum stat */
 	m.current_hp = m.max_hp;
 };

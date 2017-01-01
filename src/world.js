@@ -34,6 +34,9 @@ function World()
 	this.gridmob=[[],[]];
 	this.gridobj=[[],[]];
 	
+	/* Buffer variable used during map edit */
+	this.last_height = 0
+	
 	this.spawn_points = [];
 
 	this.load_map();
@@ -341,6 +344,9 @@ World.prototype.lower_terrain = function(xx, yy) {
 	this.grid[yy][xx] = this.get_map_char(new_height);
 	this.gridcol[yy][xx] = this.get_map_color(new_height);
 	
+	/* Save last height change */
+	this.last_height = new_height;
+	
 	/* Force immediate redraw */
 	World.dirty = true;
 };
@@ -358,6 +364,27 @@ World.prototype.raise_terrain = function(xx, yy) {
 	if (new_height > 25) { return false; }
 	
 	/* Sets the new height and recalculates the character and color */
+	this.gridheight[yy][xx] = new_height;
+	this.grid[yy][xx] = this.get_map_char(new_height);
+	this.gridcol[yy][xx] = this.get_map_color(new_height);
+	
+	/* Save last height change */
+	this.last_height = new_height;
+	
+	/* Force immediate redraw */
+	World.dirty = true;
+};
+
+/* Set specific terrain height */
+World.prototype.set_terrain_height = function(xx, yy, new_height) {
+	
+	/* Need to be in edit mode */
+	if (!SETTING_EDIT_MODE) { return; }
+	
+	/* Checks the bounds. Can't go lower than sea level during edit */
+	if (new_height < 0) { return false; }
+	
+	/* Applies the new height */
 	this.gridheight[yy][xx] = new_height;
 	this.grid[yy][xx] = this.get_map_char(new_height);
 	this.gridcol[yy][xx] = this.get_map_color(new_height);
@@ -382,6 +409,7 @@ World.prototype.create_container = function(xx, yy, level) {
 	return container
 };
 
+/* Chest and other containers placed directly in the game world */
 World.prototype.init_static_containers = function(container_ds) {
 	
 	/* New Sporigal town area containers */
@@ -398,6 +426,7 @@ World.prototype.init_static_containers = function(container_ds) {
 	container_ds.push(this.create_container(1170, 688, 1));
 };
 
+/* Place monster spawn points directly in the game world */
 World.prototype.init_spawn_points = function() {
 	
 	/* NEW SPORIGAL */

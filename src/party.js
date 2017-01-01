@@ -237,4 +237,4 @@ Party.prototype.get_class = function(party_class)
 		case CLASS_CLERIC: return "Cleric"; return;
 		case CLASS_SORCERER: return "Sorcerer"; return;
 	}
-}
+};

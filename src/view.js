@@ -21,7 +21,8 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
- /* Constructor for the view */
+/* Constructor for the view. This manages the dimensions of screen usage
+ * to include the size of the world, zoom levels, and font */
 function View() 
 {
 	this.dirty = false;
@@ -96,10 +97,12 @@ View.prototype.render = function (world_context, actor_context)
 			}
 		}
 		
+		/* Scroll the map view when the player gets too close to the edge */
 		if (Player.map_x - this.view_grid_x < 5 || this.view_grid_x+this.view_grid_width-Player.map_x < 5) {
 				this.refocus(Player.map_x, Player.map_y);
-		}	
-			
+		}
+		
+		/* Scroll the map view when the player gets too close to the edge */	
 		if (Player.map_y - this.view_grid_y < 5 || this.view_grid_y+this.view_grid_height-Player.map_y < 5) {
 			this.refocus(Player.map_x, Player.map_y);
 		}
@@ -315,8 +318,10 @@ function set_canvas_size()
 	/* Set the three canvas dimensions on load and divisible by 8 (may help future calcs)*/
 	base_canvas.width = Math.round(window.innerWidth*0.96); base_canvas.width -= base_canvas.width % 8;
 	base_canvas.height = Math.round(window.innerHeight*0.96); base_canvas.height -= base_canvas.height % 8;
+	
 	animation_canvas.width = Math.round(window.innerWidth*0.96); animation_canvas.width -= animation_canvas.width % 8;
 	animation_canvas.height = Math.round(window.innerHeight*0.96); animation_canvas.height -= animation_canvas.height % 8;
+	
 	overlay_canvas.width = Math.round(window.innerWidth*0.96); overlay_canvas.width -= overlay_canvas.width % 8;
 	overlay_canvas.height = Math.round(window.innerHeight*0.96); overlay_canvas.height -= overlay_canvas.height % 8;
 }

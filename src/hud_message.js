@@ -21,11 +21,15 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
+/* This class controls the display of the gameplay log in the message box.
+ * It derives a base class for the message box. Messages are implemented 
+ * with a ring buffer as a standard array */
+ 
 function Message(hud_instance) {
 	MessageBase.call(this, hud_instance);
 	
 	var i;
-	this.hud = hud_instance; /* save parent pinter */
+	this.hud = hud_instance; /* save parent pointer */
 	
 	for (i=0; i<this.message_buffer_size; i++) {
 		this.message_log.push(""); 
@@ -44,6 +48,7 @@ Message.prototype.message_buffer_size = 64;
 Message.prototype.message_log = [];
 Message.prototype.hud = 0; /* parent pointer unknown during prototyping */
 
+/* Draw the message log to the window */
 Message.prototype.render = function() {
 	
 	if (!this.active) { return; }
@@ -63,6 +68,7 @@ Message.prototype.render = function() {
 	this.hud.message_dirty = false;
 };
 
+/* Add a message to the log */
 Message.prototype.add_message = function(msg) {
 	this.message_index--;
 	

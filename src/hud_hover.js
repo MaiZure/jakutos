@@ -21,12 +21,15 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
+/* The Hover class manages the single-line display bar typically used
+ * in mouse hover messages */
 function Hover(hud_instance) {
 	this.hud = hud_instance;
 	this.dirty = true;
 	this.message = "";
 }
 
+/* Draw the hover bar message */
 Hover.prototype.render = function() {
 	if (this.dirty) {
 		var font_size = Math.round(this.hud.hover_bar_height*0.80);
@@ -39,10 +42,12 @@ Hover.prototype.render = function() {
 	}
 };
 
+/* Clears the hover bar */
 Hover.prototype.clear_hover_bar = function() {
 	animation_context.clearRect(this.hud.hover_bar_x,this.hud.hover_bar_y,this.hud.hover_bar_width,this.hud.hover_bar_height);
 };
 
+/* Add a new message to the hover bar */
 Hover.prototype.add_message = function(msg) {
 	if (msg != this.message) { 
 		this.message = msg;	
@@ -52,6 +57,7 @@ Hover.prototype.add_message = function(msg) {
 	}
 };
 
+/* Find the monster under the mouse */
 Hover.prototype.get_hover_mob = function(xx, yy) {
 	var pos = World.gridmob[yy][xx];
 	if (pos) { return pos.name; }
@@ -59,6 +65,7 @@ Hover.prototype.get_hover_mob = function(xx, yy) {
 	return "";
 };
 
+/* Get the name of the player under the mouse */
 Hover.prototype.get_hover_avatar = function(party_member) {
 	return Party.member[party_member].name + " the " + Party.get_class(Party.member[party_member].job);
 };

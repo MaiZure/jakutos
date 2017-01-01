@@ -26,7 +26,7 @@ const WORLD_SIZE_X = 252*5;
 const WORLD_SIZE_Y = 252*3;
 const BASE_FONT_SIZE = 24;
 const VERSION_MAJOR = 0;
-const VERSION_MINOR = 3;
+const VERSION_MINOR = 4;
 
 /* Game Settings */
 SETTING_ANIMATE = false;
@@ -169,8 +169,10 @@ const KB_W = 87;
 const KB_X = 88;
 const KB_MINUS = 189;
 const KB_PLUS = 187;
+const KB_FSLASH = 191;
 const KB_TILDE = 192;
 const KB_LBRACKET = 219;
+const KB_BSLASH = 220;
 const KB_RBRACKET = 221;
 
 /* Direction Enum */

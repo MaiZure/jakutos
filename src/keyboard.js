@@ -31,7 +31,9 @@ function doKeyDown(event)
 	/* In lieu of a formal game loop (async-type state-machine), I'll trigger updates based on all key presses
 	   This should eventually be abstracted by an 'Engine' object that separates listening and execution of all world objects
 	   I'll deal with this when I've made enough '2% rules' that justify separate execution order buckets */
-	
+	   
+	/* Separte the events in the active and passive.
+	 * Active events pass game time and cause monster reponse */
 	handle_active_events(event.keyCode);
 	handle_passive_events(event.keyCode);	
 	
@@ -58,6 +60,7 @@ function handle_active_events(key) {
 		case KB_L: console.log(Player.map_x, Player.map_y); break;
 		case KB_TILDE: SETTING_EDIT_MODE = !SETTING_EDIT_MODE; break;
 		case KB_LBRACKET: World.lower_terrain(Player.map_x, Player.map_y); break;
+		case KB_BSLASH: World.set_terrain_height(Player.map_x, Player.map_y, World.last_height); break;
 		case KB_RBRACKET: World.raise_terrain(Player.map_x, Player.map_y); break;
 		default: return false; break;
 	}
@@ -79,6 +82,7 @@ function handle_active_events(key) {
 	}
 }
 
+/* Passive events that don't pass game time */
 function handle_passive_events(key) {
 	
 	switch (key) {

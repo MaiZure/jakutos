@@ -22,7 +22,7 @@
  */
  
 /* This is the logical entitity for containers. It stores the contents
- * and other metadata */
+ * (equipment and items) and other metadata */
  
 function Container()
 {
@@ -37,6 +37,7 @@ function Container()
 	this.contents = [];
 }
 
+/* Draw the contents of the container */
 Container.prototype.render = function(target_context)
 {
 	/* Cull outside view port*/
@@ -56,6 +57,7 @@ Container.prototype.render = function(target_context)
 	this.dirty = false;
 };
 
+/* Determine if the container is visible */
 Container.prototype.is_visible = function() 
 {
 	if (this.map_x < View.view_grid_x) {
@@ -83,24 +85,29 @@ Container.prototype.update_pxpy = function()
 	this.py = current_view_grid_y*View.grid_height;
 };
 
+/* Remove provided item from the container */
 Container.prototype.remove_from_container = function(item) { 
 	var index = this.contents.indexOf(item);
 	if (index !== -1) { this.contents.splice(index,1); }
 	Hud.container_dirty = true;
 };
 
+/* Fill the container with random items */
 Container.prototype.fill_container = function() {
 	var i;
 	for (i=0; i<this.level+1; i++) { this.contents.push(new Item()); }
 	for (i=0; i<this.level*this.level; i++) { this.gold += Math.round(Math.random()*500);}
 };
 
+/* Changes the location of the container to provided map coordinates */
 Container.prototype.set_position = function(xx, yy) {
 	this.map_x = xx;
 	this.map_y = yy;
 	this.update_pxpy();
 };
 
+/* Set the 'level' of the container. The level determines the
+ * quality of the items generated */
 Container.prototype.set_level = function(level) {
 	this.level = level;
-}
+};

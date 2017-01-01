@@ -43,14 +43,18 @@ Monsterspawner.prototype.spawn_monsters = function() {
 	for (i=0; i<5; i++) {
 		/* Roll a die between 1 and 100 */
 		random = Math.round(Math.random()*100);
+		
 		/* Assume we we're creating the highest level monster */
 		level = MLEVEL_HARD;
+		
 		/* count down the probability ladder with our random roll */
 		if (random <= this.easy_dist + this.medium_dist) { level = MLEVEL_MEDIUM; }
 		if (random <= this.easy_dist) { level = MLEVEL_EASY; }
+		
 		/* Choose spots around the spawner */
 		xrand = Math.round(Math.random()*2)-1;
-		yrand = Math.round(Math.random()*2)-1
+		yrand = Math.round(Math.random()*2)-1;
+		
 		/* Spawn the monster */;
 		this.spawn_single_monster(this.type, level, this.map_x + xrand, this.map_y + yrand);
 	}
@@ -61,6 +65,8 @@ Monsterspawner.prototype.spawn_single_monster = function(type, level, xx, yy) {
 	/* Exclude invalid spaces and spaces that monsters already exist */
 	if (World.gridheight[yy][xx] < 1) { return false; }
 	if (World.gridmob[yy][xx]) { return false; }
+	
+	/* Create new monster and add it to the tracking array */
 	var monster = new Monster(type, level, xx, yy);
 	Monsters.push(monster);
 	return true;

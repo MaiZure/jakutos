@@ -105,7 +105,7 @@ Inventory.prototype.remove_by_slot = function(slot)
 
 	/* Remove associated modifiers */
 	this.remove_modifiers(item);
-}
+};
 
 /* Removes an item by scanning all wear slots and puts it in the backpack */
 Inventory.prototype.remove_by_item = function(item) 
@@ -119,7 +119,7 @@ Inventory.prototype.remove_by_item = function(item)
 			this.remove_modifiers(item);
 		}
 	}
-}
+};
 
 /* Applies base stats to the player from an item */
 Inventory.prototype.apply_stats = function(item) 
@@ -195,7 +195,7 @@ Inventory.prototype.remove_modifiers = function(item)
 		amount = mod[1];
 		this.party_member.resist_mods[resist] -= amount;
 	}
-}
+};
 
 /* Add statistic modifiers from the party member  (COMBINE THIS WITH THE REMOVE PROCEDURE!)*/
 Inventory.prototype.apply_modifiers = function(item) 
@@ -231,4 +231,4 @@ Inventory.prototype.remove_from_backpack = function(item) {
 	var index = this.backpack.indexOf(item);
 	if (index !== -1) { this.backpack.splice(index,1); }
 	Hud.inventory_dirty = true;
-}
+};
