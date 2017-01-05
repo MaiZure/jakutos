@@ -21,106 +21,103 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
  
-
+/* The world object contains abstract data about the world. This is
+ * essentially a singleton object that provides organization and access
+ * for other objects. World generation will likely go here if we decide to
+ * procedurally generate dungeons.
+ */
+ 
 /* Constructor for the region (map) */
 function World()
 {
 	var i;
 	
+	/* These are all the data arrays indexed by world location.
+	 * The default world is 1260x756 */
 	this.dirty = true;
-	this.grid = [[],[]]
-	this.gridcol = [[],[]];
-	this.gridheight = [[],[]];
-	this.gridmob=[[],[]];
-	this.gridobj=[[],[]];
+	this.grid = [[],[]]        /* Holds the 'symbol' for the world tile */
+	this.gridcol = [[],[]];    /* Holds the color assigned to the tile */
+	this.gridheight = [[],[]]; /* Holds the height value for the tile */
+	this.gridmob=[[],[]];      /* Holds direct object refernces to mobs */
+	this.gridobj=[[],[]];      /* Holds object references like chests/doors */
+	
+	/* Contains spawn points, which generate random monsters from classes */
+	this.spawn_points = [];
 	
 	/* Buffer variable used during map edit */
-	this.last_height = 0
-	
-	this.spawn_points = [];
+	this.last_height = 0;
 
+	/* Procedure to pull populate the arrays above from the world data files */
 	this.load_map();
 	
+	/* Procedure to load the spawn points */
 	this.init_spawn_points();
 	
 }
 
-/* Renders the visible portion of the world */
-World.prototype.render = function(target_context)
+/* Renders the visible portion of the world. Although this function allows 
+ * us to specify a context, by design this should be always base_context */
+World.prototype.render = function(target_context = base_context)
 {
 	var i,j, ch, col;
-	var start_grid_x, start_grid_y, end_grid_x, end_grid_y;
 	var px, py;
 	
+	/* Aliases to cut down inline space */
+	var start_grid_x = View.view_grid_x;
+	var start_grid_y = View.view_grid_y;
+	var end_grid_x = Math.min(View.view_grid_x+View.view_grid_width,WORLD_SIZE_X);
+	var end_grid_y = Math.min(View.view_grid_y+View.view_grid_height,WORLD_SIZE_Y);
+	
+	/* Set drawing mode prior to rendering the world */
 	target_context.font = View.font_size+" clacon";
 	target_context.textAlign = "left";
 	
-	start_grid_x = View.view_grid_x;
-	start_grid_y = View.view_grid_y;
-	end_grid_x = Math.min(View.view_grid_x+View.view_grid_width,WORLD_SIZE_X);
-	end_grid_y = Math.min(View.view_grid_y+View.view_grid_height,WORLD_SIZE_Y);
-	
-	
+	/* Redraw the world row-major */
 	for (j=start_grid_y; j<end_grid_y; j++) {
 		for (i=start_grid_x; i<end_grid_x; i++) {
+			
+			/* Calculate exact pixel position */
 			px = (i-View.view_grid_x)*View.grid_width;
 			py = (j-View.view_grid_y)*View.grid_height+View.grid_height;
+			/* Push the color and the character to the context */
 			target_context.fillStyle = this.gridcol[j][i];
 			target_context.fillText(this.grid[j][i],px,py);
 		}
 	}
 	
+	/* The world has been updated, remove dirty flag */
 	this.dirty = false;
 };
 
-/* Checks if the target tile is movable
-   returns true or false */
+/* Checks if the target tile is movable. returns true or false */
 World.prototype.is_clear = function(xx, yy)
 {
+	/* This tile isn't even on the map */
 	if (xx < 0) { return false; }
 	if (yy < 0) { return false; }
 	if (xx >= WORLD_SIZE_X) { return false; }
 	if (yy >= WORLD_SIZE_Y) { return false; }
+	
+	/* If the height is negative, then this is a special square (not movable
+	 * For example: A door, dungeon entrance, or wall. Eventually fly
+	 * will change things */
 	if (this.gridheight[yy][xx] >= 0) { return true; } else { return false; }
 };
 
 /* Tests it's possible to move to the target based on height different
-   returns true or false */
+ * returns true or false with default to false. */
 World.prototype.is_movable = function(from_x, from_y, to_x, to_y)
 {
+	/* Determine the height difference between tiles */
 	var diff = this.gridheight[to_y][to_x] - this.gridheight[from_y][from_x];
 	
+	/* Future code for Flying/Jumping checks */
+	
+	/* Small differences will allow movement */
 	if (diff < 3) { return true; }
 	
+	/* If we make it this far, then we we probably can't move there. */
 	return false;
-};
-
-/* Randomly generates a map - unused for now */
-World.prototype.build_map = function()
-{
-	for (i=0; i<WORLD_SIZE_X; i++) {
-		this.grid[i] = [];
-		this.gridcol[i] = [];
-		this.gridheight[i]= [];
-		this.gridmob[i] = [];
-		this.gridobj[i] = [];
-	}
-	
-	for (j=0; j<WORLD_SIZE_Y; j++) {
-		for (i=0; i<WORLD_SIZE_X; i++) {	
-			if (Math.random() > 0.9) {
-				this.grid[j][i] = 2; 
-			} else {
-				this.grid[j][i] = 1;
-			}
-			
-			switch (this.grid[j][i]) {
-				case 0: this.gridcol[j][i] = random_water_color(); break;
-				case 1: this.gridcol[j][i] = GRASSLAND ? random_grass_color() : random_dirt_color(); break;
-				case 2: this.gridcol[j][i] = random_mountain_color(); break;
-			}
-		}
-	}
 };
 
 /* Loads the map based on the const strings WORLD_MAP_* */
@@ -134,6 +131,9 @@ World.prototype.load_map = function load_map()
 	var region_size = 252;
 	save_data = localStorage;
 	
+	/* This headache is to cover the face that each region is a subspace of the world
+	 * We have to determine the starting coordinates before unrolling in to the flat map 
+	 * Source the map file and find the top-left (x, y) coordinates */
 	source_map[0] = WORLD_MAP_1; target_base_x[0] = 0; target_base_y[0]  = 0;
 	source_map[1] = WORLD_MAP_2; target_base_x[1] = region_size; target_base_y[1]  = 0;
 	source_map[2] = WORLD_MAP_3; target_base_x[2] = region_size*2; target_base_y[2]  = 0;
@@ -150,6 +150,7 @@ World.prototype.load_map = function load_map()
 	source_map[13] = WORLD_MAP_14; target_base_x[13] = region_size*3; target_base_y[13]  = region_size*2;
 	source_map[14] = WORLD_MAP_15; target_base_x[14] = region_size*4; target_base_y[14]  = region_size*2;
 	
+	/* Make each column another list to simulate 2D arrays */
 	for (i=0; i<WORLD_SIZE_X; i++) {
 		this.grid[i] = [];
 		this.gridcol[i] = [];
@@ -158,6 +159,7 @@ World.prototype.load_map = function load_map()
 		this.gridobj[i] = [];
 	}
 	
+	/* Outer is the region, middle is the row, inner is the column */
 	for (k=0; k<15; k++) {
 		for (j=0; j<region_size; j++) {
 			for (i=0; i<region_size; i++) {
@@ -241,7 +243,8 @@ World.prototype.save_map = function()
 	var line = ""
 	var ch;
 	
-	
+	/* Determine the (x,y) of the current region 
+	 * The world is 5x3 in terms of region layout */
 	target_base_x = region_size * (region_num % 5); 
 	target_base_y  = region_size * Math.floor(region_num/5);
 	
@@ -257,9 +260,12 @@ World.prototype.save_map = function()
 				default: ch = String.fromCharCode(ch+64); break;
 			}
 
-			line += ch
+			line += ch;
 		}
 	}
+	
+	/* This 'saving' routine is just a console log dump that I paste in to the 
+	 * World contant */
 	console.log(line);
 	console.log("WORLD_MAP_"+(region_num+1));
 };
@@ -406,7 +412,7 @@ World.prototype.create_container = function(xx, yy, level) {
 	container.set_level(level);
 	container.fill_container();
 	this.gridobj[yy][xx] = container;
-	return container
+	return container;
 };
 
 /* Chest and other containers placed directly in the game world */

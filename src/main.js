@@ -22,8 +22,7 @@
  */
 
 /* Kick off the game when the window loads 
- * Other events are added after init 
- */
+ * Other events are added after init */
 window.addEventListener("load", gameInit, false);
  
 /* Grab DOM objects */
@@ -38,4 +37,3 @@ overlay_context = overlay_canvas.getContext("2d");
 
 /* Sizes the drawing canvas - function located in view.js */
 set_canvas_size();
-

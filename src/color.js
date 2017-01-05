@@ -21,6 +21,10 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+/* Everything here is global. There may be some value to moving the functions
+ * to a separate namespace if this grows too large */
+ 
+/* RGB color constants that we'll use throughout the game */
 const COL_MAP_BUILDING = 'rgb(170,150,70)';
 const COL_MAP_DOOR = 'rgb(220,220,120)';
 const COL_MAP_STAIRS = 'rgb(220,60,60)';
@@ -39,6 +43,7 @@ const COL_FLAME_ARROW = "rgb(240,96,32)";
 const COL_SPIRIT_ARROW = "rgb(32,240,32)";
 const COL_MIND_BLAST = "rgb(240,160,32)";
  
+/* Just to be interesting, we'll randomize some of the colors */
 function random_grass_color()
 {
 	var r,g,b;
@@ -72,19 +77,5 @@ function random_mountain_color()
 	r = Math.round(Math.random()*30)+160;
 	g = Math.round(Math.random()*10)+r;
 	b = Math.round(Math.random()*30)+170;
-	return "rgb("+r+","+g+","+b+")";
-}
-
-function height_to_color(height)
-{
-	var r,g,b;
-	if (height == 0) return COL_MAP_WATER
-	if (height == 1) return COL_MAP_DIRT
-	else
-	{
-		r = Math.min(height*10,175);
-		g = Math.min(100+Math.round(height*5),185);
-		b = Math.min(20+Math.round(height*10),195);
-	}
 	return "rgb("+r+","+g+","+b+")";
 }

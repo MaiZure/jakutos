@@ -21,6 +21,12 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+/* gameInit() is the first function called, which kicks off the game start. This
+ * happens from main.js when the browser window finishes loading the DOM elements.
+ * Note that everything here has global scope within the browser window. I'll keep
+ * this scope as clear as practically possible and try to rely on object namespaces
+ * and interfaces. This is an ongoing evolution.
+ */
 function gameInit() 
 {
 	var i;
@@ -28,7 +34,8 @@ function gameInit()
 	/* from Math.js source */
 	add_math_utilities();
 	
-	/* Capture key presses in the document and mouse movements on the highest canvas */
+	/* Capture key presses in the document and mouse movements on the highest canvas.
+	 * These listeners are the input entry points in to our asynchronous "engine" */
 	document.addEventListener("keydown", doKeyDown, false);
 	overlay_canvas.addEventListener("mousemove", doMouseMove, false);
 	overlay_canvas.addEventListener("mousedown", doMouseClick, false);
@@ -37,7 +44,7 @@ function gameInit()
 	/* Make the game-level objects */
 	View = new View();
 	World = new World();
-	Player = create_player();
+	Player = new Player();
 	Party = new Party();
 	
 	/* Make game-level data accessor arrays */
@@ -59,24 +66,11 @@ function gameInit()
 	/* Create the minimap */
 	Minimap = new Minimap();
 	
+	/* Calculate the initial view area and perform the first render */
 	View.refocus(Player.map_x, Player.map_y, true);
 	View.render(base_context,animation_context);
 	
 	/* Can't add this listener until View has been instantiated */
 	window.addEventListener("resize", View.resizeWindow, false);
 	
-}
-
-function create_player() 
-{
-	var actor = new Player();
-	actor.is_player = true;
-	actor.map_x = 1096;
-	actor.map_y = 671;
-	actor.next_x = 1096;
-	actor.next_y = 671;
-	
-	actor.update_pxpy();
-	
-	return actor;
 }

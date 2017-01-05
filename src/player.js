@@ -32,6 +32,14 @@ function Player()
 	this.die_num = 2;
 	this.die_side = 4;
 	this.die_bonus = 1;
+	
+	this.is_player = true;
+	this.map_x = 1096;
+	this.map_y = 671;
+	this.next_x = 1096;
+	this.next_y = 671;
+	
+	this.update_pxpy();
 }
 
 Player.prototype = Object.create(Actor.prototype);

@@ -6,6 +6,8 @@ current version: **0.4**
 The current master branch is playable directly on [GitHub Pages][reference-id-for-github-pages]
 [reference-id-for-github-pages]:http://maizure.github.io/jakutos/
 
+**Future:** From January 2017 to early April 2017, I'll be tasked on a closed-source C project with a publishing quality ~5000 LOC deliverable. This means that my brain will be conceptually very far away from this project. But this isn't the end! While I won't be adding any new systems or gameplay elements, I will be refactoring and commenting the code on the master branch so I can pick this up in the spring. Keep an eye on the v0.5 branch for any subtantial changed between now and then. The roadmap below is still the goal.
+
 ##Implemented controls are as follows:  
 Arrows for 4-direction movement  
 M - Minimap (includes the whole MM6 main world)  

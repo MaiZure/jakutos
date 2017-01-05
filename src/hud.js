@@ -21,6 +21,12 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+/* The HUD has the most moving parts and unfortunately has to be 
+ * highly coupled by design. Most of the core functionality lies 
+ * in the widgets. This 'Manager' object maintains references to
+ * the widgets. There's probably a better pattern that we could
+ * eventually put in place here.
+ */ 
 function Hud() 
 {
 	/* These variables need to be deferred until instantiation */
