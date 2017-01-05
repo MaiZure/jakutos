@@ -20,6 +20,8 @@
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
+
+/* Various spell related functions. */ 
  
 /* Takes a spell and actor (monster or player) and returns a damage */
 function get_spell_damage(spell, caster)
@@ -66,62 +68,49 @@ function get_spell_damage(spell, caster)
 	return damage;
 }
 
+/* Take a spell and a caster and return a cost */
 function get_spell_cost(spell, caster)
-{
 {
 	var skill_level, cost;
 	
-	cost = 0;
-	
 	switch (spell) {
-		case SPELL_FLAME_ARROW: {
-			cost = 2;
-		}; break;
-		case SPELL_MAGIC_ARROW: {
-			cost = 2;
-		}; break;
-		case SPELL_MIND_BLAST: {
-			cost = 3;
-		}; break;
-		case SPELL_STATIC_CHARGE: {
-			cost = 2;
-		}; break;
-		case SPELL_COLD_BEAM: {
-			cost = 2;
-		}; break;
-		case SPELL_SPIRIT_ARROW: {
-			cost = 1;
-		}; break;
+		case SPELL_FLAME_ARROW:   { cost = 2; }; break;
+		case SPELL_MAGIC_ARROW:   { cost = 2; }; break;
+		case SPELL_MIND_BLAST:    { cost = 3; }; break;
+		case SPELL_STATIC_CHARGE: { cost = 2; }; break;
+		case SPELL_COLD_BEAM:     { cost = 2; }; break;
+		case SPELL_SPIRIT_ARROW:  { cost = 1; }; break;
+		default: { cost = 0; }; break;
 	}
 	
-	return cost;
-}	
+	return cost;	
 }
 
+/* Create the projectile for a certain spell */
 function get_spell_shot(spell, caster, target = 0)
 {
-	var source_gx, source_gy;
-	var source_px, source_py;
-	var target_px, target_py;
-	var target_direction;
 	
-	source_gx = caster.map_x;
-	source_gy = caster.map_y;
-	source_px = View.get_pxc(caster.map_x);
-	source_py = View.get_pyc(caster.map_y);
+	/* Where is the caster located */
+	var source_gx = caster.map_x;
+	var source_gy = caster.map_y;
+	var source_px = View.get_pxc(caster.map_x);
+	var source_py = View.get_pyc(caster.map_y);
 	
+	/* If there is a valid monster target on the screen, aim for it */
 	if (target) {
-		target_px = View.get_pxc(target.map_x);
-		target_py = View.get_pyc(target.map_y);
+		var target_px = View.get_pxc(target.map_x);
+		var target_py = View.get_pyc(target.map_y);
+	
+	/* Otherwise shoot towards the mouse pointer */
+	} else { 
+		var target_px = mouse_x;
+		var target_py = mouse_y;
 	}
 	
-	if (!target) {
-		target_px = mouse_x;
-		target_py = mouse_y;
-	}
-	
+	/* Which way is our new projectile going to go? */
 	target_direction = Math.point_direction(source_px, source_py, target_px, target_py);
 	
+	/* Instantiate the projectile using the above calculations */
 	switch (spell) {
 		case SPELL_FLAME_ARROW: {
 			return new Flamearrow(source_gx, source_gy, target_direction);

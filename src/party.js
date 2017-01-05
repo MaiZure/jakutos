@@ -20,7 +20,10 @@
  *
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
- 
+
+/* This object holds the bulk of the party information. It is distinct from the
+ * Player object (which is simply the world interaction avatar). Each party member
+ * is a child object of Party */
 function Party() 
 {
 	this.active_partymember = 0;
@@ -32,42 +35,50 @@ function Party()
 		this.member[i] = new Partymember(this,i);
 	}
 	
-	/* Temporary constructor for a default party */
+	/* The following is a temporary constructor for a default party */
+	/* Default names */
 	this.member[0].name = "Cyan";
 	this.member[1].name = "Cecil";
 	this.member[2].name = "Celes";
 	this.member[3].name = "Rydia";
 	
+	/* Default classes */
 	this.member[0].job = CLASS_KNIGHT; 
 	this.member[1].job = CLASS_PALADIN; 
 	this.member[2].job = CLASS_CLERIC; 
 	this.member[3].job = CLASS_SORCERER; 
 	
+	/* Default hitpoints */
 	this.member[0].max_hp = 30; this.member[0].current_hp = this.member[0].max_hp;
 	this.member[1].max_hp = 25; this.member[1].current_hp = this.member[1].max_hp;
 	this.member[2].max_hp = 15; this.member[2].current_hp = this.member[2].max_hp;
 	this.member[3].max_hp = 12; this.member[3].current_hp = this.member[3].max_hp;
 	
+	/* Default magic points */
 	this.member[0].max_mp = 0; this.member[0].current_mp = this.member[0].max_mp;
 	this.member[1].max_mp = 6; this.member[1].current_mp = this.member[1].max_mp;
 	this.member[2].max_mp = 12; this.member[2].current_mp = this.member[2].max_mp;
 	this.member[3].max_mp = 15; this.member[3].current_mp = this.member[3].max_mp;
 	
+	/* Default action delays */
 	this.member[0].base_delay = 9; this.member[0].current_delay = 0;
 	this.member[1].base_delay = 10; this.member[1].current_delay = 0;
 	this.member[2].base_delay = 11; this.member[2].current_delay = 0;
 	this.member[3].base_delay = 12; this.member[3].current_delay = 0;
 	
+	/* Defauly melee attack numbers */
 	this.member[0].melee_die_num = 2; this.member[0].melee_die_side = 4; this.member[0].melee_die_bonus = 1;
 	this.member[1].melee_die_num = 2; this.member[1].melee_die_side = 3; this.member[1].melee_die_bonus = 1;
 	this.member[2].melee_die_num = 1; this.member[2].melee_die_side = 3; this.member[2].melee_die_bonus = 0;
 	this.member[3].melee_die_num = 1; this.member[3].melee_die_side = 2; this.member[3].melee_die_bonus = 0;
 	
+	/* Default ranged attack numbers */
 	this.member[0].ranged_die_num = 1; this.member[0].ranged_die_side = 3; this.member[0].ranged_die_bonus = 1;
 	this.member[1].ranged_die_num = 1; this.member[1].ranged_die_side = 3; this.member[1].ranged_die_bonus = 1;
 	this.member[2].ranged_die_num = 1; this.member[2].ranged_die_side = 3; this.member[2].ranged_die_bonus = 1;
 	this.member[3].ranged_die_num = 1; this.member[3].ranged_die_side = 3; this.member[3].ranged_die_bonus = 1;
 	
+	/* Default quick spell assignments */
 	this.member[0].quick_spell = SPELL_NONE;
 	this.member[1].quick_spell = SPELL_SPIRIT_ARROW;
 	this.member[2].quick_spell = SPELL_MIND_BLAST;
@@ -91,6 +102,7 @@ Party.prototype.is_ready = function(party_member)
 /* Check if the entire party is incapacitated */
 Party.prototype.is_party_dead = function() 
 {
+	/* Check each individual member */
 	if (this.is_incapacitated(0) && this.is_incapacitated(1) && this.is_incapacitated(2) && this.is_incapacitated(3)) {
 		return true; 
 	}
@@ -113,33 +125,41 @@ Party.prototype.add_xp = function(xp_amount)
 /* Interface to damage party members */
 Party.prototype.damage_party = function(attacker, damage_amount, target = -1, damage_type = DAM_PHYSICAL) 
 {
+	/* Don't bother if everyone is dead */
 	if (this.is_party_dead()) { return false; }
 	
 	/* Pick a party member at random */
 	if (target == -1) {
 		target = Math.floor(Math.random()*3.99);
 		
+		/* Keep trying until we find someone that's alive */
 		while (this.is_incapacitated(target)) {
 			target = Math.floor(Math.random()*3.99); 
 		}
 	}
 	
+	/* Apply the damage - Eventually this will get complicated */
 	this.member[target].current_hp -= damage_amount;
 	
+	/* Set unconcious */
 	if (this.member[target].current_hp <= 0) { 
 		this.member[target].status |= STATUS_UNCONCIOUS; 
 	}
 		
+	/* Set dead */
 	if (this.member[target].current_hp <= -25) {
 		this.member[target].status |= STATUS_DEAD; 
 	}
 		
+	/* Set eradicated */
 	if (this.member[target].current_hp <= -100) {
 		this.member[target].status |= STATUS_ERADICATED; 
 	}
 	
+	/* Updated the widget for the party member */
 	Hud.partywidget[target].dirty = true;
 	
+	/* If there is a definite attacker, indicate what happened */
 	if (attacker != -1) { 
 		Hud.message.add_message(attacker.name + Player.get_damage_action(damage_type) + this.member[target].name + " for " + damage_amount); 
 	}
@@ -223,6 +243,7 @@ Party.prototype.fall_damage = function (height_difference)
 		this.damage_party(-1, damage, i);
 	}
 	
+	/* Hud message indicator */
 	Hud.message.add_message("Waaaa...!");
 };
 

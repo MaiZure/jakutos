@@ -237,12 +237,9 @@ View.prototype.toggle_animate = function()
 View.prototype.toggle_minimap = function() 
 {
 	Minimap.active = !Minimap.active;
-	if (Minimap.active) {
-		Minimap.minimap_world_dirty = true;
-		Minimap.minimap_viewbox_dirty = true;
-	} else {
-		View.clear_context(overlay_context);
-	}
+	
+	/* We just turned off the Minimap - so clear the overlay */
+	if (!Minimap.active) { View.clear_context(overlay_context); }
 	
 	World.dirty = true;
 };

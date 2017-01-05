@@ -31,8 +31,11 @@ last_mouse_gy = 0;
 
 function doMouseMove(event) 
 {
+	/* Pixel location with respect to the canvas */
 	mouse_x = event.clientX;
 	mouse_y = event.clientY;
+	
+	/* World grid location */
 	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;
 	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y;
 	

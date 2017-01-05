@@ -32,7 +32,7 @@ function doKeyDown(event)
 	   This should eventually be abstracted by an 'Engine' object that separates listening and execution of all world objects
 	   I'll deal with this when I've made enough '2% rules' that justify separate execution order buckets */
 	   
-	/* Separte the events in the active and passive.
+	/* Separated the events in the active and passive.
 	 * Active events pass game time and cause monster reponse */
 	handle_active_events(event.keyCode);
 	handle_passive_events(event.keyCode);	

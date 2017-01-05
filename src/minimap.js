@@ -21,40 +21,41 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
+/* Minimap functions are all hanging off global - that needs to change.
+ * There is probably something to gain by making a base object for a 
+ * world popup overlay that the minimap and other future popups will
+ * derive */
+ 
 
+ /* The (future) constructor for the minimap. All these functions need to be
+  * 'objectified' in order to keep the global namespace clean. I've deferred
+  * doing this simply because this is a singleton and there isn't much to gain*/
 function Minimap() 
 {
 	this.active = false;
-	this.minimap_world_dirty = true;
-	this.minimap_viewbox_dirty = true;
+	
+	/* We're actually only drawing every other square to save space */
 	this.minimap_width = WORLD_SIZE_X/2;
 	this.minimap_height = WORLD_SIZE_Y/2;
 	
 	this.base_x = 0;
 	this.base_y = 0;
 	
-	this.render = renderMinimap;
-	this.draw = drawMinimap;
+	/* Render actually calculates the minimap image
+	 * Draw simply places that image on the screen */
+	this.render = render_minimap;
+	this.draw = draw_minimap;
 	this.clear_minimap = clear_minimap;
-	this._renderTerrain = renderTerrain;
-	this._renderViewbox = renderViewbox;
 	
-	this._renderTerrain(overlay_context);
+	/* When the Minimap is initialized at game start, we draw the whole map once and
+	 * save it as an image before clearing the drawing */
+	this.render(overlay_context);
 	this.minimap_image = overlay_context.getImageData(0,0,WORLD_SIZE_X,WORLD_SIZE_Y);
 	
 	View.clear_context(overlay_context);
 }
 
-function renderMinimap() 
-{
-	if (!this.active) { return; }
-	
-	if (this.minimap_world_dirty) { this._renderTerrain(base_context); }
-	if (this.minimap_viewbox_dirty) { this._renderViewbox(animation_context); }
-	
-}
-
-function renderTerrain(target_context) 
+function render_minimap(target_context) 
 {
 	var i,j, px, py;
 	for (j=0; j<WORLD_SIZE_Y; j+=2) {
@@ -76,56 +77,42 @@ function renderTerrain(target_context)
 				case 7: target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
 				default: target_context.fillStyle = COL_MAP_HIGH_MOUNTAIN; break;
 			}
-			
+			/* Draw a 1x1 square (aka. a pixel) */
 			target_context.fillRect(px/2,py/2,1,1);
 		}
 	}
-	
-	this.minimap_world_dirty = false;
 }
 
-function renderViewbox(target_context) 
+function draw_minimap(target_context) 
 {
-	clear_minimap(target_context);
-	
-	px = worldCanvas.width-WORLD_SIZE_X+View.view_grid_x+1;
-	py = worldCanvas.height-WORLD_SIZE_Y+View.view_grid_y+1;
-	target_context.strokeStyle = "rgb(255,255,0)";
-	target_context.beginPath();
-	target_context.lineTo(px,py);
-	target_context.lineTo(px+View.view_grid_width,py);
-	target_context.lineTo(px+View.view_grid_width,py+View.view_grid_height);
-	target_context.lineTo(px,py+View.view_grid_height);
-	target_context.lineTo(px,py);
-	target_context.stroke();
-
-	this.minimap_viewbox_dirty = false;
-}
-
-function drawMinimap(target_context) 
-{
+	/* Calculate drawing locations */
 	var screen_width = target_context.canvas.width;
 	var screen_height = target_context.canvas.height;
 	var player_x = Player.map_x;
 	var player_y = Player.map_y;
 	var minimap_x = (View.view_px_width-this.minimap_width)/2;
 	var minimap_y = (View.view_px_height-this.minimap_height)/2;
-
+	
+	/* Draw our saved minimap centered in the world view */
 	target_context.putImageData(this.minimap_image, minimap_x,minimap_y);
 	
+	/* Draw a red square where the player is currently located */
 	target_context.fillStyle = "rgb(255,0,0)";
 	target_context.fillRect(minimap_x+player_x/2-5, minimap_y+player_y/2-5, 10, 10);	
 	
+	/* Draw the map frame shadow */
 	target_context.lineWidth = 4;
 	target_context.strokeStyle = "rgb(0,0,0)";
     target_context.strokeRect(minimap_x, minimap_y, this.minimap_width, this.minimap_height);
 	
+	/* Draw the map frame */
 	target_context.lineWidth = 3;
 	target_context.strokeStyle = "rgb(180,60,60)";
     target_context.strokeRect(minimap_x, minimap_y, this.minimap_width, this.minimap_height);
 	
 }
 
+/* Remove the minimap */
 function clear_minimap(target_context) 
 {
 	var xx = target_context.canvas.width-WORLD_SIZE_X;
