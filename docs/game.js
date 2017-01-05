@@ -480,6 +480,10 @@ Mindblast.prototype.render = function()
     overlay_context.stroke();
 };
 
+/* Everything here is global. There may be some value to moving the functions
+ * to a separate namespace if this grows too large */
+ 
+/* RGB color constants that we'll use throughout the game */
 const COL_MAP_BUILDING = 'rgb(170,150,70)';
 const COL_MAP_DOOR = 'rgb(220,220,120)';
 const COL_MAP_STAIRS = 'rgb(220,60,60)';
@@ -498,6 +502,7 @@ const COL_FLAME_ARROW = "rgb(240,96,32)";
 const COL_SPIRIT_ARROW = "rgb(32,240,32)";
 const COL_MIND_BLAST = "rgb(240,160,32)";
  
+/* Just to be interesting, we'll randomize some of the colors */
 function random_grass_color()
 {
 	var r,g,b;
@@ -531,20 +536,6 @@ function random_mountain_color()
 	r = Math.round(Math.random()*30)+160;
 	g = Math.round(Math.random()*10)+r;
 	b = Math.round(Math.random()*30)+170;
-	return "rgb("+r+","+g+","+b+")";
-}
-
-function height_to_color(height)
-{
-	var r,g,b;
-	if (height == 0) return COL_MAP_WATER
-	if (height == 1) return COL_MAP_DIRT
-	else
-	{
-		r = Math.min(height*10,175);
-		g = Math.min(100+Math.round(height*5),185);
-		b = Math.min(20+Math.round(height*10),195);
-	}
 	return "rgb("+r+","+g+","+b+")";
 }
  
@@ -639,6 +630,12 @@ Container.prototype.set_level = function(level) {
 	this.level = level;
 };
 
+/* The HUD has the most moving parts and unfortunately has to be 
+ * highly coupled by design. Most of the core functionality lies 
+ * in the widgets. This 'Manager' object maintains references to
+ * the widgets. There's probably a better pattern that we could
+ * eventually put in place here.
+ */ 
 function Hud() 
 {
 	/* These variables need to be deferred until instantiation */
@@ -1709,6 +1706,12 @@ Summarywidget.prototype.render = function()
 }
 
 
+/* gameInit() is the first function called, which kicks off the game start. This
+ * happens from main.js when the browser window finishes loading the DOM elements.
+ * Note that everything here has global scope within the browser window. I'll keep
+ * this scope as clear as practically possible and try to rely on object namespaces
+ * and interfaces. This is an ongoing evolution.
+ */
 function gameInit() 
 {
 	var i;
@@ -1716,7 +1719,8 @@ function gameInit()
 	/* from Math.js source */
 	add_math_utilities();
 	
-	/* Capture key presses in the document and mouse movements on the highest canvas */
+	/* Capture key presses in the document and mouse movements on the highest canvas.
+	 * These listeners are the input entry points in to our asynchronous "engine" */
 	document.addEventListener("keydown", doKeyDown, false);
 	overlay_canvas.addEventListener("mousemove", doMouseMove, false);
 	overlay_canvas.addEventListener("mousedown", doMouseClick, false);
@@ -1725,7 +1729,7 @@ function gameInit()
 	/* Make the game-level objects */
 	View = new View();
 	World = new World();
-	Player = create_player();
+	Player = new Player();
 	Party = new Party();
 	
 	/* Make game-level data accessor arrays */
@@ -1747,26 +1751,13 @@ function gameInit()
 	/* Create the minimap */
 	Minimap = new Minimap();
 	
+	/* Calculate the initial view area and perform the first render */
 	View.refocus(Player.map_x, Player.map_y, true);
 	View.render(base_context,animation_context);
 	
 	/* Can't add this listener until View has been instantiated */
 	window.addEventListener("resize", View.resizeWindow, false);
 	
-}
-
-function create_player() 
-{
-	var actor = new Player();
-	actor.is_player = true;
-	actor.map_x = 1096;
-	actor.map_y = 671;
-	actor.next_x = 1096;
-	actor.next_y = 671;
-	
-	actor.update_pxpy();
-	
-	return actor;
 }
 
 /* Abstract object that manages the inventory for one party member. 
@@ -2301,7 +2292,7 @@ function doKeyDown(event)
 	   This should eventually be abstracted by an 'Engine' object that separates listening and execution of all world objects
 	   I'll deal with this when I've made enough '2% rules' that justify separate execution order buckets */
 	   
-	/* Separte the events in the active and passive.
+	/* Separated the events in the active and passive.
 	 * Active events pass game time and cause monster reponse */
 	handle_active_events(event.keyCode);
 	handle_passive_events(event.keyCode);	
@@ -2368,8 +2359,7 @@ function handle_passive_events(key) {
 }
 
 /* Kick off the game when the window loads 
- * Other events are added after init 
- */
+ * Other events are added after init */
 window.addEventListener("load", gameInit, false);
  
 /* Grab DOM objects */
@@ -2384,7 +2374,6 @@ overlay_context = overlay_canvas.getContext("2d");
 
 /* Sizes the drawing canvas - function located in view.js */
 set_canvas_size();
-
  
 /* Adding various functions to the built in Math object as I need them */
 function add_math_utilities()
@@ -2432,40 +2421,41 @@ function add_math_utilities()
 	}
 }
 
+/* Minimap functions are all hanging off global - that needs to change.
+ * There is probably something to gain by making a base object for a 
+ * world popup overlay that the minimap and other future popups will
+ * derive */
+ 
 
+ /* The (future) constructor for the minimap. All these functions need to be
+  * 'objectified' in order to keep the global namespace clean. I've deferred
+  * doing this simply because this is a singleton and there isn't much to gain*/
 function Minimap() 
 {
 	this.active = false;
-	this.minimap_world_dirty = true;
-	this.minimap_viewbox_dirty = true;
+	
+	/* We're actually only drawing every other square to save space */
 	this.minimap_width = WORLD_SIZE_X/2;
 	this.minimap_height = WORLD_SIZE_Y/2;
 	
 	this.base_x = 0;
 	this.base_y = 0;
 	
-	this.render = renderMinimap;
-	this.draw = drawMinimap;
+	/* Render actually calculates the minimap image
+	 * Draw simply places that image on the screen */
+	this.render = render_minimap;
+	this.draw = draw_minimap;
 	this.clear_minimap = clear_minimap;
-	this._renderTerrain = renderTerrain;
-	this._renderViewbox = renderViewbox;
 	
-	this._renderTerrain(overlay_context);
+	/* When the Minimap is initialized at game start, we draw the whole map once and
+	 * save it as an image before clearing the drawing */
+	this.render(overlay_context);
 	this.minimap_image = overlay_context.getImageData(0,0,WORLD_SIZE_X,WORLD_SIZE_Y);
 	
 	View.clear_context(overlay_context);
 }
 
-function renderMinimap() 
-{
-	if (!this.active) { return; }
-	
-	if (this.minimap_world_dirty) { this._renderTerrain(base_context); }
-	if (this.minimap_viewbox_dirty) { this._renderViewbox(animation_context); }
-	
-}
-
-function renderTerrain(target_context) 
+function render_minimap(target_context) 
 {
 	var i,j, px, py;
 	for (j=0; j<WORLD_SIZE_Y; j+=2) {
@@ -2487,56 +2477,42 @@ function renderTerrain(target_context)
 				case 7: target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
 				default: target_context.fillStyle = COL_MAP_HIGH_MOUNTAIN; break;
 			}
-			
+			/* Draw a 1x1 square (aka. a pixel) */
 			target_context.fillRect(px/2,py/2,1,1);
 		}
 	}
-	
-	this.minimap_world_dirty = false;
 }
 
-function renderViewbox(target_context) 
+function draw_minimap(target_context) 
 {
-	clear_minimap(target_context);
-	
-	px = worldCanvas.width-WORLD_SIZE_X+View.view_grid_x+1;
-	py = worldCanvas.height-WORLD_SIZE_Y+View.view_grid_y+1;
-	target_context.strokeStyle = "rgb(255,255,0)";
-	target_context.beginPath();
-	target_context.lineTo(px,py);
-	target_context.lineTo(px+View.view_grid_width,py);
-	target_context.lineTo(px+View.view_grid_width,py+View.view_grid_height);
-	target_context.lineTo(px,py+View.view_grid_height);
-	target_context.lineTo(px,py);
-	target_context.stroke();
-
-	this.minimap_viewbox_dirty = false;
-}
-
-function drawMinimap(target_context) 
-{
+	/* Calculate drawing locations */
 	var screen_width = target_context.canvas.width;
 	var screen_height = target_context.canvas.height;
 	var player_x = Player.map_x;
 	var player_y = Player.map_y;
 	var minimap_x = (View.view_px_width-this.minimap_width)/2;
 	var minimap_y = (View.view_px_height-this.minimap_height)/2;
-
+	
+	/* Draw our saved minimap centered in the world view */
 	target_context.putImageData(this.minimap_image, minimap_x,minimap_y);
 	
+	/* Draw a red square where the player is currently located */
 	target_context.fillStyle = "rgb(255,0,0)";
 	target_context.fillRect(minimap_x+player_x/2-5, minimap_y+player_y/2-5, 10, 10);	
 	
+	/* Draw the map frame shadow */
 	target_context.lineWidth = 4;
 	target_context.strokeStyle = "rgb(0,0,0)";
     target_context.strokeRect(minimap_x, minimap_y, this.minimap_width, this.minimap_height);
 	
+	/* Draw the map frame */
 	target_context.lineWidth = 3;
 	target_context.strokeStyle = "rgb(180,60,60)";
     target_context.strokeRect(minimap_x, minimap_y, this.minimap_width, this.minimap_height);
 	
 }
 
+/* Remove the minimap */
 function clear_minimap(target_context) 
 {
 	var xx = target_context.canvas.width-WORLD_SIZE_X;
@@ -2545,7 +2521,9 @@ function clear_minimap(target_context)
 	var hh = WORLD_SIZE_Y;
 	target_context.clearRect(xx,yy,ww,hh);
 }
- 
+
+/* All of our monster-specific functions go here. This object is derived
+ * From the ACTOR object */ 
 function Monster(type, level, xx, yy) 
 {
 	Actor.call(this);
@@ -2746,27 +2724,32 @@ Monster.prototype.ai_move_run = function()
 	candidates = null;
 };
 
-/* All the monster date - Should eventually be refactored in to a more compact form */
+/* load_monster contains all the monster data and allows for polymorphism 
+ * Wach monster type defines three levels of difficulty.
+ * Eventually this should be moved in to a more compact form */
 Monster.prototype.load_monster = function(m, type, level) 
 {
 	switch (type) {
+		
 		case MTYPE_GOBLIN:
 		{
+			/* Goblin avatar */
+			m.avatar = "g";
+			
+			/* Difficulty related settings */
 			switch(level)
 			{
 				case MLEVEL_EASY: 
 				{
 					m.name = "Goblin";
 					m.max_hp = 13;
-					m.avatar = "g";
 					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 0;
 					m.xp_reward = 56;
 				} break;
 				case MLEVEL_MEDIUM: 
 				{
 					m.name = "Goblin Shaman"; 
-					m.max_hp = 21; 
-					m.avatar = "g"; 
+					m.max_hp = 21;  
 					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 2;
 					m.skill_fire_magic = 1;
 					m.spell_book.push(SPELL_FLAME_ARROW);
@@ -2775,8 +2758,7 @@ Monster.prototype.load_monster = function(m, type, level)
 				case MLEVEL_HARD: 
 				{
 					m.name = "Goblin King"; 
-					m.max_hp = 40; 
-					m.avatar = "g"; 
+					m.max_hp = 40;  
 					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 4;
 					m.skill_fire_magic = 2;
 					m.spell_book.push(SPELL_FLAME_ARROW);
@@ -2784,15 +2766,19 @@ Monster.prototype.load_monster = function(m, type, level)
 				} break;
 			}
 		} break;
+		
 		case MTYPE_MAGE:
 		{
+			/* Mage avatar */
+			m.avatar = "m";
+			
+			/* Difficulty related settings */
 			switch(level)
 			{
 				case MLEVEL_EASY: 
 				{
 					m.name = "Apprentice Mage";
 					m.max_hp = 6;
-					m.avatar = "m";
 					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 0;
 					m.skill_fire_magic = 1;
 					m.spell_book.push(SPELL_FLAME_ARROW);
@@ -2802,7 +2788,6 @@ Monster.prototype.load_monster = function(m, type, level)
 				{
 					m.name = "Journeyman Mage"; 
 					m.max_hp = 21; 
-					m.avatar = "m"; 
 					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 2;
 					m.skill_fire_magic = 2;
 					m.spell_book.push(SPELL_FLAME_ARROW); // Cold Beam
@@ -2811,8 +2796,7 @@ Monster.prototype.load_monster = function(m, type, level)
 				case MLEVEL_HARD: 
 				{
 					m.name = "Mage"; 
-					m.max_hp = 40; 
-					m.avatar = "m"; 
+					m.max_hp = 40;  
 					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 6;
 					m.skill_fire_magic = 3;
 					m.spell_book.push(SPELL_FLAME_ARROW); //Lightening Bolt
@@ -2820,15 +2804,18 @@ Monster.prototype.load_monster = function(m, type, level)
 				} break;
 			}
 		} break;
+		
 		case MTYPE_BAA:
 		{
+			m.avatar = "b";
+			
+			/* Difficulty related settings */
 			switch(level)
 			{
 				case MLEVEL_EASY: 
 				{
 					m.name = "Follower of Baa";
 					m.max_hp = 9;
-					m.avatar = "b";
 					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 0;
 					m.xp_reward = 39;
 				} break;
@@ -2836,7 +2823,6 @@ Monster.prototype.load_monster = function(m, type, level)
 				{
 					m.name = "Mystic of Baa"; 
 					m.max_hp = 17; 
-					m.avatar = "b"; 
 					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 2;
 					m.skill_mind_magic = 1;
 					m.spell_book.push(SPELL_MIND_BLAST);
@@ -2845,8 +2831,7 @@ Monster.prototype.load_monster = function(m, type, level)
 				case MLEVEL_HARD: 
 				{
 					m.name = "Fanatic of Baa"; 
-					m.max_hp = 25; 
-					m.avatar = "b"; 
+					m.max_hp = 25;  
 					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 4;
 					m.xp_reward = 119;
 				} break;
@@ -2919,8 +2904,11 @@ last_mouse_gy = 0;
 
 function doMouseMove(event) 
 {
+	/* Pixel location with respect to the canvas */
 	mouse_x = event.clientX;
 	mouse_y = event.clientY;
+	
+	/* World grid location */
 	mouse_gx = Math.floor(mouse_x/View.grid_width)+View.view_grid_x;
 	mouse_gy = Math.floor(mouse_y/View.grid_height)+View.view_grid_y;
 	
@@ -2974,7 +2962,10 @@ function doMouseRelease(event)
 
 /* Returns true if te mouse is currently in the game world area */
 function mouse_in_world() { return (mouse_x < View.view_px_width); }
- 
+
+/* This object holds the bulk of the party information. It is distinct from the
+ * Player object (which is simply the world interaction avatar). Each party member
+ * is a child object of Party */
 function Party() 
 {
 	this.active_partymember = 0;
@@ -2986,42 +2977,50 @@ function Party()
 		this.member[i] = new Partymember(this,i);
 	}
 	
-	/* Temporary constructor for a default party */
+	/* The following is a temporary constructor for a default party */
+	/* Default names */
 	this.member[0].name = "Cyan";
 	this.member[1].name = "Cecil";
 	this.member[2].name = "Celes";
 	this.member[3].name = "Rydia";
 	
+	/* Default classes */
 	this.member[0].job = CLASS_KNIGHT; 
 	this.member[1].job = CLASS_PALADIN; 
 	this.member[2].job = CLASS_CLERIC; 
 	this.member[3].job = CLASS_SORCERER; 
 	
+	/* Default hitpoints */
 	this.member[0].max_hp = 30; this.member[0].current_hp = this.member[0].max_hp;
 	this.member[1].max_hp = 25; this.member[1].current_hp = this.member[1].max_hp;
 	this.member[2].max_hp = 15; this.member[2].current_hp = this.member[2].max_hp;
 	this.member[3].max_hp = 12; this.member[3].current_hp = this.member[3].max_hp;
 	
+	/* Default magic points */
 	this.member[0].max_mp = 0; this.member[0].current_mp = this.member[0].max_mp;
 	this.member[1].max_mp = 6; this.member[1].current_mp = this.member[1].max_mp;
 	this.member[2].max_mp = 12; this.member[2].current_mp = this.member[2].max_mp;
 	this.member[3].max_mp = 15; this.member[3].current_mp = this.member[3].max_mp;
 	
+	/* Default action delays */
 	this.member[0].base_delay = 9; this.member[0].current_delay = 0;
 	this.member[1].base_delay = 10; this.member[1].current_delay = 0;
 	this.member[2].base_delay = 11; this.member[2].current_delay = 0;
 	this.member[3].base_delay = 12; this.member[3].current_delay = 0;
 	
+	/* Defauly melee attack numbers */
 	this.member[0].melee_die_num = 2; this.member[0].melee_die_side = 4; this.member[0].melee_die_bonus = 1;
 	this.member[1].melee_die_num = 2; this.member[1].melee_die_side = 3; this.member[1].melee_die_bonus = 1;
 	this.member[2].melee_die_num = 1; this.member[2].melee_die_side = 3; this.member[2].melee_die_bonus = 0;
 	this.member[3].melee_die_num = 1; this.member[3].melee_die_side = 2; this.member[3].melee_die_bonus = 0;
 	
+	/* Default ranged attack numbers */
 	this.member[0].ranged_die_num = 1; this.member[0].ranged_die_side = 3; this.member[0].ranged_die_bonus = 1;
 	this.member[1].ranged_die_num = 1; this.member[1].ranged_die_side = 3; this.member[1].ranged_die_bonus = 1;
 	this.member[2].ranged_die_num = 1; this.member[2].ranged_die_side = 3; this.member[2].ranged_die_bonus = 1;
 	this.member[3].ranged_die_num = 1; this.member[3].ranged_die_side = 3; this.member[3].ranged_die_bonus = 1;
 	
+	/* Default quick spell assignments */
 	this.member[0].quick_spell = SPELL_NONE;
 	this.member[1].quick_spell = SPELL_SPIRIT_ARROW;
 	this.member[2].quick_spell = SPELL_MIND_BLAST;
@@ -3045,6 +3044,7 @@ Party.prototype.is_ready = function(party_member)
 /* Check if the entire party is incapacitated */
 Party.prototype.is_party_dead = function() 
 {
+	/* Check each individual member */
 	if (this.is_incapacitated(0) && this.is_incapacitated(1) && this.is_incapacitated(2) && this.is_incapacitated(3)) {
 		return true; 
 	}
@@ -3067,33 +3067,41 @@ Party.prototype.add_xp = function(xp_amount)
 /* Interface to damage party members */
 Party.prototype.damage_party = function(attacker, damage_amount, target = -1, damage_type = DAM_PHYSICAL) 
 {
+	/* Don't bother if everyone is dead */
 	if (this.is_party_dead()) { return false; }
 	
 	/* Pick a party member at random */
 	if (target == -1) {
 		target = Math.floor(Math.random()*3.99);
 		
+		/* Keep trying until we find someone that's alive */
 		while (this.is_incapacitated(target)) {
 			target = Math.floor(Math.random()*3.99); 
 		}
 	}
 	
+	/* Apply the damage - Eventually this will get complicated */
 	this.member[target].current_hp -= damage_amount;
 	
+	/* Set unconcious */
 	if (this.member[target].current_hp <= 0) { 
 		this.member[target].status |= STATUS_UNCONCIOUS; 
 	}
 		
+	/* Set dead */
 	if (this.member[target].current_hp <= -25) {
 		this.member[target].status |= STATUS_DEAD; 
 	}
 		
+	/* Set eradicated */
 	if (this.member[target].current_hp <= -100) {
 		this.member[target].status |= STATUS_ERADICATED; 
 	}
 	
+	/* Updated the widget for the party member */
 	Hud.partywidget[target].dirty = true;
 	
+	/* If there is a definite attacker, indicate what happened */
 	if (attacker != -1) { 
 		Hud.message.add_message(attacker.name + Player.get_damage_action(damage_type) + this.member[target].name + " for " + damage_amount); 
 	}
@@ -3177,6 +3185,7 @@ Party.prototype.fall_damage = function (height_difference)
 		this.damage_party(-1, damage, i);
 	}
 	
+	/* Hud message indicator */
 	Hud.message.add_message("Waaaa...!");
 };
 
@@ -3261,6 +3270,14 @@ function Player()
 	this.die_num = 2;
 	this.die_side = 4;
 	this.die_bonus = 1;
+	
+	this.is_player = true;
+	this.map_x = 1096;
+	this.map_y = 671;
+	this.next_x = 1096;
+	this.next_y = 671;
+	
+	this.update_pxpy();
 }
 
 Player.prototype = Object.create(Actor.prototype);
@@ -3442,7 +3459,6 @@ SETTING_EDIT_MODE = false;
 const NUMBER_OF_MONSTERS = 0//500;
 const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
 const FG_COLOR = "rgb(170,170,170)";
-const GRASSLAND = Math.round(Math.random());
 
 /* ENUM TYPES (sort of)*/
 /* classes */ 
@@ -3688,6 +3704,8 @@ const RESIST_PHYSICAL = 5;
 /* Inventory Width Modes */
 const MODE_WEAR = 0;
 const MODE_BACKPACK = 1;
+
+/* Various spell related functions. */ 
  
 /* Takes a spell and actor (monster or player) and returns a damage */
 function get_spell_damage(spell, caster)
@@ -3734,62 +3752,49 @@ function get_spell_damage(spell, caster)
 	return damage;
 }
 
+/* Take a spell and a caster and return a cost */
 function get_spell_cost(spell, caster)
-{
 {
 	var skill_level, cost;
 	
-	cost = 0;
-	
 	switch (spell) {
-		case SPELL_FLAME_ARROW: {
-			cost = 2;
-		}; break;
-		case SPELL_MAGIC_ARROW: {
-			cost = 2;
-		}; break;
-		case SPELL_MIND_BLAST: {
-			cost = 3;
-		}; break;
-		case SPELL_STATIC_CHARGE: {
-			cost = 2;
-		}; break;
-		case SPELL_COLD_BEAM: {
-			cost = 2;
-		}; break;
-		case SPELL_SPIRIT_ARROW: {
-			cost = 1;
-		}; break;
+		case SPELL_FLAME_ARROW:   { cost = 2; }; break;
+		case SPELL_MAGIC_ARROW:   { cost = 2; }; break;
+		case SPELL_MIND_BLAST:    { cost = 3; }; break;
+		case SPELL_STATIC_CHARGE: { cost = 2; }; break;
+		case SPELL_COLD_BEAM:     { cost = 2; }; break;
+		case SPELL_SPIRIT_ARROW:  { cost = 1; }; break;
+		default: { cost = 0; }; break;
 	}
 	
-	return cost;
-}	
+	return cost;	
 }
 
+/* Create the projectile for a certain spell */
 function get_spell_shot(spell, caster, target = 0)
 {
-	var source_gx, source_gy;
-	var source_px, source_py;
-	var target_px, target_py;
-	var target_direction;
 	
-	source_gx = caster.map_x;
-	source_gy = caster.map_y;
-	source_px = View.get_pxc(caster.map_x);
-	source_py = View.get_pyc(caster.map_y);
+	/* Where is the caster located */
+	var source_gx = caster.map_x;
+	var source_gy = caster.map_y;
+	var source_px = View.get_pxc(caster.map_x);
+	var source_py = View.get_pyc(caster.map_y);
 	
+	/* If there is a valid monster target on the screen, aim for it */
 	if (target) {
-		target_px = View.get_pxc(target.map_x);
-		target_py = View.get_pyc(target.map_y);
+		var target_px = View.get_pxc(target.map_x);
+		var target_py = View.get_pyc(target.map_y);
+	
+	/* Otherwise shoot towards the mouse pointer */
+	} else { 
+		var target_px = mouse_x;
+		var target_py = mouse_y;
 	}
 	
-	if (!target) {
-		target_px = mouse_x;
-		target_py = mouse_y;
-	}
-	
+	/* Which way is our new projectile going to go? */
 	target_direction = Math.point_direction(source_px, source_py, target_px, target_py);
 	
+	/* Instantiate the projectile using the above calculations */
 	switch (spell) {
 		case SPELL_FLAME_ARROW: {
 			return new Flamearrow(source_gx, source_gy, target_direction);
@@ -4028,12 +4033,9 @@ View.prototype.toggle_animate = function()
 View.prototype.toggle_minimap = function() 
 {
 	Minimap.active = !Minimap.active;
-	if (Minimap.active) {
-		Minimap.minimap_world_dirty = true;
-		Minimap.minimap_viewbox_dirty = true;
-	} else {
-		View.clear_context(overlay_context);
-	}
+	
+	/* We just turned off the Minimap - so clear the overlay */
+	if (!Minimap.active) { View.clear_context(overlay_context); }
 	
 	World.dirty = true;
 };
@@ -4117,106 +4119,103 @@ function set_canvas_size()
 	overlay_canvas.height = Math.round(window.innerHeight*0.96); overlay_canvas.height -= overlay_canvas.height % 8;
 }
  
-
+/* The world object contains abstract data about the world. This is
+ * essentially a singleton object that provides organization and access
+ * for other objects. World generation will likely go here if we decide to
+ * procedurally generate dungeons.
+ */
+ 
 /* Constructor for the region (map) */
 function World()
 {
 	var i;
 	
+	/* These are all the data arrays indexed by world location.
+	 * The default world is 1260x756 */
 	this.dirty = true;
-	this.grid = [[],[]]
-	this.gridcol = [[],[]];
-	this.gridheight = [[],[]];
-	this.gridmob=[[],[]];
-	this.gridobj=[[],[]];
+	this.grid = [[],[]]        /* Holds the 'symbol' for the world tile */
+	this.gridcol = [[],[]];    /* Holds the color assigned to the tile */
+	this.gridheight = [[],[]]; /* Holds the height value for the tile */
+	this.gridmob=[[],[]];      /* Holds direct object refernces to mobs */
+	this.gridobj=[[],[]];      /* Holds object references like chests/doors */
+	
+	/* Contains spawn points, which generate random monsters from classes */
+	this.spawn_points = [];
 	
 	/* Buffer variable used during map edit */
-	this.last_height = 0
-	
-	this.spawn_points = [];
+	this.last_height = 0;
 
+	/* Procedure to pull populate the arrays above from the world data files */
 	this.load_map();
 	
+	/* Procedure to load the spawn points */
 	this.init_spawn_points();
 	
 }
 
-/* Renders the visible portion of the world */
-World.prototype.render = function(target_context)
+/* Renders the visible portion of the world. Although this function allows 
+ * us to specify a context, by design this should be always base_context */
+World.prototype.render = function(target_context = base_context)
 {
 	var i,j, ch, col;
-	var start_grid_x, start_grid_y, end_grid_x, end_grid_y;
 	var px, py;
 	
+	/* Aliases to cut down inline space */
+	var start_grid_x = View.view_grid_x;
+	var start_grid_y = View.view_grid_y;
+	var end_grid_x = Math.min(View.view_grid_x+View.view_grid_width,WORLD_SIZE_X);
+	var end_grid_y = Math.min(View.view_grid_y+View.view_grid_height,WORLD_SIZE_Y);
+	
+	/* Set drawing mode prior to rendering the world */
 	target_context.font = View.font_size+" clacon";
 	target_context.textAlign = "left";
 	
-	start_grid_x = View.view_grid_x;
-	start_grid_y = View.view_grid_y;
-	end_grid_x = Math.min(View.view_grid_x+View.view_grid_width,WORLD_SIZE_X);
-	end_grid_y = Math.min(View.view_grid_y+View.view_grid_height,WORLD_SIZE_Y);
-	
-	
+	/* Redraw the world row-major */
 	for (j=start_grid_y; j<end_grid_y; j++) {
 		for (i=start_grid_x; i<end_grid_x; i++) {
+			
+			/* Calculate exact pixel position */
 			px = (i-View.view_grid_x)*View.grid_width;
 			py = (j-View.view_grid_y)*View.grid_height+View.grid_height;
+			/* Push the color and the character to the context */
 			target_context.fillStyle = this.gridcol[j][i];
 			target_context.fillText(this.grid[j][i],px,py);
 		}
 	}
 	
+	/* The world has been updated, remove dirty flag */
 	this.dirty = false;
 };
 
-/* Checks if the target tile is movable
-   returns true or false */
+/* Checks if the target tile is movable. returns true or false */
 World.prototype.is_clear = function(xx, yy)
 {
+	/* This tile isn't even on the map */
 	if (xx < 0) { return false; }
 	if (yy < 0) { return false; }
 	if (xx >= WORLD_SIZE_X) { return false; }
 	if (yy >= WORLD_SIZE_Y) { return false; }
+	
+	/* If the height is negative, then this is a special square (not movable
+	 * For example: A door, dungeon entrance, or wall. Eventually fly
+	 * will change things */
 	if (this.gridheight[yy][xx] >= 0) { return true; } else { return false; }
 };
 
 /* Tests it's possible to move to the target based on height different
-   returns true or false */
+ * returns true or false with default to false. */
 World.prototype.is_movable = function(from_x, from_y, to_x, to_y)
 {
+	/* Determine the height difference between tiles */
 	var diff = this.gridheight[to_y][to_x] - this.gridheight[from_y][from_x];
 	
+	/* Future code for Flying/Jumping checks */
+	
+	/* Small differences will allow movement */
 	if (diff < 3) { return true; }
 	
+	/* If we make it this far, then we we probably can't move there. */
 	return false;
-};
-
-/* Randomly generates a map - unused for now */
-World.prototype.build_map = function()
-{
-	for (i=0; i<WORLD_SIZE_X; i++) {
-		this.grid[i] = [];
-		this.gridcol[i] = [];
-		this.gridheight[i]= [];
-		this.gridmob[i] = [];
-		this.gridobj[i] = [];
-	}
-	
-	for (j=0; j<WORLD_SIZE_Y; j++) {
-		for (i=0; i<WORLD_SIZE_X; i++) {	
-			if (Math.random() > 0.9) {
-				this.grid[j][i] = 2; 
-			} else {
-				this.grid[j][i] = 1;
-			}
-			
-			switch (this.grid[j][i]) {
-				case 0: this.gridcol[j][i] = random_water_color(); break;
-				case 1: this.gridcol[j][i] = GRASSLAND ? random_grass_color() : random_dirt_color(); break;
-				case 2: this.gridcol[j][i] = random_mountain_color(); break;
-			}
-		}
-	}
 };
 
 /* Loads the map based on the const strings WORLD_MAP_* */
@@ -4230,6 +4229,9 @@ World.prototype.load_map = function load_map()
 	var region_size = 252;
 	save_data = localStorage;
 	
+	/* This headache is to cover the face that each region is a subspace of the world
+	 * We have to determine the starting coordinates before unrolling in to the flat map 
+	 * Source the map file and find the top-left (x, y) coordinates */
 	source_map[0] = WORLD_MAP_1; target_base_x[0] = 0; target_base_y[0]  = 0;
 	source_map[1] = WORLD_MAP_2; target_base_x[1] = region_size; target_base_y[1]  = 0;
 	source_map[2] = WORLD_MAP_3; target_base_x[2] = region_size*2; target_base_y[2]  = 0;
@@ -4246,6 +4248,7 @@ World.prototype.load_map = function load_map()
 	source_map[13] = WORLD_MAP_14; target_base_x[13] = region_size*3; target_base_y[13]  = region_size*2;
 	source_map[14] = WORLD_MAP_15; target_base_x[14] = region_size*4; target_base_y[14]  = region_size*2;
 	
+	/* Make each column another list to simulate 2D arrays */
 	for (i=0; i<WORLD_SIZE_X; i++) {
 		this.grid[i] = [];
 		this.gridcol[i] = [];
@@ -4254,6 +4257,7 @@ World.prototype.load_map = function load_map()
 		this.gridobj[i] = [];
 	}
 	
+	/* Outer is the region, middle is the row, inner is the column */
 	for (k=0; k<15; k++) {
 		for (j=0; j<region_size; j++) {
 			for (i=0; i<region_size; i++) {
@@ -4337,7 +4341,8 @@ World.prototype.save_map = function()
 	var line = ""
 	var ch;
 	
-	
+	/* Determine the (x,y) of the current region 
+	 * The world is 5x3 in terms of region layout */
 	target_base_x = region_size * (region_num % 5); 
 	target_base_y  = region_size * Math.floor(region_num/5);
 	
@@ -4353,9 +4358,12 @@ World.prototype.save_map = function()
 				default: ch = String.fromCharCode(ch+64); break;
 			}
 
-			line += ch
+			line += ch;
 		}
 	}
+	
+	/* This 'saving' routine is just a console log dump that I paste in to the 
+	 * World contant */
 	console.log(line);
 	console.log("WORLD_MAP_"+(region_num+1));
 };
@@ -4502,7 +4510,7 @@ World.prototype.create_container = function(xx, yy, level) {
 	container.set_level(level);
 	container.fill_container();
 	this.gridobj[yy][xx] = container;
-	return container
+	return container;
 };
 
 /* Chest and other containers placed directly in the game world */
