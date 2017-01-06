@@ -76,13 +76,6 @@ const DAM_LIGHT = 7;
 const DAM_RANGED = 8;
 const DAM_ANCIENT = 9;
 
-/* Monster Levels */
-const MLEVEL_RANDOM = 0;
-const MLEVEL_EASY = 1;
-const MLEVEL_MEDIUM = 2;
-const MLEVEL_HARD = 3;
-const MLEVEL_UNIQUE = 4;
-
 /* Monster Types */
 const MTYPE_ARCHER = 1;
 const MTYPE_BARBARIAN = 2;
@@ -137,6 +130,33 @@ const MTYPE_WEREWOLF = 50;
 const MTYPE_DEMONQUEEN = 51;
 const MTYPE_REACTOR = 52;
 const MTYPE_BAA = 53;
+
+/* Monster Levels */
+const MLEVEL_RANDOM = 0;
+const MLEVEL_EASY = 1;
+const MLEVEL_MEDIUM = 2;
+const MLEVEL_HARD = 3;
+const MLEVEL_UNIQUE = 4;
+
+/* Monster Stats */
+const MSTAT_NAME = 0;
+const MSTAT_AVATAR = 1;
+const MSTAT_XP = 2;
+const MSTAT_MAX_HP = 3;
+const MSTAT_MELEE_DIE_NUM = 4;
+const MSTAT_MELEE_DIE_SIDE = 5;
+const MSTAT_MELEE_DIE_BONUS = 6;
+const MSTAT_RANGED_DIE_NUM = 7;
+const MSTAT_RANGED_DIE_SIDE = 8;
+const MSTAT_RANGED_DIE_BONUS = 9;
+const MSTAT_SPELL = 10;
+const MSTAT_SKILL_FIRE = 11;
+const MSTAT_SKILL_AIR = 12;
+const MSTAT_SKILL_WATER= 13;
+const MSTAT_SKILL_EARTH = 14;
+const MSTAT_SKILL_SPIRIT = 15;
+const MSTAT_SKILL_MIND = 16;
+const MSTAT_SKILL_BODY = 17;
 
 /* Monster AI */
 const AISTATE_WAIT = 0;

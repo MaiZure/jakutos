@@ -22,6 +22,285 @@
  */
 
  
+ /* Game Constants */
+const WORLD_SIZE_X = 252*5;
+const WORLD_SIZE_Y = 252*3;
+const BASE_FONT_SIZE = 24;
+const VERSION_MAJOR = 0;
+const VERSION_MINOR = 4;
+
+/* Game Settings */
+SETTING_ANIMATE = false;
+SETTING_EDIT_MODE = false;
+const NUMBER_OF_MONSTERS = 0//500;
+const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
+const FG_COLOR = "rgb(170,170,170)";
+
+/* ENUM TYPES (sort of)*/
+/* classes */ 
+const CLASS_KNIGHT = 1 << 0;
+const CLASS_PALADIN = 1 << 1;
+const CLASS_ARCHERER = 1 << 2;
+const CLASS_DRUID = 1 << 3;
+const CLASS_CLERIC = 1 << 4;
+const CLASS_SORCERER = 1 << 5;
+
+/* status effects */
+const STATUS_CURSED = 1 << 0;
+const STATUS_WEAK = 1 << 1;
+const STATUS_AFRAID = 1 << 2;
+const STATUS_DRUNK = 1 << 3;
+const STATUS_INSANE = 1 << 4;
+const STATUS_POISONED = 1 << 5;
+const STATUS_DISEASED = 1 << 6;
+const STATUS_ASLEEP = 1 << 7;
+const STATUS_PARALYZED = 1 << 8;
+const STATUS_UNCONCIOUS = 1 << 9;
+const STATUS_STONED = 1 << 10;
+const STATUS_ZOMBIE = 1 << 11;
+const STATUS_DEAD = 1 << 12;
+const STATUS_ERADICATED = 1 << 13;
+
+/* Magical effects */
+const EFFECT_FLYING = 1 << 0;
+const EFFECT_WIZEYE = 1 << 1;
+
+/* Damage types */
+const DAM_PHYSICAL = 0;
+const DAM_MAGIC = 1;
+const DAM_FIRE = 2;
+const DAM_EARTH = 3;
+const DAM_WATER = 4;
+const DAM_AIR = 5;
+const DAM_DARK = 6;
+const DAM_LIGHT = 7;
+const DAM_RANGED = 8;
+const DAM_ANCIENT = 9;
+
+/* Monster Types */
+const MTYPE_ARCHER = 1;
+const MTYPE_BARBARIAN = 2;
+const MTYPE_BAT = 3;
+const MTYPE_BEHOLDER = 4;
+const MTYPE_BLOODSUCKER = 5;
+const MTYPE_CLERIC = 6;
+const MTYPE_COBRA = 7;
+const MTYPE_COCKATRICE = 8;
+const MTYPE_DEMONFLY = 9;
+const MTYPE_DEMON = 10;
+const MTYPE_DRAGONCAVE = 11;
+const MTYPE_DRAGONFLY = 12;
+const MTYPE_DRAGONLAND = 13;
+const MTYPE_DRAGONCOVER = 14;
+const MTYPE_DRUIDESS = 15;
+const MTYPE_DWARF = 16;
+const MTYPE_ELEMAIR = 17;
+const MTYPE_ELEMEARTH = 18;
+const MTYPE_ELEMFIRE = 19;
+const MTYPE_ELEMWATER = 20;
+const MTYPE_FIGHTERCHAIN = 21;
+const MTYPE_FIGHTERLEATHER = 22;
+const MTYPE_GARGOYLE = 23;
+const MTYPE_GENIE = 24;
+const MTYPE_GHOST = 25;
+const MTYPE_GOBLIN = 26;
+const MTYPE_GUARD = 27;
+const MTYPE_HARPY = 28;
+const MTYPE_HYDRA = 29;
+const MTYPE_JACKALMAN = 30;
+const MTYPE_KNIGHTPLATE = 31;
+const MTYPE_LICH = 32;
+const MTYPE_LIZARDARCH = 33;
+const MTYPE_MAGE = 34;
+const MTYPE_MEDUSA = 35;
+const MTYPE_MERCHANT = 36;
+const MTYPE_MINOTAUR = 37;
+const MTYPE_MONK = 38;
+const MTYPE_NOBLEMAN = 39;
+const MTYPE_OOZE = 40;
+const MTYPE_OGRE = 41;
+const MTYPE_RAT = 42;
+const MTYPE_ROBOT = 43;
+const MTYPE_SEASERPENT = 44;
+const MTYPE_SKELETON = 45;
+const MTYPE_SORCERER = 46;
+const MTYPE_SPIDER = 47;
+const MTYPE_THIEF = 48;
+const MTYPE_TITAN = 49;
+const MTYPE_WEREWOLF = 50;
+const MTYPE_DEMONQUEEN = 51;
+const MTYPE_REACTOR = 52;
+const MTYPE_BAA = 53;
+
+/* Monster Levels */
+const MLEVEL_RANDOM = 0;
+const MLEVEL_EASY = 1;
+const MLEVEL_MEDIUM = 2;
+const MLEVEL_HARD = 3;
+const MLEVEL_UNIQUE = 4;
+
+/* Monster Stats */
+const MSTAT_NAME = 0;
+const MSTAT_AVATAR = 1;
+const MSTAT_XP = 2;
+const MSTAT_MAX_HP = 3;
+const MSTAT_MELEE_DIE_NUM = 4;
+const MSTAT_MELEE_DIE_SIDE = 5;
+const MSTAT_MELEE_DIE_BONUS = 6;
+const MSTAT_RANGED_DIE_NUM = 7;
+const MSTAT_RANGED_DIE_SIDE = 8;
+const MSTAT_RANGED_DIE_BONUS = 9;
+const MSTAT_SPELL = 10;
+const MSTAT_SKILL_FIRE = 11;
+const MSTAT_SKILL_AIR = 12;
+const MSTAT_SKILL_WATER= 13;
+const MSTAT_SKILL_EARTH = 14;
+const MSTAT_SKILL_SPIRIT = 15;
+const MSTAT_SKILL_MIND = 16;
+const MSTAT_SKILL_BODY = 17;
+
+/* Monster AI */
+const AISTATE_WAIT = 0;
+const AISTATE_CHASE = 1;
+const AISTATE_FLEE = 2;
+const AISTATE_WANDER = 3;
+
+/* Keyboard Codes */
+const KB_LEFT = 37;
+const KB_UP = 38;
+const KB_RIGHT = 39;
+const KB_DOWN = 40;
+const KB_1 = 49;
+const KB_2 = 50;
+const KB_3 = 51;
+const KB_4 = 52;
+const KB_8 = 56;
+const KB_9 = 57;
+const KB_A = 65;
+const KB_C = 67;
+const KB_D = 68;
+const KB_E = 69
+const KB_F = 70
+const KB_G = 71
+const KB_H = 72;
+const KB_L = 76;
+const KB_M = 77;
+const KB_W = 87;
+const KB_X = 88;
+const KB_MINUS = 189;
+const KB_PLUS = 187;
+const KB_FSLASH = 191;
+const KB_TILDE = 192;
+const KB_LBRACKET = 219;
+const KB_BSLASH = 220;
+const KB_RBRACKET = 221;
+
+/* Direction Enum */
+const DIR_NA = 0;
+const DIR_N = 1;
+const DIR_NE = 2;
+const DIR_E = 3;
+const DIR_SE = 4;
+const DIR_S = 5;
+const DIR_SW = 6;
+const DIR_W = 7;
+const DIR_NW = 8;
+
+/* Spells */
+const SPELL_NONE = 0;
+const SPELL_FLAME_ARROW = 1;
+const SPELL_MAGIC_ARROW = 2;
+const SPELL_MIND_BLAST = 3;
+const SPELL_STATIC_CHARGE = 4;
+const SPELL_COLD_BEAM = 5;
+const SPELL_SPIRIT_ARROW = 6;
+
+/* Wear slots */
+const WEAR_HEAD = 1;
+const WEAR_BODY = 2;
+const WEAR_FEET = 3;
+const WEAR_HANDS = 4;
+const WEAR_NECK = 5;
+const WEAR_CLOAK = 6;
+const WEAR_FINGER = 7;
+const WEAR_SHIELD = 8;
+const WEAR_WIELD_SINGLE = 9; /* Wield slot */
+const WEAR_WIELD_BOTH = 10; /* Wield slot */
+const WEAR_RANGED = 11;
+
+/* Item Types */
+const ITEM_SWORD = 1;
+const ITEM_AXE = 2;
+const ITEM_STAFF = 3;
+const ITEM_CLUB = 4;
+const ITEM_BOW = 5;
+const ITEM_SHIELD = 6;
+const ITEM_HELM = 7;
+const ITEM_CLOAK = 8;
+const ITEM_LEATHER = 9;
+const ITEM_CHAIN = 10;
+const ITEM_PLATE = 11;
+const ITEM_BOOTS = 12;
+const ITEM_GAUNTLETS = 13;
+const ITEM_RING = 14;
+const ITEM_AMULET = 15;
+const ITEM_WAND = 16;
+const ITEM_INGREDIENT = 17;
+const ITEM_SCROLL = 18;
+const ITEM_POTION = 19;
+
+/* Stats */
+const STAT_MIGHT = 0;
+const STAT_ACCURACY = 1;
+const STAT_SPEED = 2;
+const STAT_ENDURANCE = 3;
+const STAT_INTELLIGENCE = 4;
+const STAT_PERSONALITY = 5;
+
+/* Skills */
+const SKILL_STAFF = 0;
+const SKILL_SWORD = 1;
+const SKILL_DAGGER = 2;
+const SKILL_AXE = 3;
+const SKILL_SPEAR = 4;
+const SKILL_BOW = 5;
+const SKILL_MACE = 6;
+const SKILL_ANCIENT = 7;
+const SKILL_SHIELD = 8;
+const SKILL_LEATHER = 9;
+const SKILL_CHAIN = 10;
+const SKILL_PLATE = 11;
+const SKILL_FIRE = 12;
+const SKILL_AIR = 13;
+const SKILL_WATER = 14;
+const SKILL_EARTH = 15;
+const SKILL_SPIRIT = 16;
+const SKILL_MIND = 17;
+const SKILL_BODY = 18;
+const SKILL_LIGHT = 19;
+const SKILL_DARK = 20;
+const SKILL_IDENTIFY = 21;
+const SKILL_MERCHANT = 22;
+const SKILL_REPAIR = 23;
+const SKILL_BODYBUILDING = 24;
+const SKILL_MEDITATION = 25;
+const SKILL_PERCEPTION = 26;
+const SKILL_DIPLOMACY = 27;
+const SKILL_DISARM = 28;
+const SKILL_LEARNING = 29;
+
+/* Resists */
+const RESIST_FIRE = 0;
+const RESIST_ELECTRIC = 1;
+const RESIST_COLD = 2;
+const RESIST_POISON = 3;
+const RESIST_MAGIC = 4;
+const RESIST_PHYSICAL = 5;
+
+/* Inventory Width Modes */
+const MODE_WEAR = 0;
+const MODE_BACKPACK = 1;
+ 
 /* This Object will almost always be inhereted by a more specific object (Player, Monster, NPC) */
 function Actor() 
 { 
@@ -2421,15 +2700,12 @@ function add_math_utilities()
 	}
 }
 
-/* Minimap functions are all hanging off global - that needs to change.
- * There is probably something to gain by making a base object for a 
- * world popup overlay that the minimap and other future popups will
- * derive */
- 
+/* The Minimap is rendered when the game starts and saved as an image.
+ * When the View object toggles the minimap, the image is drawn from 
+ * the initial runtime render with the character location overlaid 
+ */
 
- /* The (future) constructor for the minimap. All these functions need to be
-  * 'objectified' in order to keep the global namespace clean. I've deferred
-  * doing this simply because this is a singleton and there isn't much to gain*/
+/* The constructor for the minimap. */
 function Minimap() 
 {
 	this.active = false;
@@ -2437,15 +2713,6 @@ function Minimap()
 	/* We're actually only drawing every other square to save space */
 	this.minimap_width = WORLD_SIZE_X/2;
 	this.minimap_height = WORLD_SIZE_Y/2;
-	
-	this.base_x = 0;
-	this.base_y = 0;
-	
-	/* Render actually calculates the minimap image
-	 * Draw simply places that image on the screen */
-	this.render = render_minimap;
-	this.draw = draw_minimap;
-	this.clear_minimap = clear_minimap;
 	
 	/* When the Minimap is initialized at game start, we draw the whole map once and
 	 * save it as an image before clearing the drawing */
@@ -2455,35 +2722,37 @@ function Minimap()
 	View.clear_context(overlay_context);
 }
 
-function render_minimap(target_context) 
+Minimap.prototype.render = function(target_context)
 {
 	var i,j, px, py;
 	for (j=0; j<WORLD_SIZE_Y; j+=2) {
 		for (i=0; i<WORLD_SIZE_X; i+=2) {
-			px = this.base_x+i;
-			py = this.base_y+j;
+			
+			/* We start the render at the top left */
+			px = i;
+			py = j;
 			
 			switch (World.gridheight[j][i]) {
 				case -3: target_context.fillStyle = COL_MAP_STAIRS; break;
 				case -2: target_context.fillStyle = COL_MAP_DOOR; break;
 				case -1: target_context.fillStyle = COL_MAP_BUILDING; break;
-				case 0: target_context.fillStyle = COL_MAP_WATER; break;
-				case 1: target_context.fillStyle = COL_MAP_DIRT; break;
-				case 2: target_context.fillStyle = COL_MAP_GRASS; break;
-				case 3: target_context.fillStyle = COL_MAP_GRASS; break;
-				case 4: target_context.fillStyle = COL_MAP_HILL; break;
-				case 5: target_context.fillStyle = COL_MAP_HILL; break;
-				case 6: target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
-				case 7: target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
+				case 0:  target_context.fillStyle = COL_MAP_WATER; break;
+				case 1:  target_context.fillStyle = COL_MAP_DIRT; break;
+				case 2:  target_context.fillStyle = COL_MAP_GRASS; break;
+				case 3:  target_context.fillStyle = COL_MAP_GRASS; break;
+				case 4:  target_context.fillStyle = COL_MAP_HILL; break;
+				case 5:  target_context.fillStyle = COL_MAP_HILL; break;
+				case 6:  target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
+				case 7:  target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
 				default: target_context.fillStyle = COL_MAP_HIGH_MOUNTAIN; break;
 			}
 			/* Draw a 1x1 square (aka. a pixel) */
 			target_context.fillRect(px/2,py/2,1,1);
 		}
 	}
-}
+};
 
-function draw_minimap(target_context) 
+Minimap.prototype.draw = function(target_context) 
 {
 	/* Calculate drawing locations */
 	var screen_width = target_context.canvas.width;
@@ -2509,18 +2778,17 @@ function draw_minimap(target_context)
 	target_context.lineWidth = 3;
 	target_context.strokeStyle = "rgb(180,60,60)";
     target_context.strokeRect(minimap_x, minimap_y, this.minimap_width, this.minimap_height);
-	
-}
+};
 
 /* Remove the minimap */
-function clear_minimap(target_context) 
+Minimap.prototype.clear_minimap = function(target_context) 
 {
 	var xx = target_context.canvas.width-WORLD_SIZE_X;
 	var yy = target_context.canvas.height-WORLD_SIZE_Y;
 	var ww = WORLD_SIZE_X;
 	var hh = WORLD_SIZE_Y;
 	target_context.clearRect(xx,yy,ww,hh);
-}
+};
 
 /* All of our monster-specific functions go here. This object is derived
  * From the ACTOR object */ 
@@ -2729,119 +2997,133 @@ Monster.prototype.ai_move_run = function()
  * Eventually this should be moved in to a more compact form */
 Monster.prototype.load_monster = function(m, type, level) 
 {
-	switch (type) {
-		
-		case MTYPE_GOBLIN:
-		{
-			/* Goblin avatar */
-			m.avatar = "g";
-			
-			/* Difficulty related settings */
-			switch(level)
-			{
-				case MLEVEL_EASY: 
-				{
-					m.name = "Goblin";
-					m.max_hp = 13;
-					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 0;
-					m.xp_reward = 56;
-				} break;
-				case MLEVEL_MEDIUM: 
-				{
-					m.name = "Goblin Shaman"; 
-					m.max_hp = 21;  
-					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 2;
-					m.skill_fire_magic = 1;
-					m.spell_book.push(SPELL_FLAME_ARROW);
-					m.xp_reward = 96;
-				} break;
-				case MLEVEL_HARD: 
-				{
-					m.name = "Goblin King"; 
-					m.max_hp = 40;  
-					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 4;
-					m.skill_fire_magic = 2;
-					m.spell_book.push(SPELL_FLAME_ARROW);
-					m.xp_reward = 200;
-				} break;
-			}
-		} break;
-		
-		case MTYPE_MAGE:
-		{
-			/* Mage avatar */
-			m.avatar = "m";
-			
-			/* Difficulty related settings */
-			switch(level)
-			{
-				case MLEVEL_EASY: 
-				{
-					m.name = "Apprentice Mage";
-					m.max_hp = 6;
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 0;
-					m.skill_fire_magic = 1;
-					m.spell_book.push(SPELL_FLAME_ARROW);
-					m.xp_reward = 24;
-				} break;
-				case MLEVEL_MEDIUM: 
-				{
-					m.name = "Journeyman Mage"; 
-					m.max_hp = 21; 
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 2;
-					m.skill_fire_magic = 2;
-					m.spell_book.push(SPELL_FLAME_ARROW); // Cold Beam
-					m.xp_reward = 96;
-				} break;
-				case MLEVEL_HARD: 
-				{
-					m.name = "Mage"; 
-					m.max_hp = 40;  
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 6;
-					m.skill_fire_magic = 3;
-					m.spell_book.push(SPELL_FLAME_ARROW); //Lightening Bolt
-					m.xp_reward = 200;
-				} break;
-			}
-		} break;
-		
-		case MTYPE_BAA:
-		{
-			m.avatar = "b";
-			
-			/* Difficulty related settings */
-			switch(level)
-			{
-				case MLEVEL_EASY: 
-				{
-					m.name = "Follower of Baa";
-					m.max_hp = 9;
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 0;
-					m.xp_reward = 39;
-				} break;
-				case MLEVEL_MEDIUM: 
-				{
-					m.name = "Mystic of Baa"; 
-					m.max_hp = 17; 
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 2;
-					m.skill_mind_magic = 1;
-					m.spell_book.push(SPELL_MIND_BLAST);
-					m.xp_reward = 75;
-				} break;
-				case MLEVEL_HARD: 
-				{
-					m.name = "Fanatic of Baa"; 
-					m.max_hp = 25;  
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 4;
-					m.xp_reward = 119;
-				} break;
-			}
-		} break;
-	}
+	/* Pull basic stats from data in monster_data.js */
+	m.name             = this.data[monster_index(type, level, MSTAT_NAME)];
+	m.avatar           = this.data[monster_index(type, level, MSTAT_AVATAR)];
+	m.xp_reward        = this.data[monster_index(type, level, MSTAT_XP)];
+	m.max_hp           = this.data[monster_index(type, level, MSTAT_MAX_HP)];
+	m.melee_die_num    = this.data[monster_index(type, level, MSTAT_MELEE_DIE_NUM)];
+	m.melee_die_side   = this.data[monster_index(type, level, MSTAT_MELEE_DIE_SIDE)];
+	m.melee_die_bonus  = this.data[monster_index(type, level, MSTAT_MELEE_DIE_BONUS)];
+	m.skill_fire_magic = this.data[monster_index(type, level, MSTAT_SKILL_FIRE)];
+	m.skill_mind_magic = this.data[monster_index(type, level, MSTAT_SKILL_MIND)];
+	
+	/* If the monster has a spell - push it to the spell book */
+	if (this.data[monster_index(type, level, MSTAT_SPELL)])
+		m.spell_book.push(this.data[monster_index(type, level, MSTAT_SPELL)]);
 	
 	/* Match hitpoints to the polymorphed maximum stat */
 	m.current_hp = m.max_hp;
 };
+
+/* Monster data array populated in monster_data.js */
+Monster.prototype.data = new Array(4500);
+ 
+/* All the monster data you never wanted is in this file */
+
+/* Calculate array position of contants */
+monster_index = function(type, level, stat) {
+	return (type*80)+(level*20)+stat;
+};
+
+/* Variables to alias the array population below - Beware this pollutes
+ * the global namespace (REFACTOR MORE) */
+var monster_data = Monster.prototype.data;
+
+/* GOBLINS */
+var type = MTYPE_GOBLIN; 
+var level = MLEVEL_EASY;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Goblin";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "g";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 56;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 13;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 1;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 9;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 0;
+var level = MLEVEL_MEDIUM;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Goblin Shamen";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "g";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 96;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 21;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 1;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 9;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 2;
+monster_data[ monster_index(type, level, MSTAT_SPELL) ]           = SPELL_FLAME_ARROW;
+monster_data[ monster_index(type, level, MSTAT_SKILL_FIRE) ]      = 1;
+var level = MLEVEL_HARD;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Goblin King";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "g";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 200;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 40;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 1;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 9;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 4;
+monster_data[ monster_index(type, level, MSTAT_SPELL) ]           = SPELL_FLAME_ARROW;
+monster_data[ monster_index(type, level, MSTAT_SKILL_FIRE) ]      = 2;
+
+/* MAGES */
+var type = MTYPE_MAGE; 
+var level = MLEVEL_EASY;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Apprentice Mage";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "m";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 24;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 6;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 2;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 4;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 0;
+monster_data[ monster_index(type, level, MSTAT_SPELL) ]           = SPELL_FLAME_ARROW;
+monster_data[ monster_index(type, level, MSTAT_SKILL_FIRE) ]      = 1;
+var level = MLEVEL_MEDIUM;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Journeyman Mage";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "m";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 96;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 21;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 2;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 4;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 2;
+monster_data[ monster_index(type, level, MSTAT_SPELL) ]           = SPELL_FLAME_ARROW; //Cold Beam
+monster_data[ monster_index(type, level, MSTAT_SKILL_FIRE) ]      = 2;
+var level = MLEVEL_HARD;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Mage";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "m";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 200;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 40;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 2;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 4;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 6;
+monster_data[ monster_index(type, level, MSTAT_SPELL) ]           = SPELL_FLAME_ARROW; //Lightening Bolt
+monster_data[ monster_index(type, level, MSTAT_SKILL_FIRE) ]      = 3;
+
+/* BAA FOLLOWERS*/
+var type = MTYPE_BAA; 
+var level = MLEVEL_EASY;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Follower of Baa";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "b";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 39;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 9;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 2;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 4;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 0;
+monster_data[ monster_index(type, level, MSTAT_SPELL) ]           = SPELL_FLAME_ARROW;
+var level = MLEVEL_MEDIUM;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Mystic of Baa";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "b";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 75;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 17;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 2;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 4;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 2;
+monster_data[ monster_index(type, level, MSTAT_SPELL) ]           = SPELL_MIND_BLAST;
+monster_data[ monster_index(type, level, MSTAT_SKILL_MIND) ]      = 1;
+var level = MLEVEL_HARD;
+monster_data[ monster_index(type, level, MSTAT_NAME) ]            = "Fanatic of Baa";
+monster_data[ monster_index(type, level, MSTAT_AVATAR) ]          = "m";
+monster_data[ monster_index(type, level, MSTAT_XP) ]              = 119;
+monster_data[ monster_index(type, level, MSTAT_MAX_HP) ]          = 25;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_NUM) ]   = 2;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_SIDE) ]  = 4;
+monster_data[ monster_index(type, level, MSTAT_MELEE_DIE_BONUS) ] = 4;
+monster_data[ monster_index(type, level, MSTAT_SPELL) ]           = 0;
 
 /* An invisible point in the world that monsters spawn around */
 function Monsterspawner(xx, yy, type, easy = 50, medium = 40, hard = 10) {
@@ -3445,265 +3727,6 @@ Player.prototype.update_tick = function()
 	/* Clear current threats */
 	Player.threats = [];
 };
- 
- /* Game Constants */
-const WORLD_SIZE_X = 252*5;
-const WORLD_SIZE_Y = 252*3;
-const BASE_FONT_SIZE = 24;
-const VERSION_MAJOR = 0;
-const VERSION_MINOR = 4;
-
-/* Game Settings */
-SETTING_ANIMATE = false;
-SETTING_EDIT_MODE = false;
-const NUMBER_OF_MONSTERS = 0//500;
-const ANIMATION_STEPS = 2; /* 1 = slow, 2 = medium, 4 = fast */
-const FG_COLOR = "rgb(170,170,170)";
-
-/* ENUM TYPES (sort of)*/
-/* classes */ 
-const CLASS_KNIGHT = 1 << 0;
-const CLASS_PALADIN = 1 << 1;
-const CLASS_ARCHERER = 1 << 2;
-const CLASS_DRUID = 1 << 3;
-const CLASS_CLERIC = 1 << 4;
-const CLASS_SORCERER = 1 << 5;
-
-/* status effects */
-const STATUS_CURSED = 1 << 0;
-const STATUS_WEAK = 1 << 1;
-const STATUS_AFRAID = 1 << 2;
-const STATUS_DRUNK = 1 << 3;
-const STATUS_INSANE = 1 << 4;
-const STATUS_POISONED = 1 << 5;
-const STATUS_DISEASED = 1 << 6;
-const STATUS_ASLEEP = 1 << 7;
-const STATUS_PARALYZED = 1 << 8;
-const STATUS_UNCONCIOUS = 1 << 9;
-const STATUS_STONED = 1 << 10;
-const STATUS_ZOMBIE = 1 << 11;
-const STATUS_DEAD = 1 << 12;
-const STATUS_ERADICATED = 1 << 13;
-
-/* Magical effects */
-const EFFECT_FLYING = 1 << 0;
-const EFFECT_WIZEYE = 1 << 1;
-
-/* Damage types */
-const DAM_PHYSICAL = 0;
-const DAM_MAGIC = 1;
-const DAM_FIRE = 2;
-const DAM_EARTH = 3;
-const DAM_WATER = 4;
-const DAM_AIR = 5;
-const DAM_DARK = 6;
-const DAM_LIGHT = 7;
-const DAM_RANGED = 8;
-const DAM_ANCIENT = 9;
-
-/* Monster Levels */
-const MLEVEL_RANDOM = 0;
-const MLEVEL_EASY = 1;
-const MLEVEL_MEDIUM = 2;
-const MLEVEL_HARD = 3;
-const MLEVEL_UNIQUE = 4;
-
-/* Monster Types */
-const MTYPE_ARCHER = 1;
-const MTYPE_BARBARIAN = 2;
-const MTYPE_BAT = 3;
-const MTYPE_BEHOLDER = 4;
-const MTYPE_BLOODSUCKER = 5;
-const MTYPE_CLERIC = 6;
-const MTYPE_COBRA = 7;
-const MTYPE_COCKATRICE = 8;
-const MTYPE_DEMONFLY = 9;
-const MTYPE_DEMON = 10;
-const MTYPE_DRAGONCAVE = 11;
-const MTYPE_DRAGONFLY = 12;
-const MTYPE_DRAGONLAND = 13;
-const MTYPE_DRAGONCOVER = 14;
-const MTYPE_DRUIDESS = 15;
-const MTYPE_DWARF = 16;
-const MTYPE_ELEMAIR = 17;
-const MTYPE_ELEMEARTH = 18;
-const MTYPE_ELEMFIRE = 19;
-const MTYPE_ELEMWATER = 20;
-const MTYPE_FIGHTERCHAIN = 21;
-const MTYPE_FIGHTERLEATHER = 22;
-const MTYPE_GARGOYLE = 23;
-const MTYPE_GENIE = 24;
-const MTYPE_GHOST = 25;
-const MTYPE_GOBLIN = 26;
-const MTYPE_GUARD = 27;
-const MTYPE_HARPY = 28;
-const MTYPE_HYDRA = 29;
-const MTYPE_JACKALMAN = 30;
-const MTYPE_KNIGHTPLATE = 31;
-const MTYPE_LICH = 32;
-const MTYPE_LIZARDARCH = 33;
-const MTYPE_MAGE = 34;
-const MTYPE_MEDUSA = 35;
-const MTYPE_MERCHANT = 36;
-const MTYPE_MINOTAUR = 37;
-const MTYPE_MONK = 38;
-const MTYPE_NOBLEMAN = 39;
-const MTYPE_OOZE = 40;
-const MTYPE_OGRE = 41;
-const MTYPE_RAT = 42;
-const MTYPE_ROBOT = 43;
-const MTYPE_SEASERPENT = 44;
-const MTYPE_SKELETON = 45;
-const MTYPE_SORCERER = 46;
-const MTYPE_SPIDER = 47;
-const MTYPE_THIEF = 48;
-const MTYPE_TITAN = 49;
-const MTYPE_WEREWOLF = 50;
-const MTYPE_DEMONQUEEN = 51;
-const MTYPE_REACTOR = 52;
-const MTYPE_BAA = 53;
-
-/* Monster AI */
-const AISTATE_WAIT = 0;
-const AISTATE_CHASE = 1;
-const AISTATE_FLEE = 2;
-const AISTATE_WANDER = 3;
-
-/* Keyboard Codes */
-const KB_LEFT = 37;
-const KB_UP = 38;
-const KB_RIGHT = 39;
-const KB_DOWN = 40;
-const KB_1 = 49;
-const KB_2 = 50;
-const KB_3 = 51;
-const KB_4 = 52;
-const KB_8 = 56;
-const KB_9 = 57;
-const KB_A = 65;
-const KB_C = 67;
-const KB_D = 68;
-const KB_E = 69
-const KB_F = 70
-const KB_G = 71
-const KB_H = 72;
-const KB_L = 76;
-const KB_M = 77;
-const KB_W = 87;
-const KB_X = 88;
-const KB_MINUS = 189;
-const KB_PLUS = 187;
-const KB_FSLASH = 191;
-const KB_TILDE = 192;
-const KB_LBRACKET = 219;
-const KB_BSLASH = 220;
-const KB_RBRACKET = 221;
-
-/* Direction Enum */
-const DIR_NA = 0;
-const DIR_N = 1;
-const DIR_NE = 2;
-const DIR_E = 3;
-const DIR_SE = 4;
-const DIR_S = 5;
-const DIR_SW = 6;
-const DIR_W = 7;
-const DIR_NW = 8;
-
-/* Spells */
-const SPELL_NONE = 0;
-const SPELL_FLAME_ARROW = 1;
-const SPELL_MAGIC_ARROW = 2;
-const SPELL_MIND_BLAST = 3;
-const SPELL_STATIC_CHARGE = 4;
-const SPELL_COLD_BEAM = 5;
-const SPELL_SPIRIT_ARROW = 6;
-
-/* Wear slots */
-const WEAR_HEAD = 1;
-const WEAR_BODY = 2;
-const WEAR_FEET = 3;
-const WEAR_HANDS = 4;
-const WEAR_NECK = 5;
-const WEAR_CLOAK = 6;
-const WEAR_FINGER = 7;
-const WEAR_SHIELD = 8;
-const WEAR_WIELD_SINGLE = 9; /* Wield slot */
-const WEAR_WIELD_BOTH = 10; /* Wield slot */
-const WEAR_RANGED = 11;
-
-/* Item Types */
-const ITEM_SWORD = 1;
-const ITEM_AXE = 2;
-const ITEM_STAFF = 3;
-const ITEM_CLUB = 4;
-const ITEM_BOW = 5;
-const ITEM_SHIELD = 6;
-const ITEM_HELM = 7;
-const ITEM_CLOAK = 8;
-const ITEM_LEATHER = 9;
-const ITEM_CHAIN = 10;
-const ITEM_PLATE = 11;
-const ITEM_BOOTS = 12;
-const ITEM_GAUNTLETS = 13;
-const ITEM_RING = 14;
-const ITEM_AMULET = 15;
-const ITEM_WAND = 16;
-const ITEM_INGREDIENT = 17;
-const ITEM_SCROLL = 18;
-const ITEM_POTION = 19;
-
-/* Stats */
-const STAT_MIGHT = 0;
-const STAT_ACCURACY = 1;
-const STAT_SPEED = 2;
-const STAT_ENDURANCE = 3;
-const STAT_INTELLIGENCE = 4;
-const STAT_PERSONALITY = 5;
-
-/* Skills */
-const SKILL_STAFF = 0;
-const SKILL_SWORD = 1;
-const SKILL_DAGGER = 2;
-const SKILL_AXE = 3;
-const SKILL_SPEAR = 4;
-const SKILL_BOW = 5;
-const SKILL_MACE = 6;
-const SKILL_ANCIENT = 7;
-const SKILL_SHIELD = 8;
-const SKILL_LEATHER = 9;
-const SKILL_CHAIN = 10;
-const SKILL_PLATE = 11;
-const SKILL_FIRE = 12;
-const SKILL_AIR = 13;
-const SKILL_WATER = 14;
-const SKILL_EARTH = 15;
-const SKILL_SPIRIT = 16;
-const SKILL_MIND = 17;
-const SKILL_BODY = 18;
-const SKILL_LIGHT = 19;
-const SKILL_DARK = 20;
-const SKILL_IDENTIFY = 21;
-const SKILL_MERCHANT = 22;
-const SKILL_REPAIR = 23;
-const SKILL_BODYBUILDING = 24;
-const SKILL_MEDITATION = 25;
-const SKILL_PERCEPTION = 26;
-const SKILL_DIPLOMACY = 27;
-const SKILL_DISARM = 28;
-const SKILL_LEARNING = 29;
-
-/* Resists */
-const RESIST_FIRE = 0;
-const RESIST_ELECTRIC = 1;
-const RESIST_COLD = 2;
-const RESIST_POISON = 3;
-const RESIST_MAGIC = 4;
-const RESIST_PHYSICAL = 5;
-
-/* Inventory Width Modes */
-const MODE_WEAR = 0;
-const MODE_BACKPACK = 1;
 
 /* Various spell related functions. */ 
  
@@ -4085,10 +4108,8 @@ function _animate_camera()
 			if (View.view_grid_y < View.target_view_y) { View.view_grid_y++; }
 			if (View.view_grid_y > View.target_view_y) { View.view_grid_y--; }
 			
-			if (View.view_grid_x == View.target_view_x && View.view_grid_y == View.target_view_y)
-			{
+			if (View.view_grid_x == View.target_view_x && View.view_grid_y == View.target_view_y) {
 				View.dirty = false;
-				//Hud.Minimap.minimap_viewbox_dirty = true;
 			}
 			
 			View.clear_world(animation_context);

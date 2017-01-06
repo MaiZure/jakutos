@@ -21,15 +21,12 @@
  * @license GPL-3.0+ <https://www.gnu.org/licenses/gpl.txt>
  */
 
-/* Minimap functions are all hanging off global - that needs to change.
- * There is probably something to gain by making a base object for a 
- * world popup overlay that the minimap and other future popups will
- * derive */
- 
+/* The Minimap is rendered when the game starts and saved as an image.
+ * When the View object toggles the minimap, the image is drawn from 
+ * the initial runtime render with the character location overlaid 
+ */
 
- /* The (future) constructor for the minimap. All these functions need to be
-  * 'objectified' in order to keep the global namespace clean. I've deferred
-  * doing this simply because this is a singleton and there isn't much to gain*/
+/* The constructor for the minimap. */
 function Minimap() 
 {
 	this.active = false;
@@ -37,15 +34,6 @@ function Minimap()
 	/* We're actually only drawing every other square to save space */
 	this.minimap_width = WORLD_SIZE_X/2;
 	this.minimap_height = WORLD_SIZE_Y/2;
-	
-	this.base_x = 0;
-	this.base_y = 0;
-	
-	/* Render actually calculates the minimap image
-	 * Draw simply places that image on the screen */
-	this.render = render_minimap;
-	this.draw = draw_minimap;
-	this.clear_minimap = clear_minimap;
 	
 	/* When the Minimap is initialized at game start, we draw the whole map once and
 	 * save it as an image before clearing the drawing */
@@ -55,35 +43,37 @@ function Minimap()
 	View.clear_context(overlay_context);
 }
 
-function render_minimap(target_context) 
+Minimap.prototype.render = function(target_context)
 {
 	var i,j, px, py;
 	for (j=0; j<WORLD_SIZE_Y; j+=2) {
 		for (i=0; i<WORLD_SIZE_X; i+=2) {
-			px = this.base_x+i;
-			py = this.base_y+j;
+			
+			/* We start the render at the top left */
+			px = i;
+			py = j;
 			
 			switch (World.gridheight[j][i]) {
 				case -3: target_context.fillStyle = COL_MAP_STAIRS; break;
 				case -2: target_context.fillStyle = COL_MAP_DOOR; break;
 				case -1: target_context.fillStyle = COL_MAP_BUILDING; break;
-				case 0: target_context.fillStyle = COL_MAP_WATER; break;
-				case 1: target_context.fillStyle = COL_MAP_DIRT; break;
-				case 2: target_context.fillStyle = COL_MAP_GRASS; break;
-				case 3: target_context.fillStyle = COL_MAP_GRASS; break;
-				case 4: target_context.fillStyle = COL_MAP_HILL; break;
-				case 5: target_context.fillStyle = COL_MAP_HILL; break;
-				case 6: target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
-				case 7: target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
+				case 0:  target_context.fillStyle = COL_MAP_WATER; break;
+				case 1:  target_context.fillStyle = COL_MAP_DIRT; break;
+				case 2:  target_context.fillStyle = COL_MAP_GRASS; break;
+				case 3:  target_context.fillStyle = COL_MAP_GRASS; break;
+				case 4:  target_context.fillStyle = COL_MAP_HILL; break;
+				case 5:  target_context.fillStyle = COL_MAP_HILL; break;
+				case 6:  target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
+				case 7:  target_context.fillStyle = COL_MAP_LOW_MOUNTAIN; break;
 				default: target_context.fillStyle = COL_MAP_HIGH_MOUNTAIN; break;
 			}
 			/* Draw a 1x1 square (aka. a pixel) */
 			target_context.fillRect(px/2,py/2,1,1);
 		}
 	}
-}
+};
 
-function draw_minimap(target_context) 
+Minimap.prototype.draw = function(target_context) 
 {
 	/* Calculate drawing locations */
 	var screen_width = target_context.canvas.width;
@@ -109,15 +99,14 @@ function draw_minimap(target_context)
 	target_context.lineWidth = 3;
 	target_context.strokeStyle = "rgb(180,60,60)";
     target_context.strokeRect(minimap_x, minimap_y, this.minimap_width, this.minimap_height);
-	
-}
+};
 
 /* Remove the minimap */
-function clear_minimap(target_context) 
+Minimap.prototype.clear_minimap = function(target_context) 
 {
 	var xx = target_context.canvas.width-WORLD_SIZE_X;
 	var yy = target_context.canvas.height-WORLD_SIZE_Y;
 	var ww = WORLD_SIZE_X;
 	var hh = WORLD_SIZE_Y;
 	target_context.clearRect(xx,yy,ww,hh);
-}
+};

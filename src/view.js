@@ -289,10 +289,8 @@ function _animate_camera()
 			if (View.view_grid_y < View.target_view_y) { View.view_grid_y++; }
 			if (View.view_grid_y > View.target_view_y) { View.view_grid_y--; }
 			
-			if (View.view_grid_x == View.target_view_x && View.view_grid_y == View.target_view_y)
-			{
+			if (View.view_grid_x == View.target_view_x && View.view_grid_y == View.target_view_y) {
 				View.dirty = false;
-				//Hud.Minimap.minimap_viewbox_dirty = true;
 			}
 			
 			View.clear_world(animation_context);

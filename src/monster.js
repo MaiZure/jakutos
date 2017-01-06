@@ -228,116 +228,24 @@ Monster.prototype.ai_move_run = function()
  * Eventually this should be moved in to a more compact form */
 Monster.prototype.load_monster = function(m, type, level) 
 {
-	switch (type) {
-		
-		case MTYPE_GOBLIN:
-		{
-			/* Goblin avatar */
-			m.avatar = "g";
-			
-			/* Difficulty related settings */
-			switch(level)
-			{
-				case MLEVEL_EASY: 
-				{
-					m.name = "Goblin";
-					m.max_hp = 13;
-					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 0;
-					m.xp_reward = 56;
-				} break;
-				case MLEVEL_MEDIUM: 
-				{
-					m.name = "Goblin Shaman"; 
-					m.max_hp = 21;  
-					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 2;
-					m.skill_fire_magic = 1;
-					m.spell_book.push(SPELL_FLAME_ARROW);
-					m.xp_reward = 96;
-				} break;
-				case MLEVEL_HARD: 
-				{
-					m.name = "Goblin King"; 
-					m.max_hp = 40;  
-					m.melee_die_num = 1; m.melee_die_side = 9; m.melee_die_bonus = 4;
-					m.skill_fire_magic = 2;
-					m.spell_book.push(SPELL_FLAME_ARROW);
-					m.xp_reward = 200;
-				} break;
-			}
-		} break;
-		
-		case MTYPE_MAGE:
-		{
-			/* Mage avatar */
-			m.avatar = "m";
-			
-			/* Difficulty related settings */
-			switch(level)
-			{
-				case MLEVEL_EASY: 
-				{
-					m.name = "Apprentice Mage";
-					m.max_hp = 6;
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 0;
-					m.skill_fire_magic = 1;
-					m.spell_book.push(SPELL_FLAME_ARROW);
-					m.xp_reward = 24;
-				} break;
-				case MLEVEL_MEDIUM: 
-				{
-					m.name = "Journeyman Mage"; 
-					m.max_hp = 21; 
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 2;
-					m.skill_fire_magic = 2;
-					m.spell_book.push(SPELL_FLAME_ARROW); // Cold Beam
-					m.xp_reward = 96;
-				} break;
-				case MLEVEL_HARD: 
-				{
-					m.name = "Mage"; 
-					m.max_hp = 40;  
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 6;
-					m.skill_fire_magic = 3;
-					m.spell_book.push(SPELL_FLAME_ARROW); //Lightening Bolt
-					m.xp_reward = 200;
-				} break;
-			}
-		} break;
-		
-		case MTYPE_BAA:
-		{
-			m.avatar = "b";
-			
-			/* Difficulty related settings */
-			switch(level)
-			{
-				case MLEVEL_EASY: 
-				{
-					m.name = "Follower of Baa";
-					m.max_hp = 9;
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 0;
-					m.xp_reward = 39;
-				} break;
-				case MLEVEL_MEDIUM: 
-				{
-					m.name = "Mystic of Baa"; 
-					m.max_hp = 17; 
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 2;
-					m.skill_mind_magic = 1;
-					m.spell_book.push(SPELL_MIND_BLAST);
-					m.xp_reward = 75;
-				} break;
-				case MLEVEL_HARD: 
-				{
-					m.name = "Fanatic of Baa"; 
-					m.max_hp = 25;  
-					m.melee_die_num = 2; m.melee_die_side = 4; m.melee_die_bonus = 4;
-					m.xp_reward = 119;
-				} break;
-			}
-		} break;
-	}
+	/* Pull basic stats from data in monster_data.js */
+	m.name             = this.data[monster_index(type, level, MSTAT_NAME)];
+	m.avatar           = this.data[monster_index(type, level, MSTAT_AVATAR)];
+	m.xp_reward        = this.data[monster_index(type, level, MSTAT_XP)];
+	m.max_hp           = this.data[monster_index(type, level, MSTAT_MAX_HP)];
+	m.melee_die_num    = this.data[monster_index(type, level, MSTAT_MELEE_DIE_NUM)];
+	m.melee_die_side   = this.data[monster_index(type, level, MSTAT_MELEE_DIE_SIDE)];
+	m.melee_die_bonus  = this.data[monster_index(type, level, MSTAT_MELEE_DIE_BONUS)];
+	m.skill_fire_magic = this.data[monster_index(type, level, MSTAT_SKILL_FIRE)];
+	m.skill_mind_magic = this.data[monster_index(type, level, MSTAT_SKILL_MIND)];
+	
+	/* If the monster has a spell - push it to the spell book */
+	if (this.data[monster_index(type, level, MSTAT_SPELL)])
+		m.spell_book.push(this.data[monster_index(type, level, MSTAT_SPELL)]);
 	
 	/* Match hitpoints to the polymorphed maximum stat */
 	m.current_hp = m.max_hp;
 };
+
+/* Monster data array populated in monster_data.js */
+Monster.prototype.data = new Array(4500);
